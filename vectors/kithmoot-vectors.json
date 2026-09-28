@@ -1,0 +1,1550 @@
+{
+  "protocolVersion": "kithmoot/v1",
+  "generatedBy": "vectors/generate.mjs",
+  "nostrToolsVersion": "2.25.0",
+  "groups": {
+    "roomDerivation": [
+      {
+        "name": "all-zero-secret",
+        "kind": "positive",
+        "note": "Edge case: a room secret of all-zero bytes derives normally - HKDF has no weak inputs.",
+        "input": {
+          "secretHex": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "output": {
+          "roomId": "c04f8e4830858345e00ba7a76b77d08b2cb65fa633621e16219a6ff13155b482",
+          "roomKeyHex": "e429576fabbb15d72fb770ec10f749e1ecfe9c4a85c5c05ffbbdb53e5ba08cb3"
+        }
+      },
+      {
+        "name": "all-0xff-secret",
+        "kind": "positive",
+        "note": "Edge case: a room secret of all-0xff bytes derives normally.",
+        "input": {
+          "secretHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        },
+        "output": {
+          "roomId": "3bdc0722605af28dbf47f0a0fb9fc31da83d69a1337002e650e4197c997dcb40",
+          "roomKeyHex": "6b5c98e63f51da7289059b5a276cfe747d9752af458bbd30f7330974524a4c5a"
+        }
+      },
+      {
+        "name": "typical-secret-1",
+        "kind": "positive",
+        "note": "A representative room secret, reused across the credential/roster/signal groups below so those vectors trace back to one room.",
+        "input": {
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf"
+        },
+        "output": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+        }
+      },
+      {
+        "name": "typical-secret-2",
+        "kind": "positive",
+        "note": "A second representative secret, used as \"a different room\" in wrong-room negative cases elsewhere.",
+        "input": {
+          "secretHex": "d65ea38d656270d9eebcb949759dec4599cade320bd53cf2bce301e2c23fd72d"
+        },
+        "output": {
+          "roomId": "fcdc853ddc1be7f7d978367e1a5156b55f11e4c22a49db949f5bb939a303762a",
+          "roomKeyHex": "deb56b230478ea80360cf944c2f67e3ff54bbeed6bc177419cc81ac66d0c3cfa"
+        }
+      }
+    ],
+    "channelDerivation": [
+      {
+        "name": "agents",
+        "kind": "positive",
+        "note": "The `agents` channel of ROOM_1: id = HKDF-SHA256(ikm = roomKey, info = \"kithmoot/v1/channel-id/agents\", 32 bytes) as hex, key = HKDF-SHA256(ikm = roomKey, info = \"kithmoot/v1/channel-key/agents\", 32 bytes). No salt. A chat event on this channel carries the id in its `d` tag and is NIP-44-encrypted under the key; the credential inside is still checked against the ROOM id.",
+        "input": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+          "channel": "agents"
+        },
+        "output": {
+          "id": "f07da1bdc33e83a4d21507bac3a5eaf6b8813b3eaf45dbd9b84c5924198c005b",
+          "keyHex": "9d8e52617e4707232e352b0c1cce989c7396f4e9f9abfaf8055fcd4c0a8a6ea9"
+        }
+      },
+      {
+        "name": "transcript",
+        "kind": "positive",
+        "note": "The `transcript` channel of ROOM_1: id = HKDF-SHA256(ikm = roomKey, info = \"kithmoot/v1/channel-id/transcript\", 32 bytes) as hex, key = HKDF-SHA256(ikm = roomKey, info = \"kithmoot/v1/channel-key/transcript\", 32 bytes). No salt. A chat event on this channel carries the id in its `d` tag and is NIP-44-encrypted under the key; the credential inside is still checked against the ROOM id.",
+        "input": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+          "channel": "transcript"
+        },
+        "output": {
+          "id": "ad25c1ca475a7a5909164e3903bde4fbd72e3e5846029228f739a5b11e44316d",
+          "keyHex": "1a013931809e01e964a7d7e70b7f2c160c0145771eba407ace77b5ad260e6251"
+        }
+      },
+      {
+        "name": "unnamed-is-the-room",
+        "kind": "positive",
+        "note": "No channel name means the main chat: the id is the room id and the key is the room key, unchanged, so every chat event ever published decodes exactly as before channels existed.",
+        "input": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+        },
+        "output": {
+          "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+        }
+      }
+    ],
+    "joinUrl": [
+      {
+        "name": "basic-no-policy",
+        "kind": "positive",
+        "note": "The common case: a secret and two relay hints, no access policy.",
+        "input": {
+          "base": "https://kithmoot.com/j",
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+          "relays": [
+            "wss://relay.damus.io",
+            "wss://nos.lol"
+          ],
+          "policy": null
+        },
+        "output": {
+          "url": "https://kithmoot.com/j#eyJzIjoiTWpXOXQ4OU9DTmpybnhSQnZTRllnbHdPaEJVS3dQd1NPaEJrVlJNTzdzOCIsInIiOlsid3NzOi8vcmVsYXkuZGFtdXMuaW8iLCJ3c3M6Ly9ub3MubG9sIl19",
+          "decoded": {
+            "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+            "relays": [
+              "wss://relay.damus.io",
+              "wss://nos.lol"
+            ],
+            "policy": null
+          }
+        }
+      },
+      {
+        "name": "kith-policy-with-admitted-issuer",
+        "kind": "positive",
+        "note": "A kith-gated policy round-trips its admitted-issuer allow-list.",
+        "input": {
+          "base": "https://kithmoot.com/j",
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+          "relays": [
+            "wss://relay.damus.io"
+          ],
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          }
+        },
+        "output": {
+          "url": "https://kithmoot.com/j#eyJzIjoiTWpXOXQ4OU9DTmpybnhSQnZTRllnbHdPaEJVS3dQd1NPaEJrVlJNTzdzOCIsInIiOlsid3NzOi8vcmVsYXkuZGFtdXMuaW8iXSwiYSI6eyJ0aWVyIjoia2l0aCIsImFkbWl0dGVkIjpbIjAwYTBiOGI1NzhkZTM2N2U2NWM0MDBjY2NkYjc3NDNlODI0MDNkNDU3NDY5ZDAyMDIzYjE1NjhhOTJmYWFkZDgiXX19",
+          "decoded": {
+            "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+            "relays": [
+              "wss://relay.damus.io"
+            ],
+            "policy": {
+              "tier": "kith",
+              "admitted": [
+                "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "open-policy-has-no-admitted-list",
+        "kind": "positive",
+        "note": "An 'open' policy carries no admitted list at all - decodeJoinUrl must not invent one.",
+        "input": {
+          "base": "https://kithmoot.com/j",
+          "secretHex": "d65ea38d656270d9eebcb949759dec4599cade320bd53cf2bce301e2c23fd72d",
+          "relays": [
+            "wss://relay.damus.io",
+            "wss://nos.lol"
+          ],
+          "policy": {
+            "tier": "open"
+          }
+        },
+        "output": {
+          "url": "https://kithmoot.com/j#eyJzIjoiMWw2ampXVmljTm51dkxsSmRaM3NSWm5LM2pJTDFUenl2T01CNHNJXzF5MCIsInIiOlsid3NzOi8vcmVsYXkuZGFtdXMuaW8iLCJ3c3M6Ly9ub3MubG9sIl0sImEiOnsidGllciI6Im9wZW4ifX0",
+          "decoded": {
+            "secretHex": "d65ea38d656270d9eebcb949759dec4599cade320bd53cf2bce301e2c23fd72d",
+            "relays": [
+              "wss://relay.damus.io",
+              "wss://nos.lol"
+            ],
+            "policy": {
+              "tier": "open"
+            }
+          }
+        }
+      },
+      {
+        "name": "empty-relay-list",
+        "kind": "positive",
+        "note": "Edge case: an empty relay list is a valid, if useless, join URL.",
+        "input": {
+          "base": "https://kithmoot.com/j",
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+          "relays": [],
+          "policy": null
+        },
+        "output": {
+          "url": "https://kithmoot.com/j#eyJzIjoiTWpXOXQ4OU9DTmpybnhSQnZTRllnbHdPaEJVS3dQd1NPaEJrVlJNTzdzOCIsInIiOltdfQ",
+          "decoded": {
+            "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf",
+            "relays": [],
+            "policy": null
+          }
+        }
+      },
+      {
+        "name": "members-policy-round-trip",
+        "kind": "positive",
+        "note": "A two-member policy, the shape of a direct message, round-trips with its members list normalised to lower case. A malformed list is refused rather than dropped, because a dropped list is an open room.",
+        "input": {
+          "base": "https://kithmoot.com/j",
+          "secretHex": "d65ea38d656270d9eebcb949759dec4599cade320bd53cf2bce301e2c23fd72d",
+          "relays": [
+            "wss://relay.damus.io",
+            "wss://nos.lol"
+          ],
+          "policy": {
+            "tier": "open",
+            "members": [
+              "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+              "e062bd3bb36508cc94edafc132a9f2edfb690fb369b7ea8dd7f62e38b8f4d8ea"
+            ]
+          }
+        },
+        "output": {
+          "url": "https://kithmoot.com/j#eyJzIjoiMWw2ampXVmljTm51dkxsSmRaM3NSWm5LM2pJTDFUenl2T01CNHNJXzF5MCIsInIiOlsid3NzOi8vcmVsYXkuZGFtdXMuaW8iLCJ3c3M6Ly9ub3MubG9sIl0sImEiOnsidGllciI6Im9wZW4iLCJtZW1iZXJzIjpbImIwN2ZmNjZmZmNhMmQ1NDQ1Y2ZiNGEzODRlOTRmYmE4ZWNjNTAwMDI4M2I0M2YyZDU0MjVjODVkZjUwMzJlNzQiLCJlMDYyYmQzYmIzNjUwOGNjOTRlZGFmYzEzMmE5ZjJlZGZiNjkwZmIzNjliN2VhOGRkN2Y2MmUzOGI4ZjRkOGVhIl19fQ",
+          "decoded": {
+            "secretHex": "d65ea38d656270d9eebcb949759dec4599cade320bd53cf2bce301e2c23fd72d",
+            "relays": [
+              "wss://relay.damus.io",
+              "wss://nos.lol"
+            ],
+            "policy": {
+              "tier": "open",
+              "members": [
+                "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+                "e062bd3bb36508cc94edafc132a9f2edfb690fb369b7ea8dd7f62e38b8f4d8ea"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "decode-malformed-fragment",
+        "kind": "negative",
+        "note": "A fragment that is not valid base64url must be refused, not silently treated as an open room.",
+        "input": {
+          "url": "https://kithmoot.com/j#not-valid-base64url!!!"
+        },
+        "output": {
+          "throws": true,
+          "error": "join URL fragment is not valid"
+        }
+      },
+      {
+        "name": "decode-fragment-not-json",
+        "kind": "negative",
+        "note": "A fragment made entirely of valid base64url characters that decodes to bytes which are not valid JSON at all - the alphabet check alone is not enough; the decoded payload must actually parse.",
+        "input": {
+          "url": "https://kithmoot.com/j#dGhpcyBpcyBub3QganNvbg"
+        },
+        "output": {
+          "throws": true,
+          "error": "join URL fragment is not valid"
+        }
+      },
+      {
+        "name": "decode-payload-wrong-shape",
+        "kind": "negative",
+        "note": "A fragment that decodes to valid JSON of the wrong shape - no 's' secret field at all - must be refused, not treated as a room with an empty or undefined secret.",
+        "input": {
+          "url": "https://kithmoot.com/j#eyJ1bmV4cGVjdGVkIjp0cnVlfQ"
+        },
+        "output": {
+          "throws": true,
+          "error": "join URL carries a malformed secret"
+        }
+      },
+      {
+        "name": "decode-secret-wrong-length",
+        "kind": "negative",
+        "note": "A fragment that decodes to valid JSON but carries a 16-byte secret (not 32) must be refused.",
+        "input": {
+          "url": "https://kithmoot.com/j#eyJzIjoiUnpianpjZndua2VUV2twclh1ZVYydyIsInIiOlsid3NzOi8vcmVsYXkuZXhhbXBsZSJdfQ"
+        },
+        "output": {
+          "throws": true,
+          "error": "join URL carries a malformed secret"
+        }
+      },
+      {
+        "name": "decode-policy-unknown-tier",
+        "kind": "negative",
+        "note": "A policy naming a tier outside open/ken/kith/kin must be refused, not silently dropped into an open room.",
+        "input": {
+          "url": "https://kithmoot.com/j#eyJzIjoiTWpXOXQ4OU9DTmpybnhSQnZTRllnbHdPaEJVS3dQd1NPaEJrVlJNTzdzOCIsInIiOlsid3NzOi8vcmVsYXkuZXhhbXBsZSJdLCJhIjp7InRpZXIiOiJhcmNob24ifX0"
+        },
+        "output": {
+          "throws": true,
+          "error": "join URL carries an access policy at an unknown tier"
+        }
+      }
+    ],
+    "deviceCredential": [
+      {
+        "name": "valid",
+        "kind": "positive",
+        "note": "A credential signed by the participant, authorising one device, in one room, until an expiry.",
+        "input": {
+          "participantSkHex": "826f7335cca1f25633dbc6efc43131a651feb9b7d419c9b1fdc35b2e115d2180",
+          "devicePubkey": "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "createdAt": 1799990000,
+          "expiresAt": 1800003600,
+          "auxRandHex": "be66146a98f6f64b2422cf7736519d490118440eb633c58c1a1132f45cbd0347"
+        },
+        "output": {
+          "event": {
+            "kind": 20460,
+            "created_at": 1799990000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "device",
+                "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076"
+              ],
+              [
+                "expiration",
+                "1800003600"
+              ]
+            ],
+            "content": "",
+            "pubkey": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "id": "1a59b31aef19d879d8a650e462334887229ea95d3733d1d864c1c7a60b19b8fe",
+            "sig": "1c270e8b17baa783d99bb5e2889fb96db189de07e06f46596e84e8139e88a3a143a02d58407bcfa10a75847db42a9c4f0e696ce53b85e82db8714810c1d66821"
+          }
+        },
+        "expected": {
+          "verify": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "now": 1800000000
+          },
+          "result": {
+            "ok": true,
+            "participant": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "device": "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076"
+          }
+        }
+      },
+      {
+        "name": "wrong-room",
+        "kind": "negative",
+        "note": "The same, valid credential, checked against a different room id than the one it names.",
+        "input": {
+          "event": {
+            "kind": 20460,
+            "created_at": 1799990000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "device",
+                "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076"
+              ],
+              [
+                "expiration",
+                "1800003600"
+              ]
+            ],
+            "content": "",
+            "pubkey": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "id": "1a59b31aef19d879d8a650e462334887229ea95d3733d1d864c1c7a60b19b8fe",
+            "sig": "1c270e8b17baa783d99bb5e2889fb96db189de07e06f46596e84e8139e88a3a143a02d58407bcfa10a75847db42a9c4f0e696ce53b85e82db8714810c1d66821"
+          },
+          "verify": {
+            "roomId": "fcdc853ddc1be7f7d978367e1a5156b55f11e4c22a49db949f5bb939a303762a",
+            "now": 1800000000
+          }
+        },
+        "output": {
+          "result": {
+            "ok": false,
+            "reason": "wrong room"
+          }
+        }
+      },
+      {
+        "name": "expired",
+        "kind": "negative",
+        "note": "A credential whose expiry has already passed at verification time.",
+        "input": {
+          "participantSkHex": "826f7335cca1f25633dbc6efc43131a651feb9b7d419c9b1fdc35b2e115d2180",
+          "devicePubkey": "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "createdAt": 1799990000,
+          "expiresAt": 1799996400,
+          "auxRandHex": "c3e78bc3968fe111a48d0965db57a081e06ab538d8f43c05daa67ce428725808",
+          "verify": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "now": 1800000000
+          }
+        },
+        "output": {
+          "event": {
+            "kind": 20460,
+            "created_at": 1799990000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "device",
+                "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076"
+              ],
+              [
+                "expiration",
+                "1799996400"
+              ]
+            ],
+            "content": "",
+            "pubkey": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "id": "13316da4ab09eccbf1e082e142dbb1c506d13b071a9ee4ef211ec31e7787ee63",
+            "sig": "a74148dcf5db1493723f3331f39f5585f25e3ca3912e2250f65487f1030685cea445ba43f36698a927c0a9d893a28aade5c37af9571a2a88b0c30f7dbd1bf3a9"
+          },
+          "result": {
+            "ok": false,
+            "reason": "expired"
+          }
+        }
+      },
+      {
+        "name": "tampered-signature",
+        "kind": "negative",
+        "note": "The valid credential's device tag swapped for a different pubkey after signing - the signature no longer covers the tags it is checked against.",
+        "input": {
+          "event": {
+            "kind": 20460,
+            "created_at": 1799990000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "device",
+                "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              ],
+              [
+                "expiration",
+                "1800003600"
+              ]
+            ],
+            "content": "",
+            "pubkey": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "id": "1a59b31aef19d879d8a650e462334887229ea95d3733d1d864c1c7a60b19b8fe",
+            "sig": "1c270e8b17baa783d99bb5e2889fb96db189de07e06f46596e84e8139e88a3a143a02d58407bcfa10a75847db42a9c4f0e696ce53b85e82db8714810c1d66821"
+          },
+          "verify": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "now": 1800000000
+          }
+        },
+        "output": {
+          "result": {
+            "ok": false,
+            "reason": "bad signature"
+          }
+        }
+      }
+    ],
+    "kindredProof": [
+      {
+        "name": "ken",
+        "kind": "positive",
+        "note": "A ken proof: the issuer vouches for GUEST at the 'ken' tier, in ROOM_1, until KINDRED_EXPIRES_AT. The room and the nonce are both inside the signed message - see canonicalMessage in src/access.ts - so a proof cannot be edited into another room, and two proofs on identical terms are still distinguishable. Pins the signed message layout, not any admission decision - see the accessEvaluation group for that.",
+        "input": {
+          "hostSkHex": "633c5cc7ad25effea07db59beb6adf86fdb10141db72add5a7e4084e1b6078d3",
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "tier": "ken",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "nonce": "1111111111111111111111111111111111111111111111111111111111111111",
+          "expiresAt": 1800003600,
+          "auxRandHex": "3da83b091fab6157c0f31a9d8df5ad04a3e7b666c0678ecb514a1b0110418bbc"
+        },
+        "output": {
+          "proof": {
+            "tier": "ken",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "1111111111111111111111111111111111111111111111111111111111111111",
+            "sig": "1c01fd207ebcf88fbfc6e41d01f807eac4a5bd36778d447406afe3481231bf0dac24f9ff0ad874e9716beb1c4d29685334d0e1960b723797aa158c98c9232cb5",
+            "expiresAt": 1800003600
+          }
+        }
+      },
+      {
+        "name": "kith",
+        "kind": "positive",
+        "note": "A kith proof: the issuer vouches for GUEST at the 'kith' tier, in ROOM_1, until KINDRED_EXPIRES_AT. The room and the nonce are both inside the signed message - see canonicalMessage in src/access.ts - so a proof cannot be edited into another room, and two proofs on identical terms are still distinguishable. Pins the signed message layout, not any admission decision - see the accessEvaluation group for that.",
+        "input": {
+          "hostSkHex": "633c5cc7ad25effea07db59beb6adf86fdb10141db72add5a7e4084e1b6078d3",
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "tier": "kith",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+          "expiresAt": 1800003600,
+          "auxRandHex": "c2e85df0dd4e98cac103207aa4b674b7ff71e56d099c49390a0c3c57b79176d9"
+        },
+        "output": {
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "bea5dfb86bc094d554b2a03c786a4cde384e9df9e734891d66061d8d8b1a64a1dc86b97c6fc437d42ee92d3f4b34846ad912c4618ce87d7f4b6030c5e76eaffd",
+            "expiresAt": 1800003600
+          }
+        }
+      },
+      {
+        "name": "kin",
+        "kind": "positive",
+        "note": "A kin proof: the issuer vouches for GUEST at the 'kin' tier, in ROOM_1, until KINDRED_EXPIRES_AT. The room and the nonce are both inside the signed message - see canonicalMessage in src/access.ts - so a proof cannot be edited into another room, and two proofs on identical terms are still distinguishable. Pins the signed message layout, not any admission decision - see the accessEvaluation group for that.",
+        "input": {
+          "hostSkHex": "633c5cc7ad25effea07db59beb6adf86fdb10141db72add5a7e4084e1b6078d3",
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "tier": "kin",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "nonce": "3333333333333333333333333333333333333333333333333333333333333333",
+          "expiresAt": 1800003600,
+          "auxRandHex": "d0879a1afafe02d1b9f9f3c84273e538bae21511fdfd36c2b3119880cefbf2c5"
+        },
+        "output": {
+          "proof": {
+            "tier": "kin",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "3333333333333333333333333333333333333333333333333333333333333333",
+            "sig": "67a3e5f6c1403b74a6181d473d34c2f74e536a6df93dd2d9f9a1cf117507e94fd5e5420be8afa82faced1e065cf7a8a4780bb7312a75f96991f1f1af02504abd",
+            "expiresAt": 1800003600
+          }
+        }
+      }
+    ],
+    "accessEvaluation": [
+      {
+        "name": "open-room-admits-anyone",
+        "kind": "positive",
+        "note": "An open room admits any participant without a proof at all.",
+        "input": {
+          "policy": {
+            "tier": "open"
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": null,
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "open room"
+          }
+        }
+      },
+      {
+        "name": "kith-room-admits-kith-proof",
+        "kind": "positive",
+        "note": "A kith-gated room admits a matching kith proof from a trusted issuer.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "bea5dfb86bc094d554b2a03c786a4cde384e9df9e734891d66061d8d8b1a64a1dc86b97c6fc437d42ee92d3f4b34846ad912c4618ce87d7f4b6030c5e76eaffd",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "kindred proof accepted"
+          }
+        }
+      },
+      {
+        "name": "kith-room-admits-kin-proof",
+        "kind": "positive",
+        "note": "A kith-gated room also admits a kin proof - kin is closer than kith.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kin",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "3333333333333333333333333333333333333333333333333333333333333333",
+            "sig": "67a3e5f6c1403b74a6181d473d34c2f74e536a6df93dd2d9f9a1cf117507e94fd5e5420be8afa82faced1e065cf7a8a4780bb7312a75f96991f1f1af02504abd",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "kindred proof accepted"
+          }
+        }
+      },
+      {
+        "name": "kith-room-rejects-ken-proof",
+        "kind": "negative",
+        "note": "A kith-gated room refuses a ken proof - ken is one-way recognition and never satisfies a kith gate ('tier too low').",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "ken",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "1111111111111111111111111111111111111111111111111111111111111111",
+            "sig": "1c01fd207ebcf88fbfc6e41d01f807eac4a5bd36778d447406afe3481231bf0dac24f9ff0ad874e9716beb1c4d29685334d0e1960b723797aa158c98c9232cb5",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "tier too low"
+          }
+        }
+      },
+      {
+        "name": "kith-room-rejects-untrusted-issuer",
+        "kind": "negative",
+        "note": "A kith-gated room refuses a well-formed, correctly-signed kith proof from an issuer not on its allow-list.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "9d62f4907fa01b43a61acd6f9e81671b5a87f603ab51dc2aad4eb52cde8613f5",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "4444444444444444444444444444444444444444444444444444444444444444",
+            "sig": "cff34e5e68f4e9ffe759ee343cea39b38bbbaf43f08e966391521e45deee7f2ca1249a3870aec86d969cfcf3b54cd122c1b08caccce6e4d42290d3db7435f97a",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "untrusted issuer"
+          }
+        }
+      },
+      {
+        "name": "members-admit-a-listed-participant",
+        "kind": "positive",
+        "note": "An open room with a members list admits a participant on the list, with no proof, as an open room does.",
+        "input": {
+          "policy": {
+            "tier": "open",
+            "members": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+              "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": null,
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "open room"
+          }
+        }
+      },
+      {
+        "name": "members-refuse-a-stranger",
+        "kind": "negative",
+        "note": "A members list shuts the door to anybody not on it, whatever the tier says ('not a member'). This is what makes a two-member room a direct message.",
+        "input": {
+          "policy": {
+            "tier": "open",
+            "members": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+              "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": null,
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "not a member"
+          }
+        }
+      },
+      {
+        "name": "members-compared-case-insensitively",
+        "kind": "positive",
+        "note": "A members entry in upper-case hex names the same participant. The rule every hex identifier here follows.",
+        "input": {
+          "policy": {
+            "tier": "open",
+            "members": [
+              "49EBB8E92DE99C03390BB88AB02704AB2A66332101FF895C512756AD7648E525"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": null,
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "open room"
+          }
+        }
+      },
+      {
+        "name": "members-still-need-the-tier",
+        "kind": "negative",
+        "note": "A listed member of a kith-gated room still needs a kith proof ('no kindred proof'): the list narrows who may enter, it never widens what they must show.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ],
+            "members": [
+              "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": null,
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "no kindred proof"
+          }
+        }
+      },
+      {
+        "name": "kith-room-admits-issuer-via-upper-case-allow-list-entry",
+        "kind": "positive",
+        "note": "The allow-list names the trusted issuer (HOST) in upper-case hex; the proof itself is issued and signed normally, so its issuer field is the ordinary lower-case pubkey. Still admitted - an implementation that compares the allow-list entry to the issuer with an exact string match wrongly refuses this.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00A0B8B578DE367E65C400CCCDB7743E82403D457469D02023B1568A92FAADD8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "bea5dfb86bc094d554b2a03c786a4cde384e9df9e734891d66061d8d8b1a64a1dc86b97c6fc437d42ee92d3f4b34846ad912c4618ce87d7f4b6030c5e76eaffd",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "kindred proof accepted"
+          }
+        }
+      },
+      {
+        "name": "kith-room-admits-upper-case-issuer-against-lower-case-allow-list",
+        "kind": "positive",
+        "note": "The mirror image: the proof carries its own issuer field in upper-case hex - issuer is not part of the signed message (see canonicalMessage in src/access.ts), so upper-casing it does not disturb the signature - while the room's allow-list names HOST in the ordinary lower case. Still admitted.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00A0B8B578DE367E65C400CCCDB7743E82403D457469D02023B1568A92FAADD8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "bea5dfb86bc094d554b2a03c786a4cde384e9df9e734891d66061d8d8b1a64a1dc86b97c6fc437d42ee92d3f4b34846ad912c4618ce87d7f4b6030c5e76eaffd",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "kindred proof accepted"
+          }
+        }
+      },
+      {
+        "name": "kith-room-rejects-proof-for-another-room",
+        "kind": "negative",
+        "note": "A kith proof from the trusted issuer, at a sufficient tier, unexpired, naming the right participant - and minted for a different room. An implementation that does not compare proof.room to the room being joined admits a proof its issuer never granted here ('proof names another room').",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "fcdc853ddc1be7f7d978367e1a5156b55f11e4c22a49db949f5bb939a303762a",
+            "nonce": "5555555555555555555555555555555555555555555555555555555555555555",
+            "sig": "9219ba666fc6f1327da258c1a1434c3feacb41b2665915cd5d9b90af1bd0805bdb0217cfcab2f49fd128ac64756c972c0b2ea731223b23b7a2ae2012c34f09df",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "proof names another room"
+          }
+        }
+      },
+      {
+        "name": "kith-room-rejects-room-edited-into-the-proof",
+        "kind": "negative",
+        "note": "The same other-room proof with its `room` field rewritten to name this room. The room is inside the signed message, so rewriting it invalidates the signature ('bad signature') - an implementation that binds the room but leaves it out of canonicalMessage admits this.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "5555555555555555555555555555555555555555555555555555555555555555",
+            "sig": "9219ba666fc6f1327da258c1a1434c3feacb41b2665915cd5d9b90af1bd0805bdb0217cfcab2f49fd128ac64756c972c0b2ea731223b23b7a2ae2012c34f09df",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "bad signature"
+          }
+        }
+      },
+      {
+        "name": "kith-room-admits-proof-against-upper-case-room-id",
+        "kind": "positive",
+        "note": "The room id handed to evaluateAccess is upper-case hex naming the very room the proof was minted for. Hex identifiers are compared case-insensitively throughout - see the section of this README on that - so this is still admitted.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "bea5dfb86bc094d554b2a03c786a4cde384e9df9e734891d66061d8d8b1a64a1dc86b97c6fc437d42ee92d3f4b34846ad912c4618ce87d7f4b6030c5e76eaffd",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848BDD5C60A79E2DFE667AE9616C1107F61709032B66E556E28F4A96E69450B"
+        },
+        "output": {
+          "result": {
+            "admitted": true,
+            "reason": "kindred proof accepted"
+          }
+        }
+      },
+      {
+        "name": "kith-room-rejects-tampered-signature",
+        "kind": "negative",
+        "note": "A kith proof from the trusted issuer, at a sufficient tier, unexpired, naming the right participant - identical to 'kith-room-admits-kith-proof' except its signature is garbage. Every check before the final schnorr verification passes; skip that check, or skip it entirely, and this is indistinguishable from a genuine proof.",
+        "input": {
+          "policy": {
+            "tier": "kith",
+            "admitted": [
+              "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8"
+            ]
+          },
+          "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+          "proof": {
+            "tier": "kith",
+            "participant": "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "issuer": "00a0b8b578de367e65c400cccdb7743e82403d457469d02023b1568a92faadd8",
+            "room": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "nonce": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "expiresAt": 1800003600
+          },
+          "now": 1800000000,
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+        },
+        "output": {
+          "result": {
+            "admitted": false,
+            "reason": "bad signature"
+          }
+        }
+      }
+    ],
+    "roomEpoch": [
+      {
+        "name": "epoch-zero-is-the-room",
+        "kind": "positive",
+        "note": "Epoch 0 is not a special case bolted on: it derives to exactly what `deriveRoom` derives, with the same two HKDF info strings and no salt. A client that has never heard of epochs and one that has agree byte for byte on a room nobody has been removed from, which is what makes the whole mechanism additive.",
+        "input": {
+          "epoch": 0,
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf"
+        },
+        "output": {
+          "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+          "epoch": 0
+        }
+      },
+      {
+        "name": "epoch-one",
+        "kind": "positive",
+        "note": "The first successor. `id = HKDF-SHA256(ikm = secret, info = \"kithmoot/v1/epoch-id/1\", 32)` as hex and `key = HKDF-SHA256(ikm = secret, info = \"kithmoot/v1/epoch-key/1\", 32)`, no salt. The secret is the one the rekey sealed to each remaining device - NOT the original room secret, which the removed device still holds and which now opens nothing.",
+        "input": {
+          "epoch": 1,
+          "secretHex": "3235bdb7cf4e08d8eb9f1441bd2158825c0e84150ac0fc123a106455130eeecf"
+        },
+        "output": {
+          "id": "664281bc1183839a58405e3281450f3b71f4add0346f826c0f1c4209d767fb91",
+          "keyHex": "8d439bd5a6c2a53e0e3c792e8f1ed8be7aacc227b3a4b74efd8973952b22406d",
+          "epoch": 1
+        }
+      },
+      {
+        "name": "epoch-two",
+        "kind": "positive",
+        "note": "A second removal from a room already at epoch 1: a fresh secret again, and the info strings carry the number so two epochs of one room never collide.",
+        "input": {
+          "epoch": 2,
+          "secretHex": "3d3480782bd9eabca24b6f9a541531aa2ca4dc535342d8abf1c2347d58ab26cb"
+        },
+        "output": {
+          "id": "d3593c601c50a26d2dffa2096660ad6ceea3c66ff481fa9d17e00fbdf3931ac4",
+          "keyHex": "1413d7a381318a9b0d302dc315850f3bb6085ded694a074ceddf8eceecc95e8c",
+          "epoch": 2
+        }
+      },
+      {
+        "name": "rekey",
+        "kind": "positive",
+        "note": "The authority moves the room to epoch 1 and removes one device. Encrypted to the epoch being LEFT, so everybody currently in the room can read who left; the successor secret inside is sealed separately to each device that stays, under a NIP-44 conversation key between the authority and that device, so the removed device reads the notice and not the secret. `peekRekeyEvent` answers \"which epoch is this\" with no key at all, which is how a device that has fallen behind knows it has.",
+        "input": {
+          "event": {
+            "kind": 1462,
+            "created_at": 1799999000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "AoO5rvD56/1qncZx+6GpPUsuFX9oEhRM59Ew2V5tGsEJLh8PbHyTAJBz1+Q4s8C54egFnpXKtusbE0JKwsmIACdwRXkmEX/nFGXzN6sgblDOt4t/X1RLygvxPBGiv264zMOQzrBKmZG3LIyN0x3QISgwQcfaKiK+P+Em5pcifbVqENhWIv3kj1g7jgjbNLeivnLBY73P14E5GOOJgT0RVXbi4+ZtE9t7lpw58KlwWNdrfPiGM+antUOTD3vptFSXmjw1LfMNzWEV19vqIFheK9luoLiQ6lXjpz3w4s9rJJCioIjM2K6Q2S+bHWmnaZMmOMC7ZtX8Yjt8jtPjLPMwJtkGSN+ewQRVgzLCDAczcbas9tpE1sitWA3r29meWHsIO/XKmA1FnuxelkamYRMkcVhl6Hg+Dc5WyFtZIDC9WBTo39yNkIWDqFKxuArvaZjYaxWq/cfk3UCsiYjgkuccEuZ+ZEktV5jGsaQaJFgl7HB0DYPWIZPVS4UKZnRyQruD9RYoK4dHVPtP16MkbetK6TOs3Re5HJpi/c0rX6RoP31nVdIP0EVsXdagxzABVz6P+u/d8KSDaeEKGm3txnaIfgftJIqTyv38J8e0CXPgdSMFtI44seJODzMO3mUWHl7mkBrmatxF3Yw/XQv+Ifn/nH0toK0gb3ObJ/5gXjLLtcDsqXA=",
+            "pubkey": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "id": "0f2be00e697df3d8e1f9e9a7ce0eef906ae69886460ff8a5af969f4628280287",
+            "sig": "0eeff57ea5996cd84ee3a43941f085cc3788b5ae3cbf6875e3a5f7585810605dacb143225dcfe136a2fe975d90ea708d0d271f2593ff731d32f6926ce579f371"
+          },
+          "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+          "currentEpoch": 0,
+          "currentKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+          "next": {
+            "epoch": 1,
+            "secretHex": "3d3480782bd9eabca24b6f9a541531aa2ca4dc535342d8abf1c2347d58ab26cb"
+          },
+          "recipients": [
+            "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe"
+          ],
+          "removed": [
+            "5defbe2990a67eb3589071a06ddf03c405276fa90373f9028be03b8fdc666428"
+          ],
+          "by": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+          "createdAt": 1799999000,
+          "nonceHex": "83b9aef0f9ebfd6a9dc671fba1a93d4b2e157f6812144ce7d130d95e6d1ac109",
+          "sealNonceHex": "e617dbf94c459bab110bc2d6a3e9e8d90c84fc0e8f5c335234a19af8c56a84fc",
+          "auxRandHex": "0d6b80f76bdb16bb87510db4ed0acdf1f4dbcb390b13b3c896b2129db761d80a"
+        },
+        "output": {
+          "peek": 1,
+          "result": {
+            "epoch": 1,
+            "removed": [
+              "5defbe2990a67eb3589071a06ddf03c405276fa90373f9028be03b8fdc666428"
+            ],
+            "closed": false,
+            "at": 1799999000,
+            "by": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "secretHex": "3d3480782bd9eabca24b6f9a541531aa2ca4dc535342d8abf1c2347d58ab26cb"
+          }
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "current": {
+              "epoch": 0,
+              "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+              "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+            },
+            "deviceSkHex": "751627289895e0df520a348eed03006ac69522989ce970c8a4926268de6f69de"
+          },
+          "result": {
+            "epoch": 1,
+            "removed": [
+              "5defbe2990a67eb3589071a06ddf03c405276fa90373f9028be03b8fdc666428"
+            ],
+            "closed": false,
+            "at": 1799999000,
+            "by": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "secretHex": "3d3480782bd9eabca24b6f9a541531aa2ca4dc535342d8abf1c2347d58ab26cb"
+          }
+        }
+      },
+      {
+        "name": "rekey-read-by-the-removed-device",
+        "kind": "positive",
+        "note": "The same event, decoded by the device it removes. It decodes - the notice is encrypted to the epoch that device still holds - and it carries no `secret`, because no copy was sealed to it. A client must treat \"decoded, no secret\" as \"you are out\", not as an error: it is how a removed member learns it has been removed, and it is the only notice it will get.",
+        "input": {
+          "event": {
+            "kind": 1462,
+            "created_at": 1799999000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "AoO5rvD56/1qncZx+6GpPUsuFX9oEhRM59Ew2V5tGsEJLh8PbHyTAJBz1+Q4s8C54egFnpXKtusbE0JKwsmIACdwRXkmEX/nFGXzN6sgblDOt4t/X1RLygvxPBGiv264zMOQzrBKmZG3LIyN0x3QISgwQcfaKiK+P+Em5pcifbVqENhWIv3kj1g7jgjbNLeivnLBY73P14E5GOOJgT0RVXbi4+ZtE9t7lpw58KlwWNdrfPiGM+antUOTD3vptFSXmjw1LfMNzWEV19vqIFheK9luoLiQ6lXjpz3w4s9rJJCioIjM2K6Q2S+bHWmnaZMmOMC7ZtX8Yjt8jtPjLPMwJtkGSN+ewQRVgzLCDAczcbas9tpE1sitWA3r29meWHsIO/XKmA1FnuxelkamYRMkcVhl6Hg+Dc5WyFtZIDC9WBTo39yNkIWDqFKxuArvaZjYaxWq/cfk3UCsiYjgkuccEuZ+ZEktV5jGsaQaJFgl7HB0DYPWIZPVS4UKZnRyQruD9RYoK4dHVPtP16MkbetK6TOs3Re5HJpi/c0rX6RoP31nVdIP0EVsXdagxzABVz6P+u/d8KSDaeEKGm3txnaIfgftJIqTyv38J8e0CXPgdSMFtI44seJODzMO3mUWHl7mkBrmatxF3Yw/XQv+Ifn/nH0toK0gb3ObJ/5gXjLLtcDsqXA=",
+            "pubkey": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "id": "0f2be00e697df3d8e1f9e9a7ce0eef906ae69886460ff8a5af969f4628280287",
+            "sig": "0eeff57ea5996cd84ee3a43941f085cc3788b5ae3cbf6875e3a5f7585810605dacb143225dcfe136a2fe975d90ea708d0d271f2593ff731d32f6926ce579f371"
+          }
+        },
+        "output": {
+          "result": {
+            "epoch": 1,
+            "removed": [
+              "5defbe2990a67eb3589071a06ddf03c405276fa90373f9028be03b8fdc666428"
+            ],
+            "closed": false,
+            "at": 1799999000,
+            "by": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74"
+          }
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "current": {
+              "epoch": 0,
+              "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+              "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+            },
+            "deviceSkHex": "f785badbca3915e8138c6bb54bc5cf69e8798485d7ea084daec5bae58db6d9e6"
+          },
+          "result": {
+            "epoch": 1,
+            "removed": [
+              "5defbe2990a67eb3589071a06ddf03c405276fa90373f9028be03b8fdc666428"
+            ],
+            "closed": false,
+            "at": 1799999000,
+            "by": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74"
+          }
+        }
+      },
+      {
+        "name": "rekey-closed",
+        "kind": "positive",
+        "note": "Closing a room is a rekey with no sealed copies at all: the epoch advances and nobody is given the successor, so nothing further can be published or read. `closed` is inside the ciphertext and is only a JSON `true`; the empty `keys` object is what actually closes the room, and a client that ignored the flag would still find itself with no key.",
+        "input": {
+          "event": {
+            "kind": 1462,
+            "created_at": 1799999000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "AsJHGiHMdGf9Lyh+V6t8YAB522hkumHqYMOBpXj/xyPwr4AmvHyQVFAQe3bPRGssKZggHOPlMuCrU2OALnfwdhgAPMjYalin3wvvHeucJ7laIUlPAVc5Jt78SBK9dxcn01O1KXc1o0HgM64kk3R95lmgexGgScTKNjIYAYb5KBhlBcg=",
+            "pubkey": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "id": "eda9f0c935062c12dd80c6e24129390f5820101843b2cf5ded52ddd1adb6c0e8",
+            "sig": "5bf0cd13c2a77875306e3843110f695434cafc765543cb783b848d7b40cf7dfef3a9e822013cc2ac4d4145a671808a6afd1e62ec1c41199be10317bc32f7052a"
+          }
+        },
+        "output": {
+          "result": {
+            "epoch": 1,
+            "removed": [],
+            "closed": true,
+            "at": 1799999000
+          }
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "current": {
+              "epoch": 0,
+              "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+              "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+            },
+            "deviceSkHex": "751627289895e0df520a348eed03006ac69522989ce970c8a4926268de6f69de"
+          },
+          "result": {
+            "epoch": 1,
+            "removed": [],
+            "closed": true,
+            "at": 1799999000
+          }
+        }
+      },
+      {
+        "name": "rekey-not-the-authority",
+        "kind": "negative",
+        "note": "A perfectly formed rekey, correctly encrypted to the current epoch, signed by a member who is not the room authority - which is to say, by anybody else who holds the room key, which is everybody in the room. It is REFUSED before decryption, on the signing key alone. Without this check any member could remove any other, and \"removal\" would mean nothing.",
+        "input": {
+          "event": {
+            "kind": 1462,
+            "created_at": 1799999000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "AqBigkXsdPEEP96tDIA2af3Cb5YPB1nvr6ylEcFq1ZCHBP7IFSnMaA32dxfnRA7pLdnKbLGyyBKSmHWtY1I3mA7UfGYyJK+8ZB+BJQmGvzXwSTo2GgcXviwglwO0dYGGV35Ces/+Z3tYSNy1QzrkjmY3RMfQjPufwnYN+4wFJjlbNnFWq6/Q+qCDgHqg7YT74su8AYy8LgCRl/Gj4SCqtlIOpTrL9VtOspU2OTykvevA1tDAl8Nt0ewtCdbucjmy817Px8hjIp6eHM76/14nMGujLDDYFAjDmg7Vz3y8Clc1hVkkzZWwl2YSG6hUd28ljHuXdMs2LzfqOuJRqnwKyoExGbayLzNgI8LagylQkSp888D54T5I6Kr7Uyogf2kztshLwv056mpMdSNRhwMkv/tssDciFBl1MNel2CI5JarPIgNUBsfMqKuR40v/UwgjqpoE/YrVvHCYUIB1TXF9j0hooDLcTSdqGnESnOyNHNdHeMKqQgd9vrSxnGB7/x7eNrsJ0BRK1SNW2qwXoaioWeBI3S9zBdoyEf1nipXC1cOD/KElmiJZSJIgfr1dptjdldyXmdbfQwZk11WhnKKaVwEh6w==",
+            "pubkey": "9d62f4907fa01b43a61acd6f9e81671b5a87f603ab51dc2aad4eb52cde8613f5",
+            "id": "f3825bb7a65bba2df778f82c6432fc291478e40c702013a61f9a7876cedc53c9",
+            "sig": "b7fed265169375a270e45fe840aa13e8c85755af872b06e8412756bd03083df9af3254334eb08d67bcc44e86bdff638aec9974c4e6679bf2e2a327cafe2c3f04"
+          },
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "current": {
+              "epoch": 0,
+              "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+              "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+            },
+            "deviceSkHex": "751627289895e0df520a348eed03006ac69522989ce970c8a4926268de6f69de"
+          }
+        },
+        "output": {
+          "peek": null,
+          "result": null
+        }
+      },
+      {
+        "name": "rekey-skips-an-epoch",
+        "kind": "negative",
+        "note": "The authority naming epoch 3 while this device is at epoch 0. Refused: only the very next epoch is applied, so a device cannot be walked forward past a removal it never saw, and a replayed rekey from an epoch already passed cannot move it backwards either. `peekRekeyEvent` still answers 3, which is how a client knows it is behind and should ask.",
+        "input": {
+          "event": {
+            "kind": 1462,
+            "created_at": 1799999000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "epoch",
+                "3"
+              ]
+            ],
+            "content": "AmQtYEk0dMPHUFrz+bhTOF2FVPUOvVAlNCGka828T+NSpwOC5UCCs+pe2W+1R35i3VLAGP/Td+LQ3PXsMezani1ZvJ/kbCsbwx6OoObtknb/82UHmetg3Y13lG2ockSLEZyyc8NugcikYA/pPLty3AeqR+Iw0TwTMuflSl7CQbGb+60zksgOFm59lZyxdejz1mAzyvoqzBAaxxSuBcEmcoLonhqd8Gu3j1I5ljqRfJyLkToBUnXfC9MuS5iErTZLk6baxjJLztHbTz82FiGXrUEXAP5JzJ1L712UXF4rU/i4QQR9dznjMoe+LuJnWcscv0SFind/RrWyfa05UlPfmy8PNoVLw8dSP08Yzl8tTS41WfBlF6YbHOGUEXGcZ4jTAyQ428ffXDiHoMRCAOU/nsN4y6n5DhejbKclODDPc8AO7JeuQza7AC7LgOrOsfaNqqyDOnexeNCDpDOWeUSpAQS1rV7YwQLMgDdgDybjpjCgyQeEzEdY+4CFLznpohaOxP++v8mJP4gZrGS7eeJNYxezqmbjTkRSI/jjfh0mAYZKE5xBcEO0iOuX/x82dL/dwnWUGc5jZEaeHbFC1RxesJvw1A==",
+            "pubkey": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "id": "7eb7072786de21eaeb4fe995940149552f60cb84eec269f845f8f431efe6408c",
+            "sig": "12d46a5632376aad4c35f3bf1d703f731ebf2906d88db3999806adc903a88b9557d525af9b2b09ffd425dba16a748cf9a0bd1fdeabc22ffec31e8bf559a0b34c"
+          },
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+            "current": {
+              "epoch": 0,
+              "id": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+              "keyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c"
+            },
+            "deviceSkHex": "751627289895e0df520a348eed03006ac69522989ce970c8a4926268de6f69de"
+          }
+        },
+        "output": {
+          "peek": 3,
+          "result": null
+        }
+      },
+      {
+        "name": "admins-signature",
+        "kind": "positive",
+        "note": "Who may remove somebody, said by the authority and checkable by everybody. The message is `sha256(\"kithmoot/v1/admins:<roomId>:<epoch>:<admins joined by comma>\")` over the CANONICAL list - lower-cased, deduplicated, sorted - so two clients that hold the same set in different orders verify the same signature. The epoch is inside the message, so a list signed for one epoch does not authorise anybody after the next removal.",
+        "input": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "epoch": 1,
+          "admins": [
+            "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525"
+          ],
+          "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+          "canonicalMessage": "kithmoot/v1/admins:2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b:1:49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525,b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+          "auxRandHex": "d27fcbb1f770e6772986f7e9b8a25c52db8088ad519f70b9cdc76d82b722dc5d"
+        },
+        "output": {
+          "canonical": [
+            "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525",
+            "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74"
+          ],
+          "sig": "8655aa16882d3be3397a7987f3727f9e38a2640973a81c828b1a36a4bf804d55bdf5c2d2d4a55e8d9d3f28d38772ed9e0e3bfb309083a914ce9bbff30e66f2be"
+        },
+        "expected": {
+          "verify": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "epoch": 1,
+            "admins": [
+              "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+              "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525"
+            ],
+            "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+          },
+          "result": true
+        }
+      },
+      {
+        "name": "admins-signature-another-epoch",
+        "kind": "negative",
+        "note": "The same signature, offered for epoch 2. Refused: a list is authorised for the epoch it names and no other, so an admin set from before a removal cannot be replayed to re-authorise somebody after it.",
+        "input": {
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "epoch": 2,
+          "admins": [
+            "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "49ebb8e92de99c03390bb88ab02704ab2a66332101ff895c512756ad7648e525"
+          ],
+          "sig": "8655aa16882d3be3397a7987f3727f9e38a2640973a81c828b1a36a4bf804d55bdf5c2d2d4a55e8d9d3f28d38772ed9e0e3bfb309083a914ce9bbff30e66f2be",
+          "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+        },
+        "output": {
+          "result": false
+        }
+      }
+    ],
+    "epochRequestAdmission": [
+      {
+        "name": "admission-proof",
+        "kind": "positive",
+        "note": "The proof a kind-20468 epoch request carries as `admission`. `requestKey = HKDF-SHA256(ikm = roomKey, info = \"kithmoot/v1/epoch-request-key\", 32)`, no salt, from the EPOCH-0 room key - `deriveRoom(secret).roomKey`, never a later epoch's key, so a device that has fallen any number of epochs behind can still make one. Then `admission = HMAC-SHA256(requestKey, \"kithmoot/v1/epoch-request:\" + roomId + \":\" + authority + \":\" + device + \":\" + createdAt)` as lower-case hex, the three identifiers lower-case hex and `createdAt` the request event's own `created_at` in decimal.",
+        "input": {
+          "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+          "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+          "authority": "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86",
+          "device": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+          "createdAt": 1800000000,
+          "message": "kithmoot/v1/epoch-request:2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b:47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86:fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe:1800000000"
+        },
+        "output": {
+          "requestKeyHex": "51c647c6096dddd20dd646103d6667e8915beaebe5c86646940d686a5fddfbe5",
+          "admission": "87a278bd02e95df8c19a2eabd6a86e04476b1c87565ae4716ffd947e398f1d64"
+        }
+      },
+      {
+        "name": "request",
+        "kind": "positive",
+        "note": "A complete epoch request: the device credential and the admission proof inside a NIP-44 body between the device key and the authority, on a kind-20468 event tagged `d` room id and `p` authority, signed by the device. The desk decodes it to the device, the participant the credential names, and the request id the grant will answer.",
+        "input": {
+          "event": {
+            "kind": 20468,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "p",
+                "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+              ]
+            ],
+            "content": "ArfzHVC+8B6YNMBsF0awGflQhqqsbINUeyByVDwUTl01TxviXkxH77TINN14a8A9TLr9j/I+qwZAbEtZURYvUubA//Y6AvuAjGrEUBpoJs8kIpG1MwrcCnKbv4TM9CZTbBbhb3K7pIj7gIp0T47ZFLQAa/gKx9K4QtFfOC6zpx9rU57pe4jU8GLKEKnh//mtakZ3CaPyKpC9SXBsIFyFuXYb9ZyCia26+XQLb7K6zvOOm1T5DCGSJOTmb/RwO6ia0Zh1wSDGHNlayAahmZiSHSSIxO+HphRAacTpwGAgpp79HEOV4D1fPTN108NZ6hddOkHrSwKOWdox0zTjVTlpcY1NJmHCfT7h2bBlRPXikbdRyDfO+NcLXNsBsoxZjrHSUuwORAbKiw4RLtJi9es4tFW5idFLkeoMO6D6DCwvUhEOzS7WReVuEzmWxgjVq972Hki3GT/UKxxh5ISDl29P33Dt94EiREhSg0d5gUUpVPehVRK8jdyjhGFauR2Q8Ue0cuLjMYZUsllSuPH+EL9yDr1FmjOdAtQoN/BUiwzrl4qsCvrZf5OWeHL9BazNeHfZvp02hZ8AQaMywfsQvMJpZQvSrIZMydvuDetIG4ZMaAKkjFi4zT3gNHEZyPw7eW7B6cetPT0utHguntAVwXzFluW3o9Hhkn0nxdJcbMbO7tsg1AR1NSaVbYqzwKmC0G2gZ23dVPloT7qemQqqqoA8TJo9bgqEoaZ0GR4PB7vLZSH10If9X4h+bzfL//KGeJBGQcxHf+7zk6KWbwCfyKjHSdWQtCY3VrWNUnJqX9hkRDiX4ebh1kKBHja7iWEeAwe73WV7X3826gJ/iFtIp7TNrLUjTq7bYgWK3wNAZ4LthnLJRrzgPMuj7ypryDVcyAdXLiJKWYvA+jj667PrW7HbPI+BzRZM43OnxD5GIXILPYIOfRM=",
+            "pubkey": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "id": "860709d92f992f24ccd9bdaf99da6b6201f1665ef22166c0b84a5e22aec9a4de",
+            "sig": "fd292b92bf14b4ac27a1d2c29465d69d08b9737a071e75f4a320f500cb03dd6fa4f6e913ee172b93dfa6c06de7c4f4da21b71332c02bb0e2f0222d6baf6f6145"
+          },
+          "body": {
+            "v": 1,
+            "credential": {
+              "kind": 20460,
+              "created_at": 1799990000,
+              "tags": [
+                [
+                  "d",
+                  "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+                ],
+                [
+                  "device",
+                  "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe"
+                ],
+                [
+                  "expiration",
+                  "1800003600"
+                ]
+              ],
+              "content": "",
+              "pubkey": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+              "id": "955860a514bffb37f649013c7b3dbfedc4673bc1faadded13d1847b0e027d15d",
+              "sig": "844567d3b069426b95d26462864ffbd49d55a07244cef702ebaf6a4fda2ee3f5fd0b12e0ecdd43e3ca1d799051142dfe643c416a2e84051fd32bba68f7018841"
+            },
+            "admission": "87a278bd02e95df8c19a2eabd6a86e04476b1c87565ae4716ffd947e398f1d64"
+          },
+          "deviceSkHex": "751627289895e0df520a348eed03006ac69522989ce970c8a4926268de6f69de",
+          "nonceHex": "b7f31d50bef01e9834c06c1746b019f95086aaac6c83547b2072543c144e5d35",
+          "auxRandHex": "f22f47f5a46f90e1108a3f37152079b04daf291b52116ad10384f96aa0dee5dd"
+        },
+        "output": {
+          "result": {
+            "device": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "participant": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "request": "860709d92f992f24ccd9bdaf99da6b6201f1665ef22166c0b84a5e22aec9a4de"
+          }
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+            "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+            "now": 1800000000
+          },
+          "result": {
+            "device": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "participant": "b07ff66ffca2d5445cfb4a384e94fba8ecc5000283b43f2d5425c85df5032e74",
+            "request": "860709d92f992f24ccd9bdaf99da6b6201f1665ef22166c0b84a5e22aec9a4de"
+          }
+        }
+      },
+      {
+        "name": "request-without-admission",
+        "kind": "negative",
+        "note": "The same request with no `admission` field: what a client from before the proof sent, and exactly what a stranger with the room id, the authority's pubkey and a participant key of their own can produce. Refused before the policy is consulted; the desk publishes nothing, so the stranger does not learn that a desk is there.",
+        "input": {
+          "event": {
+            "kind": 20468,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "p",
+                "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+              ]
+            ],
+            "content": "AoFUOhU2v9MLbRocQqQZnqndVMW0nOn8IBUdp+Gi9GfgDV+MKXVM9AWsZuFqTjG6gpGmOLSkqeVdR1TYBIwk3dmtF+UttI7zhEaTWcLW6iUSe//Z2fYOExXU68z2VTgYVerIoZpgeQWl4RLOCDV6yTeIoAULoQndnqRqJEi6QjGrOqGrpxvgxFpHUqYkx3KVq0UNWea/zhP2627MkEdcYmklVF86jzBFT2HByeF8YlRWh2lS81D8ORCdT+tmhf1iSbLqhCV4EWtJ+QdxdTxMNeG3mvojLeLEeLMaorpKlunxcpqtbJAWoPGGsrPSn8b0Zc36tdOVo9JwMgDpI8l3SgGW2C5Gvkswa97eWbQ5nl3nP/AEv04zkZ6jvp1f1g8mGzvfhTKGxpWjALC52dG5fJV1RIvmetxy/aTx8e2oXDoKXDMofJr8wZ1WmgJwCK7o/dGroW9QNIB63tBZIl0gk65bSwMFAPYCkcvhaYWHeYGATODe8Ip2Xr1xamW+9Sn9gtoLV6lWEA//Oo/Y1Glpi5DvcnhkgIoVXEHVF70xJCqEePPu0YIINaF1OpeP/MUJ7ANzxT7drMCfOXn4dMS1jhrplARzNWUnmTEi47UaIe0d9yjjp/+o2NcbtOrcZyChaF6iJgWxaTEli8/8tfvfU1ZrCOlvE/ik0F7m1+6vGK+H2GLNsISj4pQZb686oWabr7bbu8MnFKKOGp95bgidzbEac2HrkFJbB/HMTDSbpzWNMeUaZmneJJ/sq+F1hOpXL2vF3DYM0xMverh4YIKGeBeNLj1GrbLoVElShqGO95I2FS468DpcYb/h10BA+VgfMySdTtvwnQx+/FyltA3std7h9pAgZD8FWVuKFmW+T9lcK03ISt0bxo847aMSn9zyZVGHc440b4QPxUhbe5QNFz5a5foLiImSa2AOYoDU+rC0CLs=",
+            "pubkey": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "id": "1ecd7084c7b2a4b8a039f5eb7be3a1a1c2e6a19fb53d222b9c50e24f4a8185d8",
+            "sig": "f5a3b54740f0655f3bbcae0b65df41b95ad171375925c4cd181bc378c18d8fdf3bed31c97c5239cb6f90657e0fa5d55fa98c244cafaa9fd74358b06dc6c57e45"
+          }
+        },
+        "output": {
+          "result": null
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+            "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+            "now": 1800000000
+          },
+          "result": null
+        }
+      },
+      {
+        "name": "request-under-another-key",
+        "kind": "negative",
+        "note": "The proof computed under the key of epoch 1 rather than the epoch-0 room key. Refused: the proof key is always derived from epoch 0, because that is the one key every admitted device holds however far behind it is, and a desk checking against anything else would refuse exactly the devices the desk exists for.",
+        "input": {
+          "event": {
+            "kind": 20468,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "p",
+                "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+              ]
+            ],
+            "content": "AuUfBktokBfC8jEAZ1XW+9645urzhmGGFc4NrEdOiP+5uzK7LdP3+bF4u6wCdbToEe1YWFaD4zj9xjN+VfvFGdp1x0XHESePQbYBFJAKuBvyFGGIgS52aNYZtIlEsAoXMo4gqJ1RQJdFTwsrnCG4ZoKNx0+zvzchG7UF8xt9fBUSoQFDnmOSyp42AIxMKJsubW9xUn120VQt3FkMLrGEfaGZIW6Em0RKQORQ2OeGhJVVqSL94r2iJMNvD166Ecxzrw85nfxqxX1bLeUKEkbqOgIvpv38XNBZ8rKBWeH16MXS5E30p12QTm4zZFrx3tqMD16175LOZoWTAeKe+KU/ex8SAyC7tblOwUo9vjuHv9mvxPirBsuWNftg88FkKcrHImWOYdyGU95bb3lUQ4z6aNfDcZBv3M7jKbRe55AxaxS3gs3NL0HrgstmD6fJ18degnhdhobohzvLGxbzVsKk6sqBSEuukqwxJPSzYLOklYHWfSwfqroLAYnp4oqNZZRZsBYcUzmjPpQk5hxneBZTrGp541hS2cEVbf1p0XRBadU9I0yUf7bMWcIJuzzl8JCVNNplApmsXr047CU7Eq/cRV1jyP7/jfnRCD0egj6lNxEaUlwyVpinhCk1zsNYf7TgIwKrDhpctlEShoj/Ix3e9l1PrZ2i+JCjeoKeUgSONpxp1an3wGKgBzjj4O0+jdYJv5yXv12PLB3viRXzoInyWwlTyikzS0HvZ6IDi/leFmftBbzj+FtL1GQneiVWbxDU3isR4YXjC/xkk2gAlCfmLb+PB9WlYtyuQG8R6gLw361xMLgSisCc/jgwGB2xUMbGRpV62pohxtwpKmLTACcdf/W89OL6xNO0nRGRwZVrPhTakqlEarU+rUv6mVcrSE+uB5yxtc7S345p2MV73yI/YnoIYcNwx2uqvTn+SZIikpYImK4=",
+            "pubkey": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "id": "f6761f70ade8e0bc4caa60bfdd0b3a9252c1c49a678b33cdf28fee6e7c4c53ad",
+            "sig": "dce2560b24cca141a93c2caa4b860472467aafce2256f397e9abc2b857357d52285f77ceaf1d494ebcdd8df4193566376cb05750f544a53df1cc07102932c7cf"
+          },
+          "proofKeyHex": "1376c99d11c91603ba3904328d3fd6c857b098c62a187e4a1322c84e832d63b7"
+        },
+        "output": {
+          "result": null
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+            "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+            "now": 1800000000
+          },
+          "result": null
+        }
+      },
+      {
+        "name": "request-proof-for-another-moment",
+        "kind": "negative",
+        "note": "A correct proof for `created_at` one second later than the event carries. Refused: the proof binds the device and the moment, so a proof lifted from one request is no use inside another, even one from the same device.",
+        "input": {
+          "event": {
+            "kind": 20468,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b"
+              ],
+              [
+                "p",
+                "47ab2a9f89f155b277f1e847d7d4eba664d28324ee903ffc051bdc9e14869f86"
+              ]
+            ],
+            "content": "Aum2++QEm52Lth4BQRQZi1AM2yQIzEcXA35bnqJbbz5w/tigHvF48pAbcgIiDGxF9SoHVve5jktDIn6ooJ+YV77/0z5y5RFqgFFer5d1ARPFnSfGy0tUhUZTBscQhQ33t8FmF9gqdhKgvxhkYPUdTMeS6ADNrrbu8CkuEffzn8SOncmMrqrxChhWPcekuIiDEfNBgwzkmiMLXeXyKRIEz/HeWAMefKClpO8zHkLtkhOK/zeEP+xv/iuPB5fohlwevFm8orVuE9C5f15LaxC/LxUkQx/qr6jLl824R1rfyscAv3FqzhstM2lg7PDwjFQh2Gk0yQ0TskelGjPFFHzTYlILQOEH2KceoDRwmlNjep5AO1EPgiW71HMsat94OlGzrN0x6OjUJyoZkCEV6Nd+5xSc0syWaQjqORin5/Px2dqu/wXBFxY4jl3d4MlUZlI7E/vJDgbbVCuwErPFe4Fw2AaCAbfV/n3WqLM6+YN6ls4hVClF4SFrBusgyoFoYHqTZhh/i6mnGZPRbYD82j3kteS/JGxhC0LQC9ReoMUk5a0uJK02iaAJVI/uj9aVUM9b0STHGItg8mHgnYec198/efD0hnApmM50no6fizHEA1WDpH10ljyR5/gXZPGVFirKqmVeQEDiqegIUpW0OM/q3HstrzSVOajma3r9LNK4J4yEcu+591VteUZaxNzRfPwT2WSSKjpT+UvQ9JMZodXPjJKZXFk6wH4WcDcuAfU4ojNFzYR+k78MoIoIwovYlkrdfCZOhwWWEp8h7jf6XTqDyuJZ3lC3s2Pi/UbX3y/M3G6vKTS02a4JTgAgQvbqUpoZf0cXZxUXZGXPfBllsayw7f2y/kXesL2i/VANRBAx7e1qHJURgWTUH/DVwLJbN4r0OCQMl5ighi+gLRSAI/IbPtS7PZV2VSSmZXLEl7yZ7S/1rRY=",
+            "pubkey": "fcd74d122f0a212a673839482f69ad973f6d38735faeeb3e57929c2b916492fe",
+            "id": "4a33347d5ab4ec176957487060cdef0a6f642fec21eb58d8ea8974423a6bbb73",
+            "sig": "9e84d416382251472dc494ce1e1b7fb8f18ba7dceb6d07d3742f5af557be879d75ea3ad97ec8118a1f575fe86b5b06f843e43e7ad4774835b8c29d07f789ceaf"
+          }
+        },
+        "output": {
+          "result": null
+        },
+        "expected": {
+          "decode": {
+            "roomId": "2848bdd5c60a79e2dfe667ae9616c1107f61709032b66e556e28f4a96e69450b",
+            "authoritySkHex": "e407c0989f606d8165f63d104e1674a462b191e1df99a29ae9be3f2907deca32",
+            "roomKeyHex": "593a3bdd10ea8589533c31ce5860e1f2698fcbc6dc9a7b64713cc94c0c38713c",
+            "now": 1800000000
+          },
+          "result": null
+        }
+      }
+    ]
+  }
+}

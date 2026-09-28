@@ -1,19 +1,89 @@
 {
   "name": "@forgesworn/fold-kit",
-  "version": "0.0.0-seed.0",
+  "version": "0.1.0",
   "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./lane": {
+      "types": "./dist/lane.d.ts",
+      "default": "./dist/lane.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
+    "dist",
+    "vectors/kithmoot-vectors.json",
+    "vectors/circle-vectors.json",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "llms.txt"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "diff-source": "node scripts/diff-source.mjs",
+    "bundle-check": "node scripts/bundle-check.mjs",
+    "tarball-smoke": "node scripts/tarball-smoke.mjs",
+    "vectors": "vitest run vectors/",
+    "check": "npm run typecheck && npm test && npm run diff-source",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run check && npm run bundle-check && npm run tarball-smoke"
+  },
+  "keywords": [
+    "nostr",
+    "e2ee",
+    "circle",
+    "group-chat",
+    "epoch-key",
+    "invite-link",
+    "device-credential"
+  ],
+  "author": "forgesworn",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "peerDependencies": {
+    "nostr-tools": ">=2.24.2 <3",
+    "@noble/hashes": "^1.8.0",
+    "@noble/curves": "^2.0.1"
+  },
+  "dependencies": {
+    "@scure/base": "^2.0.0"
+  },
+  "devDependencies": {
+    "@noble/curves": "2.0.1",
+    "@noble/hashes": "^1.8.0",
+    "@types/node": "^22",
+    "esbuild": "^0.25.0",
+    "nostr-tools": "2.25.0",
+    "signet-login": "0.17.1",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.11"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "funding": {
+    "type": "lightning",
+    "url": "lightning:profusemeat89@walletofsatoshi.com"
+  },
+  "homepage": "https://github.com/forgesworn/fold-kit#readme",
+  "bugs": {
+    "url": "https://github.com/forgesworn/fold-kit/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/forgesworn/fold-kit.git"
-  },
-  "author": "forgesworn",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
   }
 }
