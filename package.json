@@ -53,7 +53,7 @@
   },
   "peerDependencies": {
     "nostr-tools": ">=2.24.2 <3",
-    "@noble/hashes": "^1.8.0 || ^2.0.0",
+    "@noble/hashes": "^1.8.0",
     "@noble/curves": "^2.0.1"
   },
   "dependencies": {
