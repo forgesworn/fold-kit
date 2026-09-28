@@ -1,0 +1,100 @@
+# @forgesworn/fold-kit
+
+> Circle primitives for private Nostr groups nobody operates: a room key per epoch, sealed to each device that stays; link invitations as capabilities; member removal by rekey; device credentials so a person approves a device once and it signs from then on. Extracted from KithMoot, byte-identical on the wire. Framework-free: owns no storage, UI, relay defaults or identity keys, and does no relay I/O of its own.
+
+ESM-only, Node.js 22.13+. Two entry points: `@forgesworn/fold-kit` (everything) and `@forgesworn/fold-kit/lane` (relay lane classification only).
+
+## Install
+
+```bash
+npm install @forgesworn/fold-kit
+```
+
+Not yet published to npm under this API. Until it is, pin an immutable Git commit:
+
+```json
+{
+  "dependencies": {
+    "@forgesworn/fold-kit": "github:forgesworn/fold-kit#<commit>"
+  }
+}
+```
+
+### Peer dependencies
+
+`nostr-tools` (`>=2.24.2 <3`), `@noble/hashes` (`^1.8.0 || ^2.0.0`), `@noble/curves` (`^2.0.1`) - peers, not dependencies, so a consumer keeps a single copy of each.
+
+## Exports
+
+### Identity, verification, hex
+
+- `hexEquals(a, b)` → `boolean` - constant-shape hex comparison
+- `normaliseHex(hex)` → `string` - lower-cases and validates hex
+- `verifyEventUncached(event)` → `boolean`
+- `boundedEventVerifier(limit?, verify?)` → `(event) => boolean` - an LRU-bounded verifier
+- `localIdentity(participantSk)` → `ParticipantIdentity` - a local signer, plus the `ParticipantIdentity`/`UnsignedEvent` seam every codec below takes as a dependency
+
+### Wire kinds and types
+
+- `KINDS` → `{ CREDENTIAL: 20460, CHAT: 1460, INVITATION_REQUEST: 20466, INVITATION_GRANT: 20467, INVITATION_RETIREMENT: 1461, GROUP_INVITATION: 1463, ROOM_REKEY: 1462, EPOCH_REQUEST: 20468, EPOCH_GRANT: 20469 }`
+- `DeviceCredential`, `AccessTier` (`'open' | 'ken' | 'kith' | 'kin'`), `AgentRule`, `RoomPolicy`, `KindredProof` - link-layer wire types
+- `RelayTransport` → `{ publish(event), subscribe(filters, onEvent, onEose?), close() }` - the transport seam every relay-facing codec takes; this kit declares its own interface rather than importing a relay pool implementation
+
+### Rooms, credentials, access
+
+- `generateRoomSecret()` → `Uint8Array` (32 bytes)
+- `deriveRoom(secret)` → `{ roomId, roomKey }`
+- `encodeJoinUrl(base, secret, relays, policy?)` / `decodeJoinUrl(url)` - legacy v1 join URL
+- `parseRoomPolicy(raw)` → `RoomPolicy | undefined`
+- `createDeviceCredential(opts)` → `Promise<DeviceCredential>` - room-scope or person-scope (`scope: 'person'`)
+- `verifyDeviceCredential(event, opts)` → `VerifyResult` - pass `acceptPerson: true` to accept a person-scope credential where a room credential is expected
+- `PERSON_CREDENTIAL_MAX_SECONDS` - 30-day cap on a person-scope credential
+- `issueKindredProof(opts)` → `KindredProof`
+- `evaluateAccess(policy, participant, proof, now, roomId)` → `{ admitted, reason }`
+- `sanitiseDisplayName(raw)` → `string | undefined`, `MAX_DISPLAY_NAME_LENGTH`
+- `safeRelayUrls(raw)`, `safeIceUrls(raw)`, `assertNetworkHintBounds(relays, ice)`, `MAX_RELAY_HINTS`, `MAX_ICE_HINTS`, `MAX_NETWORK_HINT_LENGTH`
+
+### Links and invitations
+
+- `parseRoomLink(url)` / `encodeRoomLink(base, link)` → `RoomLink` - the v1/v2/v3 link envelope
+- `createRoomInvitation(persistent?)`, `roomInvitation(bearer, inviter, persistent?)`, `deriveInvitationId(invitation)`
+- `encodeInvitationRequest(opts)` / `decodeInvitationRequest(event, opts)` - v2 live rendezvous request
+- `encodeInvitationGrant(opts)` / `decodeRoomAdmissionGrant(event, opts)` - v2 grant, with a delegation chain
+- `verifyInvitationDelegation(invitation, chain, now)`
+- `encodeInvitationRetirement(opts)` / `decodeInvitationRetirementNotice(event, invitation)` - durable tombstone (kind 1461)
+- `hostRoomInvitation(opts)` / `requestRoomAdmission(opts)` - the live desk, both sides
+- `encodePersistentInvitation(opts)` / `decodePersistentInvitation(event, invitation)` - v3 stored group invitation (kind 1463)
+- `requestPersistentRoomAdmission(opts)` - joins from stored admission alone, no live desk needed
+
+### Epochs (removal by rekey)
+
+- `deriveEpoch({ epoch, secret })` → `{ epoch, id, key }`, `generateEpochSecret()`
+- `encodeRekeyEvent(opts)` / `peekRekeyEvent(event, opts)` / `decodeRekeyEvent(event, opts)` - the durable rekey notice (kind 1462), sealed per remaining device, naming who was removed
+- `encodeEpochRequest(opts)` / `decodeEpochRequest(event, opts)` - a device asking the authority for the current epoch
+- `encodeEpochGrant(opts)` / `decodeEpochGrant(event, opts)` - the authority's answer (secret, epoch-0, or a refusal `'removed' | 'closed'`)
+- `epochRequestAdmission(opts)`, `deriveEpochRequestKey(roomKey)`
+- `hostRoomEpoch(opts)` / `requestRoomEpoch(opts)` / `EpochRefusedError` - the live request/grant desk, both sides
+- `canonicalAdmins(admins)` / `signAdmins(opts)` / `verifyAdmins(opts)` - the authority's signed admin list
+- `canonicalChannels(channels)` / `signChannels(opts)` / `verifyChannels(opts)` - the authority's signed channel list; `CHANNEL_NAME`, `RESERVED_CHANNELS`
+
+### Channel derivation
+
+- `deriveChannel(roomId, roomKey, channel?)` → `{ id, key }` - a named channel's id/key, derived from the room key; `CHANNEL_ID_INFO`, `CHANNEL_KEY_INFO`, `MAX_CHANNEL_NAME_LENGTH`. The chat log and event codecs themselves stay in the consuming app.
+
+### Lane (`@forgesworn/fold-kit/lane`)
+
+- `laneOfRelayUrl(url, circle?)` / `laneOfRelays(urls, circle?)` → `Lane | undefined` (`'public' | 'sheltered' | 'direct'`)
+- `isLane(value)`, `weakestLane(lanes)`, `isDowngrade(requested, actual)`
+- `LANES`, `LANE_MEANING`, `LANE_LABEL`, `LANE_GLYPH`
+
+## Design notes
+
+- Every `kithmoot/v*` derivation label and message prefix is byte-identical to the source KithMoot commit this kit was extracted from (see EXTRACTION.md). These are protocol names now, not branding.
+- No baked-in relay defaults, no storage, no DOM access. A caller supplies a `RelayTransport` implementation (a relay pool, or a test double).
+- A room's authority - the party that may rekey and remove members - is the root inviter key pinned in the room's link, not a separate role system.
+
+## Docs
+
+- README.md - full API overview, peer dependency rationale, how this kit relates to `covey-kit` and `roost-kit`
+- EXTRACTION.md - the source commit, exactly which modules and functions moved, and the two splits (`access.ts`, `chat.ts`) performed on the way
+- AGENTS.md - build/test commands and repository conventions for an agent working in this repo
