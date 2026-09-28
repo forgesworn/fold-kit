@@ -5,7 +5,13 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
-## Unreleased
+## 0.2.0
+
+### Added
+
+- `deriveScoped(epoch, label)` for app-defined keys under an epoch, and
+  `createSubKeyCertificate` / `verifySubKeyCertificate` for never-published
+  sub-key certificates (see README and `vectors/fold-vectors.json`).
 
 ### Changed (breaking behaviour, pre-1.0)
 
