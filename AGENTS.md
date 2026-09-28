@@ -21,6 +21,7 @@ npm test               # run the Vitest suite, including both vector files
 npm run typecheck       # type-check src/ and test/, no emit (vectors/ is vitest-only, matching KithMoot)
 npm run vectors         # run only the vector-verification suites
 npm run diff-source      # compare moved modules against the pinned source commit
+npm run generate-fold    # regenerate vectors/fold-vectors.json (T3.1/T3.3/#205 vectors; needs a prior build)
 npm run bundle-check     # esbuild browser bundle check (needs a prior build)
 npm run tarball-smoke    # npm pack, install into a scratch dir, import every export
 npm run check            # typecheck + test + diff-source
@@ -40,23 +41,28 @@ hand - it prints a notice and exits 0 rather than failing.
 
 - `src/` - the library. Modules mirror the KithMoot files they were copied
   from (see EXTRACTION.md), except `kinds.ts`, `types.ts` and `access.ts`
-  (subsetted) and `channel.ts` (one function extracted from KithMoot's
-  `chat.ts`) and `transport.ts` (new: this kit's own `RelayTransport`
-  interface).
+  (subsetted), `channel.ts` (one function extracted from KithMoot's
+  `chat.ts`), `transport.ts` (new: this kit's own `RelayTransport`
+  interface), and `scoped.ts`/`sub-cert.ts` (new: T3.1/T3.3, not moved from
+  anywhere - see EXTRACTION.md "Phase 3 additions").
 - `test/sim-relay.ts` - an in-process relay simulator (`SimRelay`,
   `SimTransport`) used by the invitation, persistent-invitation and epoch
   test suites.
 - `vectors/` - known-answer wire-format vectors: `kithmoot-vectors.json` (a
   circle-layer subset of KithMoot's own vector file, byte-identical
-  group-for-group) and `circle-vectors.json` (gaps KithMoot's original file
-  did not cover, from the T0 vector-review branch). `vectors/verify.test.ts`
-  and `vectors/verify-circle.test.ts` run this kit's own functions against
-  them. `vectors/lib/determinism.mjs` and `vectors/lib/fixtures.mjs` are
-  copied from KithMoot unchanged (fixed labelled inputs, no KithMoot-specific
-  behaviour).
+  group-for-group), `circle-vectors.json` (gaps KithMoot's original file
+  did not cover, from the T0 vector-review branch), and `fold-vectors.json`
+  (this kit's own T3.1/T3.3/#205 vectors, with no KithMoot counterpart - see
+  `scripts/generate-fold.mjs`). `vectors/verify.test.ts`,
+  `vectors/verify-circle.test.ts` and `vectors/verify-fold.test.ts` run this
+  kit's own functions against them. `vectors/lib/determinism.mjs` and
+  `vectors/lib/fixtures.mjs` are copied from KithMoot unchanged (fixed
+  labelled inputs, no KithMoot-specific behaviour).
 - `scripts/` - `diff-source.mjs` (proves moved bodies are byte-identical to
-  the pinned source), `bundle-check.mjs` (browser bundle size and `node:`
-  import check), `tarball-smoke.mjs` (real-tarball consumer smoke test).
+  the pinned source, with one declared exception - see EXTRACTION.md "The
+  #205 fix"), `generate-fold.mjs` (builds `vectors/fold-vectors.json`),
+  `bundle-check.mjs` (browser bundle size and `node:` import check),
+  `tarball-smoke.mjs` (real-tarball consumer smoke test).
 - `dist/` - build output (generated, not committed).
 
 ## Exports

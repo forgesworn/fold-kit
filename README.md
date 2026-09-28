@@ -127,6 +127,28 @@ the rest).
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,
   `RESERVED_CHANNELS` - the authority's signed channel list
 
+### Scoped labels and sub-key certificates (a consuming app's own keys)
+
+- `deriveScoped` - derive an app-defined `{ id, key }` pair from an epoch key
+  under an app's own labelled namespace (e.g. `myapp/v1/board/<id>/update`),
+  so an app can ride the same epoch as the roster and the chat - and rotate
+  on the same rekey - without ever deriving a key that could be mistaken for
+  a KithMoot channel. Refuses this kit's own protocol namespace and any
+  label outside `SCOPED_LABEL_PATTERN`.
+- `createSubKeyCertificate`, `verifySubKeyCertificate`,
+  `SUB_KEY_CERTIFICATE_SCOPE` - a small, locally-signed statement that a
+  credentialled device minted a particular app-derived key (a `deriveScoped`
+  output, typically) for a particular scoped id. Rides inside a signed
+  message's ciphertext alongside the device credential it depends on; never
+  published on its own, and never accepted by `verifyDeviceCredential` (its
+  `scope: "sub"` is a value that function already refuses). Verification is
+  strict and canonical: exactly four two-element tags in a fixed order,
+  empty `content`, an `expiration` in canonical decimal form compared as the
+  exact tag string (not numerically) against the device credential passed
+  in - `verifySubKeyCertificate` reads that credential's own `device` and
+  `expiration` tags itself, rather than trusting a caller to have copied
+  them out correctly.
+
 ### Channel (main entry, and `deriveChannel` only)
 
 - `deriveChannel`, `CHANNEL_ID_INFO`, `CHANNEL_KEY_INFO`,
@@ -167,6 +189,7 @@ npm test            # run the Vitest suite, including both vector files
 npm run typecheck    # type-check src/ and test/ (matching KithMoot, vectors/ is not tsc-checked)
 npm run vectors      # run only the vector-verification suites
 npm run diff-source  # compare moved modules against the pinned source commit (needs FOLD_KIT_SOURCE_DIR)
+npm run generate-fold # regenerate vectors/fold-vectors.json (needs a prior build)
 npm run bundle-check # esbuild browser bundle check (needs a prior build)
 npm run check        # typecheck + test + diff-source
 ```

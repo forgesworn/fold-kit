@@ -77,6 +77,11 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `canonicalAdmins(admins)` / `signAdmins(opts)` / `verifyAdmins(opts)` - the authority's signed admin list
 - `canonicalChannels(channels)` / `signChannels(opts)` / `verifyChannels(opts)` - the authority's signed channel list; `CHANNEL_NAME`, `RESERVED_CHANNELS`
 
+### Scoped labels and sub-key certificates
+
+- `deriveScoped(epoch, label)` → `{ id, key }` - HKDF from the epoch KEY under an app's own labelled namespace (e.g. `myapp/v1/board/<id>/update`); refuses this kit's own protocol namespace and any label outside `SCOPED_LABEL_PATTERN`
+- `createSubKeyCertificate(opts)` → `Promise<DeviceCredential>` / `verifySubKeyCertificate(event, opts)` → result - a locally-signed, never-published statement binding an app-derived key to the credentialled device that minted it; `scope: 'sub'` is a value `verifyDeviceCredential` already refuses, so the two forms can never be confused. `verifySubKeyCertificate` takes `opts.credential` (the already-verified device credential) and reads its `device`/`expiration` tags itself; verification is strict (exactly four two-element tags, empty content) and canonical (expiration compared as the exact tag string). `SUB_KEY_CERTIFICATE_SCOPE`.
+
 ### Channel derivation
 
 - `deriveChannel(roomId, roomKey, channel?)` → `{ id, key }` - a named channel's id/key, derived from the room key; `CHANNEL_ID_INFO`, `CHANNEL_KEY_INFO`, `MAX_CHANNEL_NAME_LENGTH`. The chat log and event codecs themselves stay in the consuming app.

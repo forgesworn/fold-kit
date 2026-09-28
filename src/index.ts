@@ -18,6 +18,20 @@ export {
 } from './credential.js'
 export type { CreateCredentialOptions, VerifyResult } from './credential.js'
 
+export { deriveScoped, SCOPED_LABEL_PATTERN } from './scoped.js'
+export type { ScopedKeys } from './scoped.js'
+
+export {
+  createSubKeyCertificate,
+  verifySubKeyCertificate,
+  SUB_KEY_CERTIFICATE_SCOPE,
+} from './sub-cert.js'
+export type {
+  CreateSubKeyCertificateOptions,
+  VerifySubKeyCertificateOptions,
+  VerifySubKeyCertificateResult,
+} from './sub-cert.js'
+
 export {
   generateRoomSecret,
   deriveRoom,
