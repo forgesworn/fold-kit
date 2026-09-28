@@ -1,0 +1,19 @@
+{
+  "name": "@forgesworn/fold-kit",
+  "version": "0.0.0-seed.0",
+  "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
+  "type": "module",
+  "files": [
+    "LICENSE",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forgesworn/fold-kit.git"
+  },
+  "author": "forgesworn",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
