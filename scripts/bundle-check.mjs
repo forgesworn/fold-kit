@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-// Browser bundle check (plan §5 "Bundle size in a PWA" / T1.1 acceptance,
-// docs/plans/2026-09-28-circle-kit-extraction.md, girnel repository):
-// esbuild each entry with --platform=browser, assert no `node:` import
-// survives the bundle, and report a size budget (minified, and gzip).
+// Browser bundle check: esbuild each entry with --platform=browser, assert
+// no `node:` import survives the bundle, and check a size budget (minified,
+// and gzip). See EXTRACTION.md for the extraction this check belongs to.
 //
 // Run after `npm run build` (needs dist/ to exist).
 import { existsSync } from 'node:fs'
@@ -21,13 +20,13 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
   process.exit(1)
 }
 
-// Budgets are generous headroom over what T1.1 measured, not a tight target;
-// see docs/plans/2026-09-28-circle-kit-extraction.md §5: "moved dist JS is
-// 168 KB unminified with comments" for the whole circle layer in KithMoot,
-// which pulls in far more than this kit's two entries.
+// Budgets are about 25% headroom over what the current build measures
+// (index: 35.8 KB minified / 11.0 KB gzip; lane: 0.9 KB / 0.5 KB), tight
+// enough to catch an accidental dependency or a bundled peer, loose enough
+// not to fail on ordinary code growth.
 const BUDGETS_KB = {
-  index: { minified: 200, gzip: 70 },
-  lane: { minified: 10, gzip: 5 },
+  index: { minified: 45, gzip: 14 },
+  lane: { minified: 1.2, gzip: 0.7 },
 }
 
 let failed = false

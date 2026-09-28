@@ -13,7 +13,8 @@
     "./lane": {
       "types": "./dist/lane.d.ts",
       "default": "./dist/lane.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

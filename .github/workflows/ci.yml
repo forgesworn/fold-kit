@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -19,7 +20,19 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+      # KithMoot is public: check out the pinned source commit this kit was
+      # extracted from, so `npm run check`'s diff-source step can prove the
+      # moved modules are still byte-identical to it, in CI as well as
+      # locally. See scripts/diff-source.mjs and EXTRACTION.md.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: forgesworn/kithmoot
+          ref: 5babfec982f54c855720034b363de6fe7543dabe
+          fetch-depth: 1
+          path: .kithmoot-src
       - run: npm ci
       - run: npm run check
+        env:
+          FOLD_KIT_SOURCE_DIR: ${{ github.workspace }}/.kithmoot-src
       - run: npm run build
       - run: npm pack --dry-run
