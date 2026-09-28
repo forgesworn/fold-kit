@@ -1,12 +1,12 @@
 /** Circle-layer wire kinds: a subset of KithMoot's `src/kinds.ts`, copied
  * byte-identical per entry from the pinned source commit (see
- * docs/plans/2026-09-28-circle-kit-extraction.md §1.1 and EXTRACTION.md in
- * this repository). KithMoot's own `kinds.ts` spreads these into its wider
- * `KINDS` object and keeps the rest (roster, signalling, descriptor,
- * pairing, call bell, and so on) itself.
+ * EXTRACTION.md in this repository). KithMoot's own `kinds.ts` spreads
+ * these into its wider `KINDS` object and keeps the rest (roster,
+ * signalling, descriptor, pairing, call bell, and so on) itself.
  *
- * `CHAT` (1460) is included because Girnel's board events share KithMoot's
- * chat kind, so a relay cannot tell a board from a chat (plan Decision 3). */
+ * `CHAT` (1460) is included because a downstream app's own board events
+ * are designed to share KithMoot's chat kind, so a relay cannot tell a
+ * board from a chat (see docs/extraction-plan-excerpt.md). */
 export const KINDS = {
   /** Device credential. Signed by the participant key; never published to a
    *  relay - it travels inside the encrypted roster, so relays never see the

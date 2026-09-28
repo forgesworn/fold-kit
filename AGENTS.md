@@ -30,9 +30,11 @@ npm run prepublishOnly   # check + bundle-check + tarball-smoke; runs automatica
 There is no separate lint script.
 
 `npm run diff-source` needs a local checkout of the pinned KithMoot source
-commit; point `FOLD_KIT_SOURCE_DIR` at it. With no `FOLD_KIT_SOURCE_DIR` set
-(the default in CI, which has no access to the source repository) it prints
-a notice and exits 0 rather than failing.
+commit; point `FOLD_KIT_SOURCE_DIR` at it. KithMoot is public, so CI checks
+out the pinned commit itself and sets `FOLD_KIT_SOURCE_DIR` before `npm run
+check` runs (see `.github/workflows/ci.yml`). With no `FOLD_KIT_SOURCE_DIR`
+set at all - the default for a local run with no KithMoot checkout to
+hand - it prints a notice and exits 0 rather than failing.
 
 ## Repository Structure
 
@@ -77,8 +79,14 @@ derivation, lane).
   kit's `src/` carries. Adding, removing or editing one anywhere fails that
   test until the frozen list is updated deliberately.
 - Peer dependencies (`nostr-tools`, `@noble/hashes`, `@noble/curves`), never
-  bundled dependencies - a consumer keeps one copy of each. Imports use
-  `.js` subpaths so either noble major resolves.
+  bundled dependencies - a consumer keeps one copy of each, at the same
+  versions KithMoot pins. `@noble/hashes` is pinned to `^1.8.0` only (not
+  also 2.x): this kit's `@noble/hashes` imports have no `.js` suffix and its
+  `hkdf` calls pass a string `info` argument, and 2.x's `exports` map only
+  resolves `.js`-suffixed subpaths while its `hkdf` rejects a string `info`
+  - so 2.x cannot satisfy these imports as written, unlike `@noble/curves`
+  (imported with `.js` suffixes throughout, and pinned to a single major
+  anyway).
 - Keep `src/` framework-free and silent: no DOM access, storage access,
   environment reads, console output, or baked-in relay defaults.
 - Maintain ESM-compatible imports/exports (`.js` extensions on relative
@@ -113,4 +121,6 @@ commit (see README "Install").
 Releases go through the shared `forgesworn/anvil` reusable workflow
 (`.github/workflows/release.yml`), triggered by a published GitHub Release
 or a manual dispatch naming a tag. `.github/workflows/ci.yml` runs
-`npm run check` on Node 22.13 and 24 on every push and pull request.
+`npm run check` (including `diff-source`, against a checkout of the pinned
+KithMoot commit it fetches itself) on Node 22.13 and 24, on every push to
+`main` and on every pull request.

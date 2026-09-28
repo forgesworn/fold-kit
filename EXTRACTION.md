@@ -8,8 +8,9 @@ plus the T0 wire-compatibility work: `vectors/circle-vectors.json`,
 plan required before any code moved. The source checkout used for the
 extraction and for `scripts/diff-source.mjs` was not modified.
 
-Plan: `docs/plans/2026-09-28-circle-kit-extraction.md` in the `girnel`
-repository, task T1.1.
+Prepared under a private extraction plan (task T1.1) that also covers work
+outside this repository's scope; see `docs/extraction-plan-excerpt.md` for
+the parts of it this repository's own docs refer to.
 
 ## What moved (§1.1)
 
@@ -46,8 +47,9 @@ pinned commit by `scripts/diff-source.mjs`:
 - **`kinds.ts`** → this kit's `src/kinds.ts` is a subset: `CREDENTIAL`,
   `CHAT`, `INVITATION_REQUEST`, `INVITATION_GRANT`, `INVITATION_RETIREMENT`,
   `GROUP_INVITATION`, `ROOM_REKEY`, `EPOCH_REQUEST`, `EPOCH_GRANT`, each
-  copied with its doc comment unchanged. `CHAT` (1460) is included per the
-  plan's Decision 3: Girnel's board events share KithMoot's chat kind.
+  copied with its doc comment unchanged. `CHAT` (1460) is included because
+  a downstream app's own board events are designed to share KithMoot's
+  chat kind (see `docs/extraction-plan-excerpt.md`).
 - **`types.ts`** → this kit's `src/types.ts` is a subset: `DeviceCredential`,
   `AccessTier`, `AgentRule`, `RoomPolicy`, `KindredProof`. `Reachability`
   (imported by KithMoot's `types.ts` for `RosterEntry`, `AssistOffer` and
@@ -95,8 +97,10 @@ pinned commit by `scripts/diff-source.mjs`:
   - only the describe blocks for the 8 circle groups above, with
   `deriveChannel`'s import moved from `../src/chat.js` to `../src/channel.js`.
   Every retained assertion is unchanged.
-- `vectors/verify-circle.test.ts`: copied unchanged - every import it needs
-  (`kinds.js`, `room.js`, `link.js`, `network-hints.js`, `display-name.js`,
+- `vectors/verify-circle.test.ts`: copied unchanged except one comment line
+  naming the private planning document this repository does not name (see
+  "Public repository naming" below) - every import it needs (`kinds.js`,
+  `room.js`, `link.js`, `network-hints.js`, `display-name.js`,
   `invitation.js`, `persistent-invitation.js`, `credential.js`, `epoch.js`,
   `access.js`) already matches this kit's module layout one-to-one.
 
@@ -131,15 +135,55 @@ Every label byte value is unchanged from KithMoot's frozen list.
 
 ## Package
 
-ESM only, `exports` for `.` (everything) and `./lane` (lane helpers only),
-peer dependencies (`nostr-tools >=2.24.2 <3`, `@noble/hashes ^1.8.0 || ^2.0.0`,
-`@noble/curves ^2.0.1`) matching KithMoot's pinned versions so a consumer
-keeps a single copy of each, `engines.node >=22.13`, `sideEffects: false`.
+ESM only, `exports` for `.` (everything), `./lane` (lane helpers only) and
+`./package.json`, peer dependencies (`nostr-tools >=2.24.2 <3`,
+`@noble/hashes ^1.8.0`, `@noble/curves ^2.0.1`) matching KithMoot's pinned
+versions so a consumer keeps a single copy of each, `engines.node >=22.13`,
+`sideEffects: false`. `@noble/hashes` is pinned to its 1.x major only:
+this kit's `@noble/hashes` imports have no `.js` suffix and its `hkdf`
+calls pass a string `info` argument, and 2.x's `exports` map only resolves
+`.js`-suffixed subpaths while its `hkdf` rejects a string `info` - so 2.x
+cannot satisfy these imports as written.
+
+## Public repository naming
+
+This repository is public. It does not name the private downstream app that
+motivated some of the moves and split points above (the board-events kind
+share, for instance) - see `docs/extraction-plan-excerpt.md`, which carries
+the neutral wording used throughout this repository's docs, comments and
+tests in place of that name.
+
+## For KithMoot's cutover (T2.1, not this task)
+
+Notes for whoever writes KithMoot's re-export shims, so the codec cutover
+does not silently change KithMoot's own public surface:
+
+- Shims must use named `export { … }` / `export type { … }`, not
+  `export * from '@forgesworn/fold-kit'`. A wildcard re-export would pull in
+  all of this kit's ~96 root exports, including several (such as `KINDS`
+  itself, or `RelayTransport`) that KithMoot's own modules already export
+  under the same name from elsewhere - and it would change KithMoot's
+  `src/api-surface.test.ts` snapshot for every shimmed file, which is
+  exactly what that snapshot exists to catch.
+- The `chat.ts` shim must not re-export `CHANNEL_LABELS`: that name does
+  not exist in KithMoot today (its own label is `CHAT_LABELS`, kept in
+  KithMoot since `ChatLog` and the chat codecs did not move), and
+  `src/labels.test.ts` would otherwise see two different exported lists
+  claiming the same two label strings.
+- The `kinds.ts` shim: KithMoot's `KINDS` object should spread this kit's
+  `KINDS` first, then KithMoot's own remaining kind entries, and drop
+  KithMoot's own now-duplicate `CHAT` field (this kit's `KINDS.CHAT` is
+  byte-identical to KithMoot's, so the spread order does not change the
+  value - only which module's object literal defines it).
+- The `types.ts` shim must `import type` whichever of this kit's types
+  KithMoot's own `types.ts` still uses (`DeviceCredential`, `AccessTier`,
+  `RoomPolicy`, `KindredProof`) rather than redeclaring them, so there is
+  exactly one definition of each.
 
 ## Validation
 
-- `npm run check` (typecheck + test + diff-source): see the session's report
-  for the exact Node versions this ran on.
+- `npm run check` (typecheck + test + diff-source) on Node 22.13 and Node
+  24: green on both.
 - `scripts/diff-source.mjs` against commit `5babfec`: zero differences.
 - Both vector files verify against this kit's own functions.
 - `scripts/bundle-check.mjs`: esbuild browser bundle of both entry points,

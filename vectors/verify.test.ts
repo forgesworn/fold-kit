@@ -1,8 +1,8 @@
 // Adapted from KithMoot's vectors/verify.test.ts: only the circle-layer
-// groups this kit owns (see docs/plans/2026-09-28-circle-kit-extraction.md
-// §3.1/§3.2 in the girnel repository) - room derivation, channel derivation,
-// join URL, device credential, kindred proof, access evaluation, room epoch
-// and epoch request admission. The other groups (roster event, signal wrap,
+// groups this kit owns (see EXTRACTION.md) - room derivation, channel
+// derivation, join URL, device credential, kindred proof, access
+// evaluation, room epoch and epoch request admission. The other groups
+// (roster event, signal wrap,
 // room descriptor, TURN credential, agent ownership, chat attachment,
 // approval control, verification words, and the message layer) stay in
 // KithMoot, whose modules did not move here.

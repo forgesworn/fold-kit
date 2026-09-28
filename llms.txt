@@ -22,7 +22,7 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 
 ### Peer dependencies
 
-`nostr-tools` (`>=2.24.2 <3`), `@noble/hashes` (`^1.8.0 || ^2.0.0`), `@noble/curves` (`^2.0.1`) - peers, not dependencies, so a consumer keeps a single copy of each.
+`nostr-tools` (`>=2.24.2 <3`), `@noble/hashes` (`^1.8.0`), `@noble/curves` (`^2.0.1`) - peers, not dependencies, so a consumer keeps a single copy of each. `@noble/hashes` is 1.x only: this kit's imports have no `.js` suffix and its `hkdf` calls pass a string `info`, both of which 2.x rejects.
 
 ## Exports
 

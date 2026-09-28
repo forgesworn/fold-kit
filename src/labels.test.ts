@@ -1,12 +1,11 @@
 // Freezes every `kithmoot/` string in this kit's `src/` - HKDF info strings,
 // message domain prefixes and content-version markers - copied from
 // KithMoot's `src/labels.test.ts` and cut down to the modules that moved to
-// this kit (see docs/plans/2026-09-28-circle-kit-extraction.md §1.1 and
-// "Corrections after the T0 vector review": "Every module that owns
-// `kithmoot/` wire strings exports a frozen `*_LABELS` list; after cutover
-// KithMoot's label test imports the kit's lists.", in the girnel
-// repository). These are protocol names, not branding: every one must stay
-// byte-identical to what KithMoot signs and encrypts under today.
+// this kit (see EXTRACTION.md: "Every module that owns `kithmoot/` wire
+// strings exports a frozen `*_LABELS` list; after cutover KithMoot's label
+// test imports the kit's lists."). These are protocol names, not branding:
+// every one must stay byte-identical to what KithMoot signs and encrypts
+// under today.
 //
 // This test does not care which module a label lives in, only that the
 // full set found by scanning `src/*.ts` (excluding `.test.ts` files and

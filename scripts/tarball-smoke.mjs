@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Real-tarball consumer smoke test (T1.1 acceptance,
-// docs/plans/2026-09-28-circle-kit-extraction.md, girnel repository):
-// `npm pack`, install the tarball into a scratch directory alongside the
-// peer dependencies, and import every export from both entry points.
+// Real-tarball consumer smoke test: `npm pack`, install the tarball into a
+// scratch directory alongside the peer dependencies, and import every
+// export from both entry points. See EXTRACTION.md for the extraction this
+// check belongs to.
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'

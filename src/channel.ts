@@ -2,8 +2,7 @@ import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 
 /** `deriveChannel`, extracted from KithMoot's `src/chat.ts` (see
- * docs/plans/2026-09-28-circle-kit-extraction.md §1.1: "`channel` (step
- * T2.2) | `chat.ts:40-64` | `deriveChannel` only; `ChatLog` and codecs stay").
+ * EXTRACTION.md).
  * `ChatLog` and the chat event codecs stay in KithMoot. */
 
 export const CHANNEL_ID_INFO = 'kithmoot/v1/channel-id/'

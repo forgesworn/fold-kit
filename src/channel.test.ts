@@ -5,8 +5,7 @@ import { deriveChannel, MAX_CHANNEL_NAME_LENGTH } from './channel.js'
 // Adapted from KithMoot's src/chat.test.ts "channels" describe block: only
 // the two cases that exercise `deriveChannel` itself, with no dependency on
 // `ChatLog` or the chat event codecs (which stay in KithMoot - see
-// docs/plans/2026-09-28-circle-kit-extraction.md §1.1 in the girnel
-// repository).
+// EXTRACTION.md).
 
 function fixture() {
   const secret = new Uint8Array(32).fill(7)

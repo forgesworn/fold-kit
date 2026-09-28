@@ -22,7 +22,7 @@ describe('circle-layer kind numbers', () => {
     expect(CIRCLE_KIND_NAMES.map((name) => KINDS[name])).toEqual([20460, 20466, 20467, 1461, 1463, 1462, 20468, 20469])
   })
 
-  it('every kind number in KINDS is unique, including CHAT (shared with Girnel board events by design)', () => {
+  it('every kind number in KINDS is unique, including CHAT (shared with a downstream app\'s board events by design)', () => {
     const allValues = Object.values(KINDS)
     expect(new Set(allValues).size, 'KINDS has two names sharing one wire kind number').toBe(allValues.length)
   })
@@ -31,7 +31,7 @@ describe('circle-layer kind numbers', () => {
     for (const name of CIRCLE_KIND_NAMES) expect(Object.prototype.hasOwnProperty.call(KINDS, name), name).toBe(true)
   })
 
-  it('CHAT (1460) is present: Girnel board events share this kind so a relay cannot tell a board from a chat (plan Decision 3)', () => {
+  it('CHAT (1460) is present: a downstream app\'s board events are designed to share this kind so a relay cannot tell a board from a chat (see docs/extraction-plan-excerpt.md)', () => {
     expect(KINDS.CHAT).toBe(1460)
   })
 })

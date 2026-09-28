@@ -2,11 +2,10 @@ import type { Event } from 'nostr-tools/pure'
 
 /** Circle-layer wire types: a subset of KithMoot's `src/types.ts`, copied
  * byte-identical per declaration from the pinned source commit (see
- * docs/plans/2026-09-28-circle-kit-extraction.md §1.1 and EXTRACTION.md in
- * this repository). KithMoot's `types.ts` also defines roster, media and
+ * EXTRACTION.md). KithMoot's `types.ts` also defines roster, media and
  * descriptor types that stay in KithMoot; those import `Reachability`
- * (KithMoot's `src/reachability.ts`), which does not move here (see the
- * plan's "Corrections after the T0 vector review"). None of the types below
+ * (KithMoot's `src/reachability.ts`), which does not move here (see
+ * EXTRACTION.md's "What did not move" section). None of the types below
  * need it. */
 
 /** A device credential is an ordinary signed Nostr event, never published bare. */

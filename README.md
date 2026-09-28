@@ -40,7 +40,7 @@ Not yet published to npm. Until it is, pin an immutable Git commit:
 {
   "peerDependencies": {
     "nostr-tools": ">=2.24.2 <3",
-    "@noble/hashes": "^1.8.0 || ^2.0.0",
+    "@noble/hashes": "^1.8.0",
     "@noble/curves": "^2.0.1"
   }
 }
@@ -48,8 +48,12 @@ Not yet published to npm. Until it is, pin an immutable Git commit:
 
 Peers, not dependencies, so a consumer such as KithMoot keeps a single copy
 of `nostr-tools` (guarded by its own `overrides` and version-guard test) and
-of the noble libraries. Imports are written with `.js` subpaths, which both
-noble majors export, so either major resolves.
+of the noble libraries, at the same versions KithMoot already pins.
+`@noble/hashes` is pinned to its 1.x major only: its 2.x major changed its
+`hkdf` signature to reject a string `info` argument (this kit's HKDF calls
+pass strings) and its `exports` map no longer resolves the bare subpaths
+this kit and KithMoot both import without a `.js` suffix, so 2.x cannot
+satisfy this kit's imports as written.
 
 ESM only (`"type": "module"`). Node.js `>=22.13`.
 
@@ -72,9 +76,10 @@ the rest).
 - `KINDS` - the circle layer's kind numbers (`CREDENTIAL`, `CHAT`,
   `INVITATION_REQUEST`, `INVITATION_GRANT`, `INVITATION_RETIREMENT`,
   `GROUP_INVITATION`, `ROOM_REKEY`, `EPOCH_REQUEST`, `EPOCH_GRANT`) - a
-  subset of KithMoot's full registry. `CHAT` (1460) is included because
-  Girnel's board events share KithMoot's chat kind, so a relay cannot tell a
-  board from a chat.
+  subset of KithMoot's full registry. `CHAT` (1460) is included because a
+  downstream app's own board events are designed to share KithMoot's chat
+  kind, so a relay cannot tell a board from a chat (see
+  docs/extraction-plan-excerpt.md).
 - `DeviceCredential`, `AccessTier`, `AgentRule`, `RoomPolicy`, `KindredProof` -
   the link-layer wire types
 - `RelayTransport` - the transport seam (`publish`/`subscribe`/`close`) every
@@ -146,8 +151,12 @@ the rest).
   collaborative documents, where a wrap per recipient per message is too
   costly.
 
-Nothing is shared in code between the three today; see the extraction plan's
-§2.2 for why (incompatible key models, trust models and nostr-tools pins).
+Nothing is shared in code between the three today: the key models are
+incompatible (a static epoch secret with sealed rekeys here, versus a
+deterministic reseed from a root in covey-kit), the trust models differ
+(pinned authority here versus caller-enforced roles in covey-kit), and
+covey-kit/roost-kit pin a different `nostr-tools` version than this kit and
+KithMoot share.
 
 ## Development
 

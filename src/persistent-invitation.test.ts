@@ -97,8 +97,7 @@ describe('persistent group invitations', () => {
   // The upstream kithmoot suite also has a test here that joins via
   // `RoomAgent.join` (`app`-level agent runtime) to prove an agent can send
   // chat from stored admission alone. `RoomAgent` is not part of the kit's
-  // boundary (see docs/plans/2026-09-28-circle-kit-extraction.md §1.1/§1.2
-  // in the girnel repository), so that integration test stays in KithMoot;
-  // `SimRelay`/`SimTransport` above already exercise the same stored-event
-  // replay path this kit owns.
+  // boundary (see EXTRACTION.md), so that integration test stays in
+  // KithMoot; `SimRelay`/`SimTransport` above already exercise the same
+  // stored-event replay path this kit owns.
 })
