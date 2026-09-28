@@ -151,8 +151,50 @@ function printFirstDiffLine(a, b, label) {
 
 // --- Whole-file modules (import paths unchanged, or rewritten as noted) ---
 
-for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'credential.ts', 'room.ts', 'network-hints.ts', 'display-name.ts', 'link.ts', 'lane.ts']) {
+for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints.ts', 'display-name.ts', 'link.ts', 'lane.ts']) {
   checkWholeFile(`src/${f}`, `src/${f}`)
+}
+
+/**
+ * `src/credential.ts` carries exactly two deliberate additions from the
+ * pinned source, both part of the forgesworn/kithmoot#205 fix (see
+ * EXTRACTION.md "The #205 fix"): the `RestampedCredentialExpiryError` class,
+ * and the mint-time check that throws it. Everything else in the file must
+ * still be byte-identical, so this strips both declared blocks - and only
+ * those blocks, each matched verbatim - before doing the same whole-file
+ * comparison every other moved module gets. If either block's text ever
+ * drifts from what is declared here, the strip fails to match and the
+ * comparison below fails loudly rather than silently accepting unrelated
+ * drift.
+ */
+{
+  const KIT_ONLY_BLOCKS = [
+    "\n\n/**\n * Thrown by `createDeviceCredential` when a remote signer's restamped\n * `created_at` would make the requested expiry run longer than 30 days from\n * it - see the comment at the throw site, and forgesworn/kithmoot issue 205\n * (CHANGELOG.md has the full writeup and a link).\n * Typed (rather than a plain `Error`) so a caller can distinguish this from\n * the other, unrelated failure modes above it (wrong key, wrong terms, bad\n * signature) and retry with a shorter margin specifically in this case.\n */\nexport class RestampedCredentialExpiryError extends Error {\n  /** How far over the 30-day cap the signed `created_at` pushed the\n   *  requested expiry, in seconds. Always positive. A caller retrying with\n   *  a shorter margin needs to shorten by at least this much. */\n  readonly overBySeconds: number\n  constructor(overBySeconds: number) {\n    super('the signer restamped created_at, and the requested expiry now runs longer than 30 days from it')\n    this.name = 'RestampedCredentialExpiryError'\n    this.overBySeconds = overBySeconds\n  }\n}",
+    "\n\n  // forgesworn/kithmoot#205: a remote signer (a bunker, a phone) may restamp\n  // `created_at` to its own, earlier clock. `verifyDeviceCredential` measures\n  // the 30-day cap from the SIGNED `created_at`, not from `now` above - so a\n  // person credential requested near the cap can come back already unable to\n  // verify anywhere (\"longer than 30 days\"), even though nothing here was\n  // asked for more than 30 days. Re-check with the verifier's own\n  // measurement and fail loudly at mint time, rather than handing back a\n  // credential doomed to be refused everywhere it is presented. Callers that\n  // hit this can retry with a shorter `expiresAt` margin.\n  if (person && opts.expiresAt - signed.created_at > PERSON_CREDENTIAL_MAX_SECONDS) {\n    throw new RestampedCredentialExpiryError(opts.expiresAt - signed.created_at - PERSON_CREDENTIAL_MAX_SECONDS)\n  }",
+  ]
+  const kitText = readKit('src/credential.ts')
+  const sourceText = readAtCommit('src/credential.ts')
+  let stripped = kitText
+  let missing = false
+  for (const block of KIT_ONLY_BLOCKS) {
+    const idx = stripped.indexOf(block)
+    if (idx === -1) {
+      failures += 1
+      missing = true
+      console.error('FAIL (declared diff): src/credential.ts does not contain a declared #205 block verbatim - update diff-source.mjs or restore the block')
+      continue
+    }
+    stripped = stripped.slice(0, idx) + stripped.slice(idx + block.length)
+  }
+  if (!missing) {
+    if (stripped !== sourceText) {
+      failures += 1
+      console.error('FAIL (whole file, minus declared #205 blocks): src/credential.ts differs from src/credential.ts@' + sourceCommit + ' beyond the declared import rewrites and the #205 blocks')
+      printFirstDiffLine(stripped, sourceText, 'src/credential.ts')
+    } else {
+      console.log(`ok   (whole file, minus declared #205 blocks): src/credential.ts == src/credential.ts@${sourceCommit}`)
+    }
+  }
 }
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
   checkWholeFile(`src/${f}`, `src/${f}`, [["from './transport.js'", "from './relay-pool.js'"]])

@@ -1758,7 +1758,7 @@
       {
         "name": "refused-over-30-days",
         "kind": "negative",
-        "note": "M15 (refused side): the real `createDeviceCredential`'s mint-time check passes (expiry is exactly 2592000 seconds past the requested `now`, not more) - but the injected identity restamps the signed event's `created_at` ten seconds earlier than `now`, so the credential that actually results runs 2592010 seconds from its own real `created_at`. `verifyDeviceCredential` refuses it on read.",
+        "note": "M15 (refused side); updated for forgesworn/kithmoot#205: the real createDeviceCredential now measures the same way verifyDeviceCredential does - against the SIGNED created_at, not the requested now - and throws RestampedCredentialExpiryError at mint time instead of returning a credential. output.event/output.result keep M15's original coverage: the exact over-cap event a pre-#205 mint would have returned (built deterministically, the same bytes as before), and verifyDeviceCredential's own refusal of it, which is unchanged by #205 (its measurement was already correct - only the mint side was checking the wrong clock).",
         "input": {
           "participantSkHex": "826f7335cca1f25633dbc6efc43131a651feb9b7d419c9b1fdc35b2e115d2180",
           "devicePubkey": "b4814eb28f92350f362af5eb7a1dc6b9bdd1d27e789f5d97ad3b8c7653753076",
@@ -1772,6 +1772,7 @@
           }
         },
         "output": {
+          "mintThrew": "the signer restamped created_at, and the requested expiry now runs longer than 30 days from it",
           "event": {
             "kind": 20460,
             "created_at": 1799989990,

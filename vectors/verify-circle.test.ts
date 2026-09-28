@@ -45,7 +45,13 @@ import {
   type InvitationDelegation,
 } from '../src/invitation.js'
 import { decodePersistentInvitation, encodePersistentInvitation } from '../src/persistent-invitation.js'
-import { verifyDeviceCredential, createDeviceCredential, PERSON_CREDENTIAL_MAX_SECONDS, type CreateCredentialOptions } from '../src/credential.js'
+import {
+  verifyDeviceCredential,
+  createDeviceCredential,
+  PERSON_CREDENTIAL_MAX_SECONDS,
+  RestampedCredentialExpiryError,
+  type CreateCredentialOptions,
+} from '../src/credential.js'
 import {
   deriveEpoch,
   decodeEpochGrant,
@@ -768,11 +774,13 @@ describe('person credential', () => {
     expect(result).toEqual({ ok: true, participant: getPublicKey(sk), device: v.input.devicePubkey })
   })
 
-  it('refused-over-30-days: the real createDeviceCredential, given an identity that restamps created_at earlier, mints an over-long credential - refused on read (M15, refused side)', async () => {
+  it('refused-over-30-days: the real createDeviceCredential, given an identity that restamps created_at earlier, now refuses at mint time (M15, refused side; updated for forgesworn/kithmoot#205)', async () => {
     const v = vec('personCredential', 'refused-over-30-days')
-    // The mint-time check passes: exactly MAX, not over it.
+    // The pre-#205 mint-time check would have passed: exactly MAX, not over it.
     expect(v.input.expiresAt - v.input.mintTimeNow).toBe(PERSON_CREDENTIAL_MAX_SECONDS)
-    // But the identity restamps ten seconds earlier, so the real duration is over.
+    // But the identity restamps ten seconds earlier, so the real duration is over -
+    // and createDeviceCredential now measures against that real, signed created_at
+    // (matching verifyDeviceCredential) rather than against the requested `now`.
     expect(v.input.mintTimeNow - v.input.restampedCreatedAt).toBe(10)
     expect(v.input.expiresAt - v.input.restampedCreatedAt).toBe(PERSON_CREDENTIAL_MAX_SECONDS + 10)
 
@@ -783,17 +791,46 @@ describe('person credential', () => {
         return finalizeDeterministic({ ...unsigned, created_at: v.input.restampedCreatedAt }, sk, hexToBytes(v.input.auxRandHex)) as Event
       },
     }
-    const event = await createDeviceCredential({
-      identity: restampingIdentity,
-      devicePubkey: v.input.devicePubkey,
-      scope: 'person',
-      expiresAt: v.input.expiresAt,
-      now: () => v.input.mintTimeNow,
-    })
-    expect(plain(event)).toEqual(v.output.event)
-    expect(event.created_at).toBe(v.input.restampedCreatedAt)
+    let thrown: unknown
+    try {
+      await createDeviceCredential({
+        identity: restampingIdentity,
+        devicePubkey: v.input.devicePubkey,
+        scope: 'person',
+        expiresAt: v.input.expiresAt,
+        now: () => v.input.mintTimeNow,
+      })
+    } catch (err) {
+      thrown = err
+    }
+    expect(thrown).toBeInstanceOf(RestampedCredentialExpiryError)
+    expect((thrown as Error).message).toBe(v.output.mintThrew)
+    expect((thrown as RestampedCredentialExpiryError).overBySeconds).toBe(10)
 
-    const result = verifyDeviceCredential(event, { identity: v.input.verify.identity, now: v.input.verify.now })
+    // M15's original coverage, kept: the exact over-cap event a pre-#205
+    // mint would have returned (built deterministically here, since the
+    // real createDeviceCredential now refuses to produce it), byte-identical
+    // to the recorded vector, and verifyDeviceCredential's own refusal of
+    // it - unchanged by #205, since its measurement (against the signed
+    // created_at) was already correct; only the mint side was checking the
+    // wrong clock.
+    const wouldHaveMinted = finalizeDeterministic(
+      {
+        kind: 20460,
+        created_at: v.input.restampedCreatedAt,
+        tags: [
+          ['d', getPublicKey(sk)],
+          ['device', v.input.devicePubkey],
+          ['expiration', String(v.input.expiresAt)],
+          ['scope', 'person'],
+        ],
+        content: '',
+      },
+      sk,
+      hexToBytes(v.input.auxRandHex),
+    ) as Event
+    expect(plain(wouldHaveMinted)).toEqual(v.output.event)
+    const result = verifyDeviceCredential(wouldHaveMinted, { identity: v.input.verify.identity, now: v.input.verify.now })
     expect(result).toEqual(v.output.result)
     expect(result).toEqual({ ok: false, reason: 'longer than 30 days' })
   })
