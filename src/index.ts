@@ -15,6 +15,7 @@ export {
   createDeviceCredential,
   verifyDeviceCredential,
   PERSON_CREDENTIAL_MAX_SECONDS,
+  RestampedCredentialExpiryError,
 } from './credential.js'
 export type { CreateCredentialOptions, VerifyResult } from './credential.js'
 

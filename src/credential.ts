@@ -35,6 +35,27 @@ export interface CreateCredentialOptions {
 export const PERSON_CREDENTIAL_MAX_SECONDS = 30 * 24 * 60 * 60
 
 /**
+ * Thrown by `createDeviceCredential` when a remote signer's restamped
+ * `created_at` would make the requested expiry run longer than 30 days from
+ * it - see the comment at the throw site, and forgesworn/kithmoot issue 205
+ * (CHANGELOG.md has the full writeup and a link).
+ * Typed (rather than a plain `Error`) so a caller can distinguish this from
+ * the other, unrelated failure modes above it (wrong key, wrong terms, bad
+ * signature) and retry with a shorter margin specifically in this case.
+ */
+export class RestampedCredentialExpiryError extends Error {
+  /** How far over the 30-day cap the signed `created_at` pushed the
+   *  requested expiry, in seconds. Always positive. A caller retrying with
+   *  a shorter margin needs to shorten by at least this much. */
+  readonly overBySeconds: number
+  constructor(overBySeconds: number) {
+    super('the signer restamped created_at, and the requested expiry now runs longer than 30 days from it')
+    this.name = 'RestampedCredentialExpiryError'
+    this.overBySeconds = overBySeconds
+  }
+}
+
+/**
  * Authorise a device to act for a participant in one room, until an expiry.
  *
  * The credential is signed by the participant key but is never published to a
@@ -87,6 +108,19 @@ export async function createDeviceCredential(opts: CreateCredentialOptions): Pro
   }
   if (!verifyEventUncached(signed)) {
     throw new Error('the signer returned a credential that does not verify')
+  }
+
+  // forgesworn/kithmoot#205: a remote signer (a bunker, a phone) may restamp
+  // `created_at` to its own, earlier clock. `verifyDeviceCredential` measures
+  // the 30-day cap from the SIGNED `created_at`, not from `now` above - so a
+  // person credential requested near the cap can come back already unable to
+  // verify anywhere ("longer than 30 days"), even though nothing here was
+  // asked for more than 30 days. Re-check with the verifier's own
+  // measurement and fail loudly at mint time, rather than handing back a
+  // credential doomed to be refused everywhere it is presented. Callers that
+  // hit this can retry with a shorter `expiresAt` margin.
+  if (person && opts.expiresAt - signed.created_at > PERSON_CREDENTIAL_MAX_SECONDS) {
+    throw new RestampedCredentialExpiryError(opts.expiresAt - signed.created_at - PERSON_CREDENTIAL_MAX_SECONDS)
   }
 
   return signed

@@ -93,7 +93,10 @@ the rest).
   `parseRoomPolicy` - the legacy v1 join URL and room id/key derivation
 - `createDeviceCredential`, `verifyDeviceCredential`,
   `PERSON_CREDENTIAL_MAX_SECONDS` - room-scope and person-scope device
-  credentials
+  credentials. `createDeviceCredential` throws `RestampedCredentialExpiryError`
+  for a person-scope credential a restamping signer would make unverifiable
+  everywhere (see CHANGELOG.md) - catch it and retry with a shorter
+  `expiresAt` margin
 - `issueKindredProof`, `evaluateAccess` - kindred-tier admission
 - `sanitiseDisplayName`, `MAX_DISPLAY_NAME_LENGTH` - defused display names
 - `safeRelayUrls`, `safeIceUrls`, `assertNetworkHintBounds`, and the related

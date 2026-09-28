@@ -49,7 +49,7 @@ import * as lane from '@forgesworn/fold-kit/lane'
 
 const expectedMain = ${JSON.stringify([
       'hexEquals', 'normaliseHex', 'verifyEventUncached', 'boundedEventVerifier', 'localIdentity',
-      'KINDS', 'createDeviceCredential', 'verifyDeviceCredential', 'PERSON_CREDENTIAL_MAX_SECONDS',
+      'KINDS', 'createDeviceCredential', 'verifyDeviceCredential', 'PERSON_CREDENTIAL_MAX_SECONDS', 'RestampedCredentialExpiryError',
       'generateRoomSecret', 'deriveRoom', 'encodeJoinUrl', 'decodeJoinUrl', 'parseRoomPolicy', 'ROOM_LABELS',
       'MAX_RELAY_HINTS', 'MAX_ICE_HINTS', 'MAX_NETWORK_HINT_LENGTH', 'isSafeRelayUrl', 'safeRelayUrls',
       'isSafeIceUrl', 'safeIceUrls', 'assertNetworkHintBounds', 'sanitiseDisplayName', 'MAX_DISPLAY_NAME_LENGTH',

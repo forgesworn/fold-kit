@@ -206,8 +206,9 @@ rather than `deriveScoped`, so a shared bug between the generator and
 upstream KithMoot counterpart and is not covered by `scripts/diff-source.mjs`.
 
 The forgesworn/kithmoot#205 credential fix is a separate change, on its own
-branch/PR (`fix/restamp-205`) based on this one: `feat/scoped-keys` (this
-branch) makes no change to `credential.ts` at all.
+branch/PR (`fix/restamp-205`) based on this one: the `feat/scoped-keys` tip
+this branch is based on makes no change to `credential.ts` at all; only the
+commit below does.
 
 ### Mutation testing
 
@@ -229,7 +230,72 @@ mint-time hex-shape validations, the mint-time future-integer check, and
 all four of `createSubKeyCertificate`'s post-signing equality checks -
 signer pubkey, kind/content, tags, and `verifyEventUncached`). Each mutation
 was reverted immediately after its run; none is present in the committed
-code.
+code. The `RestampedCredentialExpiryError`/`overBySeconds` check the #205
+fix below adds was likewise mutated and killed (see that section).
+
+## The #205 fix: the one deliberate difference from the pinned source
+
+`src/credential.ts` is not quite byte-identical to the pinned commit: it
+carries one small, deliberate fix for
+[forgesworn/kithmoot#205](https://github.com/forgesworn/kithmoot/issues/205).
+
+The bug: `createDeviceCredential`'s 30-day cap on a person-scope credential
+is checked against the *requested* `now` (`opts.expiresAt - now`), but
+`verifyDeviceCredential`'s matching check is against the *signed*
+`created_at` (`expiresAt - cred.created_at`). A remote signer (a bunker, a
+phone) that restamps `created_at` to its own, earlier clock - which
+`createDeviceCredential` deliberately tolerates, since some signers do this
+and nothing here should assume otherwise - can then produce a credential
+that mints successfully but is refused as `"longer than 30 days"` by every
+verifier, including `verifyDeviceCredential` itself.
+
+The fix is two small additions, both stripped by name in
+`scripts/diff-source.mjs` (see below): a typed error,
+`RestampedCredentialExpiryError` (exported from the package root, carrying
+`overBySeconds`, so a caller can tell this failure apart from the function's
+other, unrelated failure modes and retry specifically for it), and a check
+right after the existing post-signing checks in `createDeviceCredential`
+that re-measures the cap using the verifier's own calculation (against
+`signed.created_at`) and throws that error immediately if it is over, rather
+than returning a credential doomed to be refused everywhere. A caller that
+hits this (as the downstream sync spec's own retry logic does) asks again
+with a shorter `expiresAt` margin. `verifyDeviceCredential` itself is
+untouched - its measurement was already correct; only the mint side was
+checking the wrong clock.
+
+`scripts/diff-source.mjs` proves these two additions are the *only*
+difference: it strips exactly these two declared blocks (each matched
+verbatim) from `src/credential.ts` before comparing the rest of the file,
+byte for byte, against the pinned commit. If either block's text ever
+drifted from what the script declares, the strip would stop matching and
+the check would fail loudly rather than silently widening what counts as
+"the declared difference".
+
+This fix changes the behaviour one existing vector was written to pin: the
+`personCredential`/`refused-over-30-days` vector in `circle-vectors.json`
+(KithMoot's own `M15`) exercises exactly the restamp-at-the-cap scenario the
+bug describes, and was frozen expecting a successful mint followed by a
+verifier refusal. That vector's `output` keeps both halves of M15's
+original coverage - `event` and `result` are still the exact over-cap event
+a pre-#205 mint would have produced (built deterministically in the test,
+since the real `createDeviceCredential` now refuses to produce it) and
+`verifyDeviceCredential`'s own refusal of it, byte-identical to before - and
+adds `mintThrew`, the new mint-time refusal message. The vector's `note` and
+the corresponding test in `vectors/verify-circle.test.ts` are updated to
+check all three - the issue itself anticipated this ("The vectors pin
+current [i.e. buggy] behaviour; this fix is separate"). Every other vector
+in both `kithmoot-vectors.json` and `circle-vectors.json`, and their
+generators, are untouched. `src/credential-205.test.ts` adds two more cases
+through the real function: the same at-the-cap restamp now throwing
+(asserted as `RestampedCredentialExpiryError`, with a mutation-tested check
+on `overBySeconds`), and a one-hour-margin request succeeding under the same
+restamp.
+
+**This is a breaking behaviour change for `createDeviceCredential`, called
+out in `CHANGELOG.md`.** KithMoot's own `src/credential.ts` has the same
+bug, unfixed; `CHANGELOG.md` says what has to change there (`M15` in its
+`vectors/verify-circle.test.ts` and `vectors/generate-circle.mjs`) in a
+paired PR.
 
 ## Public repository naming
 
@@ -277,7 +343,7 @@ does not silently change KithMoot's own public surface:
 - `scripts/tarball-smoke.mjs`: `npm pack`, install into a scratch directory,
   import and exercise every export from both entry points.
 
-KithMoot has not cut over to this kit (T2.1); it still carries its own copy
-of every module listed above. A new npm release under `0.1.0` is pending the
-owner's decision (T4.0); until then, a consumer pins the exact Git commit
-that publishes this file.
+KithMoot has cut over to this kit (T2.1) and pins an exact npm version;
+its moved files are re-export shims. Any change here that alters behaviour
+KithMoot's vectors record (for example the #205 fix) lands in KithMoot in
+the same PR as the version bump.

@@ -49,6 +49,7 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `createDeviceCredential(opts)` → `Promise<DeviceCredential>` - room-scope or person-scope (`scope: 'person'`)
 - `verifyDeviceCredential(event, opts)` → `VerifyResult` - pass `acceptPerson: true` to accept a person-scope credential where a room credential is expected
 - `PERSON_CREDENTIAL_MAX_SECONDS` - 30-day cap on a person-scope credential
+- `RestampedCredentialExpiryError` - thrown by `createDeviceCredential` when a restamping signer would make a person-scope credential unverifiable everywhere; has `overBySeconds`; catch and retry with a shorter `expiresAt` margin (see CHANGELOG.md)
 - `issueKindredProof(opts)` → `KindredProof`
 - `evaluateAccess(policy, participant, proof, now, roomId)` → `{ admitted, reason }`
 - `sanitiseDisplayName(raw)` → `string | undefined`, `MAX_DISPLAY_NAME_LENGTH`
