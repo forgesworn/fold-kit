@@ -5,6 +5,7 @@ import { MAX_EPOCH, type EpochKeys, type PeekRekeyOptions, type RekeyNotice } fr
 import { decodeRekeyEnvelope, MAX_REKEY_CONTENT_LENGTH, type RekeyEnvelope } from './rekey-reader.js'
 import { assertCompleteStoredQuery, type StoredEventQuery, type StoredEventQueryResult } from './stored-query.js'
 import type { RelayTransport } from './transport.js'
+import { verifyEventUncached } from './verify.js'
 
 const HEX64 = /^[0-9a-f]{64}$/i
 const HEX128 = /^[0-9a-f]{128}$/i
@@ -92,6 +93,7 @@ export class EpochFollower {
   #liveCandidates: Event[] = []
   #liveBytes = 0
   #liveOverflow = false
+  #overflowSources = new Set<string>()
 
   constructor(options: EpochFollowerOptions) {
     if (!Number.isSafeInteger(options.initial.epoch) || options.initial.epoch < 0 ||
@@ -109,7 +111,7 @@ export class EpochFollower {
     if (this.#closed) throw new Error('epoch follower is closed')
     if (this.#started) return
     this.#started = true
-    this.#unsubscribe = this.#opts.transport.subscribe(this.#filters, (event) => {
+    this.#unsubscribe = this.#opts.transport.subscribe(this.#filters, (event, via) => {
       if (this.#closed || !plausible(event, this.#opts.roomId, this.#opts.authority)) return
       // A live delivery is an observed candidate even when a later stored
       // query omits it. Only exact duplicates can be suppressed before auth:
@@ -117,7 +119,10 @@ export class EpochFollower {
       if (this.#liveCandidates.some((candidate) => sameEvent(candidate, event))) return
       const size = eventBytes(event)
       if (this.#liveCandidates.length >= MAX_FOLLOWER_CANDIDATES ||
-          this.#liveBytes + size > MAX_FOLLOWER_BYTES) this.#liveOverflow = true
+          this.#liveBytes + size > MAX_FOLLOWER_BYTES) {
+        this.#liveOverflow = true
+        if (via) this.#overflowSources.add(via)
+      }
       else { this.#liveCandidates.push(copyEvent(event)); this.#liveBytes += size }
       this.#liveVersion++
       // The query supplies completion evidence and any competing stored forks.
@@ -149,6 +154,34 @@ export class EpochFollower {
     })
   }
 
+  #retainLive(keep: (event: Event) => boolean): void {
+    this.#liveCandidates = this.#liveCandidates.filter(keep)
+    this.#liveBytes = this.#liveCandidates.reduce((total, event) => total + eventBytes(event), 0)
+  }
+
+  #pruneInvalidLive(): void {
+    // The queue was bounded before signature work. A forged claimed id cannot
+    // suppress authentic bytes, and definitively bad signatures must not hold
+    // the bounded queue forever after a completed catch-up.
+    this.#retainLive((event) => {
+      try { return verifyEventUncached(event) } catch { return false }
+    })
+  }
+
+  #compactResolvedLive(): void {
+    this.#retainLive((event) => {
+      const epoch = Number(event.tags[1]![1])
+      if (epoch > this.#epoch) return true
+      const parent = this.#opts.epochKeys(epoch - 1)
+      if (!parent || parent.epoch !== epoch - 1) return true
+      const envelope = decodeRekeyEnvelope(event, { roomId: this.#opts.roomId,
+        authority: this.#opts.authority, current: parent })
+      if (!envelope) return true // may belong to a future replacement parent
+      const winnerId = this.#winnerId(epoch)
+      return winnerId === undefined || event.id < winnerId
+    })
+  }
+
   close(): void {
     if (this.#closed) return
     this.#closed = true
@@ -163,11 +196,13 @@ export class EpochFollower {
     // Repeated live arrivals are bounded; a partial pass never reports success.
     for (let attempt = 0; attempt < MAX_FOLLOWER_CANDIDATES; attempt++) {
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
+      this.#pruneInvalidLive()
       const version = this.#liveVersion
       this.#attemptVersion = version
       const events = this.#liveCandidates.map(copyEvent)
       let bytes = this.#liveBytes
-      let overflow = this.#liveOverflow
+      let overflow = false
+      const lostLiveCandidate = this.#liveOverflow
       let accepting = true
       const result = await this.#opts.query(this.#filters, (event) => {
         if (!accepting || overflow || this.#closed || signal.aborted ||
@@ -184,9 +219,19 @@ export class EpochFollower {
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       assertCompleteStoredQuery(result)
       if (overflow) throw new Error('stored rekey result is incomplete: candidate bound exceeded')
+      // If a live candidate was dropped at the bound, only a full no-since
+      // refetch from every queried source can repair the incomplete view.
+      if (lostLiveCandidate) {
+        if (result.unavailable.length || [...this.#overflowSources].some((source) => !result.eosed.includes(source))) {
+          throw new Error('live rekey overflow needs a complete stored refetch')
+        }
+        this.#liveOverflow = false
+        this.#overflowSources.clear()
+      }
       if (version !== this.#liveVersion) continue
       const decision = await this.#choose(events, signal)
       if (decision === 'refetch' || version !== this.#liveVersion) continue
+      this.#compactResolvedLive()
       return result
     }
     throw new Error('stored rekey result changed during reconciliation; refetch needed')

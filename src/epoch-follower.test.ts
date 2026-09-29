@@ -291,6 +291,33 @@ describe('EpochFollower', () => {
     expect(h.transitions).toHaveLength(0)
   })
 
+  it('prunes rejected live traffic so a later clean stored query can recover', async () => {
+    const next = epoch(1, 141); const valid = rekey(root, next, 141)
+    const h = harness(); h.follower.start()
+    for (let i = 0; i < MAX_FOLLOWER_CANDIDATES; i++) h.live.emit({ ...valid,
+      id: i.toString(16).padStart(64, '0'), sig: '0'.repeat(128) })
+    await h.follower.catchUp()
+    expect(h.transitions).toHaveLength(0)
+    h.events.push(valid); h.secrets.set(valid.id, next)
+    await h.follower.catchUp()
+    expect(h.transitions.map((change) => change.event.id)).toEqual([valid.id])
+    h.follower.close()
+  })
+
+  it('recovers a live overflow only after every queried source has completed refetch', async () => {
+    const next = epoch(1, 142); const valid = rekey(root, next, 142)
+    const h = harness(); h.follower.start()
+    for (let i = 0; i <= MAX_FOLLOWER_CANDIDATES + 1; i++) h.live.emit({ ...valid,
+      id: i.toString(16).padStart(64, '0'), sig: '0'.repeat(128) })
+    await expect(h.follower.catchUp()).rejects.toThrow('complete stored refetch')
+    h.setEvidence({ queried: ['wss://one', 'wss://two'],
+      eosed: ['wss://one', 'wss://two'], unavailable: [] })
+    h.events.push(valid); h.secrets.set(valid.id, next)
+    await h.follower.catchUp()
+    expect(h.transitions.map((change) => change.event.id)).toEqual([valid.id])
+    h.follower.close()
+  })
+
   it('never calls the transition after close, even if a query ignores cancellation', async () => {
     const next = epoch(1, 150); const event = rekey(root, next, 150)
     let finish!: (result: StoredEventQueryResult) => void
