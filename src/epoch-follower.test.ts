@@ -64,6 +64,57 @@ function harness(initial = { epoch: 0, winningRekeyId: undefined as string | und
 }
 
 describe('EpochFollower', () => {
+  it('continues from a trusted restored checkpoint without historical parent keys', async () => {
+    const first = epoch(1, 47), second = epoch(2, 48)
+    const known = rekey(root, first, 90), next = rekey(first, second, 91)
+    const h = harness({ epoch: 1, winningRekeyId: known.id })
+    h.keys.delete(0); h.keys.set(1, deriveEpoch(first)); h.winners.set(1, known.id)
+    h.events.push(known)
+    await h.follower.catchUp()
+    expect(h.transitions).toEqual([])
+    h.events.push(next); h.secrets.set(next.id, second)
+    await h.follower.catchUp()
+    expect(h.transitions.map(change => change.event.id)).toEqual([next.id])
+    expect(h.winners.get(1)).toBe(known.id)
+    expect(h.winners.get(2)).toBe(next.id)
+    // A parent needed by a transition this instance adopted is mandatory.
+    h.keys.delete(1)
+    await expect(h.follower.catchUp()).rejects.toThrow('parent keys for entered epoch 2')
+  })
+
+  it.each([true, false])('does not reinterpret lost inspected history as an unavailable checkpoint (winner known: %s)', async knownWinner => {
+    const first = epoch(1, 49), known = rekey(root, first, 92)
+    const h = harness({ epoch: 1, winningRekeyId: knownWinner ? known.id : undefined })
+    h.keys.set(1, deriveEpoch(first)); h.events.push(known)
+    await h.follower.catchUp()
+    h.keys.delete(0)
+    await expect(h.follower.catchUp()).rejects.toThrow('parent keys for entered epoch 1')
+  })
+
+  it('forgets parent checks for descendants deliberately invalidated by replacement', async () => {
+    const first = epoch(1, 44), second = epoch(1, 45), childSecret = epoch(2, 46)
+    const [lower, higher] = [rekey(root, first, 94), rekey(root, second, 95)].sort((a, b) => a.id.localeCompare(b.id))
+    const highSecret = higher.created_at === 94 ? first : second
+    const child = rekey(highSecret, childSecret, 96)
+    const h = harness({ epoch: 2, winningRekeyId: child.id })
+    h.keys.set(1, deriveEpoch(highSecret)); h.keys.set(2, deriveEpoch(childSecret))
+    h.winners.set(1, higher.id); h.winners.set(2, child.id); h.events.push(higher, child)
+    await h.follower.catchUp()
+    h.events.push(lower) // No recipient copy for this replacement winner.
+    await h.follower.catchUp()
+    expect(h.transitions.map(change => change.kind)).toEqual(['replace'])
+    expect(h.winners.get(1)).toBe(lower.id)
+    expect(h.keys.has(1)).toBe(false)
+    expect(h.keys.has(2)).toBe(false)
+  })
+
+  it('refuses malformed historical parent lookups instead of treating them as absent', async () => {
+    const first = epoch(1, 46), known = rekey(root, first, 93)
+    const h = harness({ epoch: 1, winningRekeyId: known.id })
+    h.keys.set(0, deriveEpoch(first)); h.events.push(known)
+    await expect(h.follower.catchUp()).rejects.toThrow('parent keys for entered epoch 1')
+  })
+
   it('chooses the lowest complete-body id in either arrival order, independent of a recipient copy', async () => {
     const one = epoch(1, 50); const two = epoch(1, 60)
     const a = rekey(root, one, 100, true); const b = rekey(root, two, 101)

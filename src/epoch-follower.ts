@@ -81,6 +81,8 @@ function sameEvent(a: Event, b: Event): boolean {
 export class EpochFollower {
   readonly #opts: EpochFollowerOptions
   readonly #filters: Filter[]
+  readonly #initialEpoch: number
+  #checkedParents = new Set<number>()
   #epoch: number
   #winnerIds = new Map<number, string>()
   #unsubscribe?: () => void
@@ -103,6 +105,7 @@ export class EpochFollower {
         !HEX64.test(options.initial.winningRekeyId))) throw new TypeError('invalid epoch follower context')
     this.#opts = { ...options, roomId: options.roomId.toLowerCase(), authority: options.authority.toLowerCase() }
     this.#epoch = options.initial.epoch
+    this.#initialEpoch = options.initial.epoch
     if (options.initial.winningRekeyId) this.#winnerIds.set(this.#epoch, options.initial.winningRekeyId.toLowerCase())
     this.#filters = [{ kinds: [KINDS.ROOM_REKEY], authors: [this.#opts.authority], '#d': [this.#opts.roomId] }]
   }
@@ -246,9 +249,14 @@ export class EpochFollower {
       const oldId = epoch <= this.#epoch ? this.#winnerId(epoch) : undefined
       const parent = this.#opts.epochKeys(epoch - 1)
       if (!parent || parent.epoch !== epoch - 1) {
-        if (oldId) throw new Error(`parent keys for entered epoch ${epoch} are unavailable`)
+        // A restored checkpoint may legitimately have no earlier keys. It does
+        // not promise fork verification before that trust boundary. Once this
+        // instance has inspected a parent, losing it is no longer a checkpoint.
+        if (parent === undefined && epoch <= this.#initialEpoch && !this.#checkedParents.has(epoch)) continue
+        if (oldId || this.#checkedParents.has(epoch)) throw new Error(`parent keys for entered epoch ${epoch} are unavailable`)
         continue
       }
+      this.#checkedParents.add(epoch)
       let winner: { event: Event; envelope: RekeyEnvelope } | undefined
       for (const event of events) {
         if (Number(event.tags[1]![1]) !== epoch || (winner && event.id >= winner.event.id)) continue
@@ -274,6 +282,9 @@ export class EpochFollower {
       await this.#opts.onTransition(change)
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       this.#epoch = epoch
+      if (change.kind === 'replace') {
+        for (const checked of this.#checkedParents) if (checked > epoch) this.#checkedParents.delete(checked)
+      }
       for (const key of this.#winnerIds.keys()) if (key > epoch) this.#winnerIds.delete(key)
       this.#winnerIds.set(epoch, winner.event.id)
       if (change.kind === 'replace' || version !== this.#liveVersion) return 'refetch'

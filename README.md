@@ -172,8 +172,11 @@ It awaits `onTransition` before advancing. A late lower-id fork emits
 `replace` with `invalidateFromEpoch`, then refetches descendants under the
 new parent. The caller must durably store the winner, retain historical parent
 keys and winner ids for epochs it wants to recheck, and invalidate losing
-descendants before resolving the callback. An initial epoch with no historical
-winner id is a trusted lower bound. `start()` retains bounded live candidates
+descendants before resolving the callback. The initial checkpoint is a trusted
+lower bound when historical parent keys are absent, even if its winning rekey id
+is known. Available historical parents still enable fork checks; losing an
+already-inspected parent, or a parent needed by a newly adopted epoch, fails
+catch-up. `start()` retains bounded live candidates
 alongside stored-query results, including a valid event omitted by that query;
 the query still supplies the completion barrier. `close()` cancels this follower
 without closing a shared transport. A query
