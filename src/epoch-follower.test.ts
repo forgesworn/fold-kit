@@ -108,9 +108,9 @@ describe('EpochFollower', () => {
     expect(h.keys.has(2)).toBe(false)
   })
 
-  it('refuses malformed historical parent lookups instead of treating them as absent', async () => {
+  it.each([true, false])('refuses malformed historical parent lookups (winner known: %s)', async knownWinner => {
     const first = epoch(1, 46), known = rekey(root, first, 93)
-    const h = harness({ epoch: 1, winningRekeyId: known.id })
+    const h = harness({ epoch: 1, winningRekeyId: knownWinner ? known.id : undefined })
     h.keys.set(0, deriveEpoch(first)); h.events.push(known)
     await expect(h.follower.catchUp()).rejects.toThrow('parent keys for entered epoch 1')
   })

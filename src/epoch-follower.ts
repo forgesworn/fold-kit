@@ -248,11 +248,14 @@ export class EpochFollower {
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       const oldId = epoch <= this.#epoch ? this.#winnerId(epoch) : undefined
       const parent = this.#opts.epochKeys(epoch - 1)
-      if (!parent || parent.epoch !== epoch - 1) {
+      if (parent !== undefined && (!parent || parent.epoch !== epoch - 1)) {
+        throw new TypeError(`parent keys for entered epoch ${epoch} are malformed`)
+      }
+      if (!parent) {
         // A restored checkpoint may legitimately have no earlier keys. It does
         // not promise fork verification before that trust boundary. Once this
         // instance has inspected a parent, losing it is no longer a checkpoint.
-        if (parent === undefined && epoch <= this.#initialEpoch && !this.#checkedParents.has(epoch)) continue
+        if (epoch <= this.#initialEpoch && !this.#checkedParents.has(epoch)) continue
         if (oldId || this.#checkedParents.has(epoch)) throw new Error(`parent keys for entered epoch ${epoch} are unavailable`)
         continue
       }
