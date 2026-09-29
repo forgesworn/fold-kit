@@ -51,7 +51,7 @@ function ownKeys(value: object): string[] {
 
 /** Reject non-JSON encoder inputs rather than letting JSON.stringify silently omit them. */
 function copyJson(value: unknown, seen: WeakSet<object>, depth: number, count: { n: number }): JsonValue {
-  if (++count.n > 512 || depth > 16) throw new Error('app JSON is too deep or large')
+  if (++count.n > 512 || depth > 256) throw new Error('app JSON is too deep or large')
   if (value === null || typeof value === 'boolean') return value
   if (typeof value === 'string') {
     if (value.length > MAX_EPOCH_INVITATION_APP_BYTES) throw new Error('app string exceeds byte budget')

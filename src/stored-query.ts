@@ -18,7 +18,7 @@ export function assertCompleteStoredQuery(result: StoredEventQueryResult): void 
   if (!result || !Array.isArray(result.queried) || !Array.isArray(result.eosed) || !Array.isArray(result.unavailable)) {
     throw new Error('stored query returned no source outcomes')
   }
-  const valid = (list: readonly string[]) => list.every((source) => typeof source === 'string' && source.length > 0) &&
+  const valid = (list: readonly string[]) => Array.from(list).every((source) => typeof source === 'string' && source.length > 0) &&
     new Set(list).size === list.length
   if (!valid(result.queried) || !valid(result.eosed) || !valid(result.unavailable) ||
       result.queried.length === 0 || result.eosed.length === 0) {

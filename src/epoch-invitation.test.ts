@@ -55,6 +55,10 @@ describe('v4 current-epoch invitation wire and link', () => {
       app: { x: Number.NaN } as never, now })).toThrow('strict JSON')
     expect(() => encodeEpochInvitation({ invitation, authoritySk, roomId, current,
       app: [] as never, now })).toThrow('JSON object')
+    let nested: import('./epoch-invitation.js').JsonValue = 0
+    for (let i = 0; i < 123; i++) nested = [nested]
+    expect(new TextEncoder().encode(JSON.stringify({ x: nested })).length).toBe(253)
+    expect(decodeEpochInvitation(welcome({ x: nested }), invitation)?.app).toEqual({ x: nested })
     const cycle: Record<string, unknown> = {}; cycle.self = cycle
     expect(() => encodeEpochInvitation({ invitation, authoritySk, roomId, current,
       app: cycle as never, now })).toThrow('cycle')
@@ -94,6 +98,8 @@ describe('v4 stored admission', () => {
       .rejects.toThrow('real EOSE')
     await expect(requestEpochAdmission({ invitation, query: query([event], { queried: ['one', 'two'], eosed: ['one'], unavailable: [] }) }))
       .rejects.toThrow('every queried source')
+    await expect(requestEpochAdmission({ invitation, query: query([event], { queried: Array(1), eosed: Array(1), unavailable: [] }) }))
+      .rejects.toThrow('invalid source outcomes')
     expect((await requestEpochAdmission({ invitation, query: query([event]) })).current).toEqual(current)
   })
 
