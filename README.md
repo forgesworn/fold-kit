@@ -181,6 +181,15 @@ without real EOSE, one with incomplete source outcomes, or one exceeding the
 bounded candidate set cannot cause a transition. This is key-chain recovery,
 not authority to edit or publish; applications still check their own records.
 
+Retention is limited to 256 candidates and 8 MiB per follower instance. Valid
+observed events remain retained after adoption so that a later parent fork cannot
+make the follower forget a still-valid descendant minimum. Consequently, reaching
+this lifetime retention limit can stop further progress even when later queries
+complete. The follower fails closed; repeated refetches do not discard authenticated
+history to make room. Long-running applications need durable exact-event archival
+and a recovery procedure that preserves all still-relevant fork evidence. Recreating
+a follower without that evidence is not a safe way to clear the limit.
+
 `parseCircleMembership(unknown)` validates and copies a version-1 capability
 record with `roomId`, `authority`, `current: { epoch, secret }`, optional
 `invitation: { v, bearer, inviter }` and optional `authorityKey`. Secrets and
