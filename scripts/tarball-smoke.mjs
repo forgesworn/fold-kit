@@ -68,6 +68,8 @@ const expectedMain = ${JSON.stringify([
       'canonicalChannels', 'signChannels', 'verifyChannels', 'signAdmins', 'verifyAdmins', 'EPOCH_LABELS',
       'deriveChannel', 'CHANNEL_ID_INFO', 'CHANNEL_KEY_INFO', 'MAX_CHANNEL_NAME_LENGTH', 'CHANNEL_LABELS',
       'deriveScoped', 'SCOPED_LABEL_PATTERN',
+      'decodeRekeyEnvelope', 'decodeRekeyEventWithSigner', 'RekeySignerError', 'MAX_REKEY_CONTENT_LENGTH',
+      'parseCircleMembership', 'circleMembershipEpoch', 'circleAuthorityKey',
       'createSubKeyCertificate', 'verifySubKeyCertificate', 'SUB_KEY_CERTIFICATE_SCOPE',
       'LANES', 'LANE_MEANING', 'LANE_LABEL', 'LANE_GLYPH', 'isLane', 'laneOfRelayUrl', 'laneOfRelays', 'weakestLane', 'isDowngrade',
     ])}
@@ -85,6 +87,8 @@ if (missing.length > 0) {
 const room = main.deriveRoom(new Uint8Array(32).fill(7))
 if (!/^[0-9a-f]{64}$/.test(room.roomId)) throw new Error('deriveRoom did not return a hex room id')
 if (lane.laneOfRelayUrl('wss://relay.example') !== 'public') throw new Error('laneOfRelayUrl misbehaved')
+if (main.parseCircleMembership({}) !== null) throw new Error('membership parser accepted invalid record')
+if (main.decodeRekeyEnvelope({}, {}) !== null) throw new Error('rekey reader accepted invalid event')
 const scoped = main.deriveScoped({ epoch: 0, id: room.roomId, key: room.roomKey }, 'smoke/v1/x')
 if (!/^[0-9a-f]{64}$/.test(scoped.id)) throw new Error('deriveScoped did not return a hex id')
 

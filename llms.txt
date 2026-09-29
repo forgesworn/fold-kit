@@ -104,3 +104,10 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - README.md - full API overview, peer dependency rationale, how this kit relates to `covey-kit` and `roost-kit`
 - EXTRACTION.md - the source commit, exactly which modules and functions moved, and the two splits (`access.ts`, `chat.ts`) performed on the way
 - AGENTS.md - build/test commands and repository conventions for an agent working in this repo
+
+### Additive signer recovery and membership
+
+- `decodeRekeyEnvelope(event, {roomId, authority, current})` validates a bounded, exact-shape v1 body without recipient decryption. Fork choice must not depend on which recipient copy opens.
+- `decodeRekeyEventWithSigner(event, {...options, signer})`: signer is `Nip44Decryptor` with pubkey and async nip44.decrypt(peer, ciphertext). Invalid bytes give null; absent copy gives notice without secret; operational decrypt failure throws RekeySignerError with cause. No epoch desk, no participant secret. Legacy synchronous decoding stays unchanged.
+- `parseCircleMembership(unknown)` strictly copies `{v:1,roomId,authority,current:{epoch,secret},invitation?:{v:2|3|4,bearer,inviter},authorityKey?}`. Canonical b64url 32-byte secrets; epoch-zero root and optional authority scalar/public key must match. Later-epoch standing/provenance remains caller-owned.
+- `circleMembershipEpoch(record)` and `circleAuthorityKey(record)` validate and return fresh bytes; invalid records throw. No storage or signing session is owned by these helpers.

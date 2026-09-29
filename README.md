@@ -130,6 +130,40 @@ the rest).
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,
   `RESERVED_CHANNELS` - the authority's signed channel list
 
+### Signer recovery and saved membership
+
+`decodeRekeyEnvelope(event, { roomId, authority, current })` validates the
+complete v1 rekey body without opening any recipient copy. Use this result for
+fork selection: a missing recipient copy must not change the winning event.
+The additive reader bounds content before hashing and requires the exact two
+tags and body fields emitted by `encodeRekeyEvent`. The existing synchronous
+`decodeRekeyEvent` and all old wire bytes remain unchanged.
+
+`decodeRekeyEventWithSigner(event, { roomId, authority, current, signer })`
+accepts a `Nip44Decryptor`: `{ pubkey, nip44: { decrypt(peer, ciphertext) } }`.
+It opens only that signer's recipient copy, after local authentication. No
+private participant key, signing permission or epoch desk is required. Include
+the person's public key in the existing encoder's `recipients` when creating
+that copy. No copy returns a valid notice without `secret`; invalid event or
+returned plaintext gives `null`; signer cancellation/disconnection throws
+`RekeySignerError` with the original cause. The caller retains the selected
+winner and decides when to retry an operational failure.
+
+`parseCircleMembership(unknown)` validates and copies a version-1 capability
+record with `roomId`, `authority`, `current: { epoch, secret }`, optional
+`invitation: { v, bearer, inviter }` and optional `authorityKey`. Secrets and
+bearers use canonical unpadded base64url, exactly 32 bytes. A keeper key must
+be a valid private scalar matching `authority`; epoch zero must derive the
+root room id. `circleMembershipEpoch(record)` and `circleAuthorityKey(record)`
+return fresh byte arrays and reject invalid records.
+
+A later-epoch record needs only its current secret, not the epoch-zero secret.
+Parsing stored data proves neither remote authority nor current standing:
+applications bind it through verified admission/rekey provenance and keep
+creation metadata, winner ids and historical epochs separately. This module
+reads or writes no storage. Invitation version 4 is representable in the
+record, but its link and admission codecs are a separate follow-up.
+
 ### Scoped labels and sub-key certificates (a consuming app's own keys)
 
 - `deriveScoped` - derive an app-defined `{ id, key }` pair from an epoch key
