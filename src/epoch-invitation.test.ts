@@ -19,7 +19,7 @@ const invitation: EpochInvitation = { v: 4, bearer: new Uint8Array(32).fill(12),
 const now = 1_900_000_000
 const current = { epoch: 0, secret: secret0 }
 
-function welcome(app?: Record<string, string>, token = invitation): Event {
+function welcome(app?: Record<string, import('./epoch-invitation.js').JsonValue>, token = invitation): Event {
   return encodeEpochInvitation({ invitation: token, authoritySk, roomId, current, app, now })
 }
 
