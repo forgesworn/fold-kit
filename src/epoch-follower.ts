@@ -93,6 +93,7 @@ export class EpochFollower {
   #liveCandidates: Event[] = []
   #liveBytes = 0
   #liveOverflow = false
+  #overflowGeneration = 0
   #overflowSources = new Set<string>()
 
   constructor(options: EpochFollowerOptions) {
@@ -121,6 +122,7 @@ export class EpochFollower {
       if (this.#liveCandidates.length >= MAX_FOLLOWER_CANDIDATES ||
           this.#liveBytes + size > MAX_FOLLOWER_BYTES) {
         this.#liveOverflow = true
+        this.#overflowGeneration++
         if (via) this.#overflowSources.add(via)
       }
       else { this.#liveCandidates.push(copyEvent(event)); this.#liveBytes += size }
@@ -168,20 +170,6 @@ export class EpochFollower {
     })
   }
 
-  #compactResolvedLive(): void {
-    this.#retainLive((event) => {
-      const epoch = Number(event.tags[1]![1])
-      if (epoch > this.#epoch) return true
-      const parent = this.#opts.epochKeys(epoch - 1)
-      if (!parent || parent.epoch !== epoch - 1) return true
-      const envelope = decodeRekeyEnvelope(event, { roomId: this.#opts.roomId,
-        authority: this.#opts.authority, current: parent })
-      if (!envelope) return true // may belong to a future replacement parent
-      const winnerId = this.#winnerId(epoch)
-      return winnerId === undefined || event.id < winnerId
-    })
-  }
-
   close(): void {
     if (this.#closed) return
     this.#closed = true
@@ -203,6 +191,7 @@ export class EpochFollower {
       let bytes = this.#liveBytes
       let overflow = false
       const lostLiveCandidate = this.#liveOverflow
+      const overflowGeneration = this.#overflowGeneration
       let accepting = true
       const result = await this.#opts.query(this.#filters, (event) => {
         if (!accepting || overflow || this.#closed || signal.aborted ||
@@ -219,6 +208,9 @@ export class EpochFollower {
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       assertCompleteStoredQuery(result)
       if (overflow) throw new Error('stored rekey result is incomplete: candidate bound exceeded')
+      // A live delivery after this query began may have overflowed the queue.
+      // Its missing bytes cannot be recovered by this older stored result.
+      if (version !== this.#liveVersion || overflowGeneration !== this.#overflowGeneration) continue
       // If a live candidate was dropped at the bound, only a full no-since
       // refetch from every queried source can repair the incomplete view.
       if (lostLiveCandidate) {
@@ -228,10 +220,13 @@ export class EpochFollower {
         this.#liveOverflow = false
         this.#overflowSources.clear()
       }
-      if (version !== this.#liveVersion) continue
       const decision = await this.#choose(events, signal)
       if (decision === 'refetch' || version !== this.#liveVersion) continue
-      this.#compactResolvedLive()
+      // A descendant accepted under today's parent may remain the minimum
+      // under a later, lower parent fork with the same epoch secret. Even a
+      // complete query can omit a live event, so keep signed live evidence.
+      // The queue remains bounded; overflow requires a complete refetch and
+      // cannot silently choose a higher candidate.
       return result
     }
     throw new Error('stored rekey result changed during reconciliation; refetch needed')

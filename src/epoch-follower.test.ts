@@ -21,11 +21,11 @@ function rekey(current: RoomEpoch, next: RoomEpoch, now: number, closed = false)
     recipients: [], removed: [], closed, now })
 }
 
-function transport(): RelayTransport & { emit(event: Event): void } {
-  let callback: ((event: Event) => void) | undefined
+function transport(): RelayTransport & { emit(event: Event, via?: string): void } {
+  let callback: ((event: Event, via?: string) => void) | undefined
   return { publish: async () => {}, subscribe: (_filters, onEvent) => {
     callback = onEvent; return () => { callback = undefined }
-  }, close: () => {}, emit: (event) => callback?.(event) }
+  }, close: () => {}, emit: (event, via) => callback?.(event, via) }
 }
 
 function harness(initial = { epoch: 0, winningRekeyId: undefined as string | undefined }) {
@@ -315,6 +315,73 @@ describe('EpochFollower', () => {
     h.events.push(valid); h.secrets.set(valid.id, next)
     await h.follower.catchUp()
     expect(h.transitions.map((change) => change.event.id)).toEqual([valid.id])
+    h.follower.close()
+  })
+
+  it('does not clear a newer live overflow with a query that started before it', async () => {
+    const one = rekey(root, epoch(1, 143), 143)
+    const two = rekey(root, epoch(1, 144), 144)
+    const [lower, higher] = [one, two].sort((a, b) => a.id.localeCompare(b.id))
+    let releaseFirst!: () => void, releaseSecond!: () => void, secondStarted!: () => void
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve })
+    const secondGate = new Promise<void>((resolve) => { releaseSecond = resolve })
+    const secondQuery = new Promise<void>((resolve) => { secondStarted = resolve })
+    const full: StoredEventQueryResult = { queried: ['wss://one', 'wss://two'],
+      eosed: ['wss://one', 'wss://two'], unavailable: [] }
+    const partial: StoredEventQueryResult = { queried: ['wss://one', 'wss://two'],
+      eosed: ['wss://two'], unavailable: ['wss://one'] }
+    const live = transport()
+    const transitions: EpochTransition[] = []
+    let queries = 0
+    const follower = new EpochFollower({ roomId, authority, transport: live,
+      query: async (_filters, accept) => {
+        queries++
+        if (queries === 1) { await firstGate; return full }
+        if (queries === 2) { secondStarted(); await secondGate; return full }
+        accept(higher)
+        return partial
+      },
+      initial: { epoch: 0 }, epochKeys: (n) => n === 0 ? deriveEpoch(root) : undefined,
+      winningRekeyId: () => undefined, openSecret: async () => undefined,
+      onTransition: async (change) => { transitions.push(change) }, onError: () => {},
+    })
+    follower.start()
+    const work = follower.catchUp()
+    for (let i = 0; i < MAX_FOLLOWER_CANDIDATES + 1; i++) live.emit({ ...higher,
+      id: i.toString(16).padStart(64, '0'), sig: '0'.repeat(128) }, 'wss://one')
+    releaseFirst()
+    await secondQuery
+    for (let i = 1000; i < 1000 + MAX_FOLLOWER_CANDIDATES; i++) live.emit({ ...higher,
+      id: i.toString(16).padStart(64, '0'), sig: '0'.repeat(128) }, 'wss://one')
+    live.emit(lower, 'wss://one')
+    releaseSecond()
+    await expect(work).rejects.toThrow('complete stored refetch')
+    expect(queries).toBe(3)
+    expect(transitions).toHaveLength(0)
+    follower.close()
+  })
+
+  it('retains an accepted live child minimum across same-secret parent replacement', async () => {
+    const parent = epoch(1, 145), childSecret = epoch(2, 146)
+    const [lowerParent, higherParent] = [rekey(root, parent, 145), rekey(root, parent, 146)]
+      .sort((a, b) => a.id.localeCompare(b.id))
+    const [lowerChild, higherChild] = [rekey(parent, childSecret, 147), rekey(parent, childSecret, 148)]
+      .sort((a, b) => a.id.localeCompare(b.id))
+    const h = harness()
+    h.secrets.set(lowerParent.id, parent); h.secrets.set(higherParent.id, parent)
+    h.secrets.set(lowerChild.id, childSecret); h.secrets.set(higherChild.id, childSecret)
+    h.follower.start()
+    h.live.emit(higherParent)
+    h.live.emit(lowerChild)
+    await h.follower.catchUp()
+    expect(h.winners.get(2)).toBe(lowerChild.id)
+    h.events.push(higherChild)
+    h.live.emit(lowerParent)
+    await h.follower.catchUp()
+    expect(h.transitions.map((change) => [change.kind, change.notice.epoch])).toEqual([
+      ['advance', 1], ['advance', 2], ['replace', 1], ['advance', 2],
+    ])
+    expect(h.winners.get(2)).toBe(lowerChild.id)
     h.follower.close()
   })
 
