@@ -161,6 +161,24 @@ returned plaintext gives `null`; signer cancellation/disconnection throws
 `RekeySignerError` with the original cause. The caller retains the selected
 winner and decides when to retry an operational failure.
 
+`EpochFollower` coordinates stored rekeys without owning a relay or durable
+state. Give it a `RelayTransport` for live hints, a `StoredEventQuery` whose
+result records actual EOSE and every source outcome, the current checkpoint,
+and lookups for epoch keys and persisted winner ids. `catchUp()` queries kind
+1462 from the pinned authority and root room id with no `since`; concurrent
+calls share one run. It selects the lowest-id fully validated rekey body for
+each parent, regardless of recipient copy, and only then calls `openSecret`.
+It awaits `onTransition` before advancing. A late lower-id fork emits
+`replace` with `invalidateFromEpoch`, then refetches descendants under the
+new parent. The caller must durably store the winner, retain historical parent
+keys and winner ids for epochs it wants to recheck, and invalidate losing
+descendants before resolving the callback. An initial epoch with no historical
+winner id is a trusted lower bound. `start()` subscribes to live hints;
+`close()` cancels this follower without closing a shared transport. A query
+without real EOSE, one with incomplete source outcomes, or one exceeding the
+bounded candidate set cannot cause a transition. This is key-chain recovery,
+not authority to edit or publish; applications still check their own records.
+
 `parseCircleMembership(unknown)` validates and copies a version-1 capability
 record with `roomId`, `authority`, `current: { epoch, secret }`, optional
 `invitation: { v, bearer, inviter }` and optional `authorityKey`. Secrets and

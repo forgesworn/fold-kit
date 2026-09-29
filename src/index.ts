@@ -197,5 +197,7 @@ export {
 export type { Lane } from './lane.js'
 export { decodeRekeyEnvelope, decodeRekeyEventWithSigner, RekeySignerError, MAX_REKEY_CONTENT_LENGTH } from './rekey-reader.js'
 export type { Nip44Decryptor, DecodeRekeyEnvelopeOptions, DecodeRekeyWithSignerOptions, RekeyEnvelope } from './rekey-reader.js'
+export { EpochFollower, MAX_FOLLOWER_CANDIDATES, MAX_FOLLOWER_BYTES } from './epoch-follower.js'
+export type { EpochFollowerOptions, EpochTransition } from './epoch-follower.js'
 export { parseCircleMembership, circleMembershipEpoch, circleAuthorityKey } from './membership.js'
 export type { CircleMembership } from './membership.js'

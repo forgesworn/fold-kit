@@ -73,6 +73,7 @@ const expectedMain = ${JSON.stringify([
       'deriveChannel', 'CHANNEL_ID_INFO', 'CHANNEL_KEY_INFO', 'MAX_CHANNEL_NAME_LENGTH', 'CHANNEL_LABELS',
       'deriveScoped', 'SCOPED_LABEL_PATTERN',
       'decodeRekeyEnvelope', 'decodeRekeyEventWithSigner', 'RekeySignerError', 'MAX_REKEY_CONTENT_LENGTH',
+      'EpochFollower', 'MAX_FOLLOWER_CANDIDATES', 'MAX_FOLLOWER_BYTES',
       'parseCircleMembership', 'circleMembershipEpoch', 'circleAuthorityKey',
       'createSubKeyCertificate', 'verifySubKeyCertificate', 'SUB_KEY_CERTIFICATE_SCOPE',
       'LANES', 'LANE_MEANING', 'LANE_LABEL', 'LANE_GLYPH', 'isLane', 'laneOfRelayUrl', 'laneOfRelays', 'weakestLane', 'isDowngrade',
@@ -111,13 +112,15 @@ console.log('tarball-smoke: all ' + expectedMain.length + ' main exports and ' +
   execFileSync('node', ['smoke.mjs'], { cwd: scratch, stdio: 'inherit' })
   writeFileSync(join(scratch, 'smoke.ts'), `
 import { encodeEpochInvitationLink, parseEpochInvitationLink, type EpochInvitation,
-  type StoredEventQuery, type JsonValue } from '@forgesworn/fold-kit'
+  type StoredEventQuery, type JsonValue, type EpochFollowerOptions } from '@forgesworn/fold-kit'
 const invitation: EpochInvitation = { v: 4, bearer: new Uint8Array(32), inviter: '0'.repeat(64) }
 const app: Record<string, JsonValue> = { nested: [true, 2, null] }
 const query: StoredEventQuery = async (_filters, _onEvent) => ({
   queried: ['one'], eosed: ['one'], unavailable: [],
 })
 void app; void query
+const followerOptions: EpochFollowerOptions | undefined = undefined
+void followerOptions
 parseEpochInvitationLink(encodeEpochInvitationLink('https://example.test/join', { invitation, relays: [] }))
 `)
   writeFileSync(join(scratch, 'tsconfig.json'), JSON.stringify({ compilerOptions: {

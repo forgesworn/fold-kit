@@ -20,9 +20,9 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
   process.exit(1)
 }
 
-// The additive v4 invitation/query API brings the index to 51.5 KB minified
-// / 15.0 KB gzip. Leave roughly 25% headroom while keeping the lane budget
-// fixed; the no-node-import and unbundled-peer checks still apply.
+// The additive v4 invitation/query and epoch follower APIs bring the index
+// to about 56 KB minified / 16.5 KB gzip. Keep the lane budget fixed; the
+// no-node-import and unbundled-peer checks still apply.
 const BUDGETS_KB = {
   index: { minified: 65, gzip: 19 },
   lane: { minified: 1.2, gzip: 0.7 },
