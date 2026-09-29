@@ -347,3 +347,11 @@ KithMoot has cut over to this kit (T2.1) and pins an exact npm version;
 its moved files are re-export shims. Any change here that alters behaviour
 KithMoot's vectors record (for example the #205 fix) lands in KithMoot in
 the same PR as the version bump.
+
+## Additive recovery readers
+
+`rekey-reader.ts` and `membership.ts` are new modules, not extracted bodies.
+They share the kit's existing event verification, NIP-44, room derivation and
+key primitives. The stricter recipient-independent reader is additive so the
+legacy synchronous decoder and every moved module remain byte-identical to
+the pinned source. No protocol label or existing vector changes in this slice.

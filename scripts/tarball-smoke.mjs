@@ -46,6 +46,7 @@ try {
     `
 import * as main from '@forgesworn/fold-kit'
 import * as lane from '@forgesworn/fold-kit/lane'
+import { getPublicKey } from 'nostr-tools/pure'
 
 const expectedMain = ${JSON.stringify([
       'hexEquals', 'normaliseHex', 'verifyEventUncached', 'boundedEventVerifier', 'localIdentity',
@@ -60,6 +61,9 @@ const expectedMain = ${JSON.stringify([
       'encodeInvitationRetirement', 'decodeInvitationRetirement', 'decodeInvitationRetirementNotice', 'retirementError',
       'hostRoomInvitation', 'requestRoomAdmissionCapability', 'requestRoomAdmission', 'INVITATION_LABELS',
       'encodePersistentInvitation', 'decodePersistentInvitation', 'requestPersistentRoomAdmission', 'PERSISTENT_INVITATION_LABELS',
+      'EPOCH_INVITATION_KEY_INFO', 'EPOCH_INVITATION_LABELS', 'MAX_EPOCH_INVITATION_APP_BYTES',
+      'encodeEpochInvitation', 'decodeEpochInvitation', 'prepareEpochInvitation', 'requestEpochAdmission',
+      'encodeEpochInvitationLink', 'parseEpochInvitationLink', 'assertCompleteStoredQuery',
       'MAX_ROOM_LINK_FRAGMENT_LENGTH', 'parseRoomLink', 'encodeRoomLink',
       'EPOCH_ID_INFO', 'EPOCH_KEY_INFO', 'MAX_EPOCH', 'EPOCH_REQUEST_KEY_INFO', 'generateEpochSecret', 'deriveEpoch',
       'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'deriveEpochRequestKey', 'epochRequestAdmission',
@@ -68,6 +72,9 @@ const expectedMain = ${JSON.stringify([
       'canonicalChannels', 'signChannels', 'verifyChannels', 'signAdmins', 'verifyAdmins', 'EPOCH_LABELS',
       'deriveChannel', 'CHANNEL_ID_INFO', 'CHANNEL_KEY_INFO', 'MAX_CHANNEL_NAME_LENGTH', 'CHANNEL_LABELS',
       'deriveScoped', 'SCOPED_LABEL_PATTERN',
+      'decodeRekeyEnvelope', 'decodeRekeyEventWithSigner', 'RekeySignerError', 'MAX_REKEY_CONTENT_LENGTH',
+      'EpochFollower', 'MAX_FOLLOWER_CANDIDATES', 'MAX_FOLLOWER_BYTES',
+      'parseCircleMembership', 'circleMembershipEpoch', 'circleAuthorityKey',
       'createSubKeyCertificate', 'verifySubKeyCertificate', 'SUB_KEY_CERTIFICATE_SCOPE',
       'LANES', 'LANE_MEANING', 'LANE_LABEL', 'LANE_GLYPH', 'isLane', 'laneOfRelayUrl', 'laneOfRelays', 'weakestLane', 'isDowngrade',
     ])}
@@ -85,6 +92,17 @@ if (missing.length > 0) {
 const room = main.deriveRoom(new Uint8Array(32).fill(7))
 if (!/^[0-9a-f]{64}$/.test(room.roomId)) throw new Error('deriveRoom did not return a hex room id')
 if (lane.laneOfRelayUrl('wss://relay.example') !== 'public') throw new Error('laneOfRelayUrl misbehaved')
+if (main.parseCircleMembership({}) !== null) throw new Error('membership parser accepted invalid record')
+if (main.decodeRekeyEnvelope({}, {}) !== null) throw new Error('rekey reader accepted invalid event')
+if (main.decodeEpochInvitation({}, {v:4,bearer:new Uint8Array(32),inviter:'0'.repeat(64)}) !== null) throw new Error('v4 decoder accepted invalid event')
+const authoritySk = new Uint8Array(32).fill(7)
+const token = {v:4,bearer:new Uint8Array(32).fill(8),inviter:getPublicKey(authoritySk)}
+const current = {epoch:0,secret:new Uint8Array(32).fill(9)}
+const rootId = main.deriveRoom(current.secret).roomId
+const welcome = main.encodeEpochInvitation({invitation:token,authoritySk,roomId:rootId,current,app:{purpose:'smoke'},now:1900000000})
+if (main.decodeEpochInvitation(welcome,token)?.roomId !== rootId) throw new Error('packed v4 welcome failed')
+const link = main.encodeEpochInvitationLink('https://example.test/join',{invitation:token,relays:['wss://relay.example']})
+if (main.parseEpochInvitationLink(link).invitation.inviter !== token.inviter) throw new Error('packed v4 link failed')
 const scoped = main.deriveScoped({ epoch: 0, id: room.roomId, key: room.roomKey }, 'smoke/v1/x')
 if (!/^[0-9a-f]{64}$/.test(scoped.id)) throw new Error('deriveScoped did not return a hex id')
 
@@ -92,6 +110,24 @@ console.log('tarball-smoke: all ' + expectedMain.length + ' main exports and ' +
 `,
   )
   execFileSync('node', ['smoke.mjs'], { cwd: scratch, stdio: 'inherit' })
+  writeFileSync(join(scratch, 'smoke.ts'), `
+import { encodeEpochInvitationLink, parseEpochInvitationLink, type EpochInvitation,
+  type StoredEventQuery, type JsonValue, type EpochFollowerOptions } from '@forgesworn/fold-kit'
+const invitation: EpochInvitation = { v: 4, bearer: new Uint8Array(32), inviter: '0'.repeat(64) }
+const app: Record<string, JsonValue> = { nested: [true, 2, null] }
+const query: StoredEventQuery = async (_filters, _onEvent) => ({
+  queried: ['one'], eosed: ['one'], unavailable: [],
+})
+void app; void query
+const followerOptions: EpochFollowerOptions | undefined = undefined
+void followerOptions
+parseEpochInvitationLink(encodeEpochInvitationLink('https://example.test/join', { invitation, relays: [] }))
+`)
+  writeFileSync(join(scratch, 'tsconfig.json'), JSON.stringify({ compilerOptions: {
+    target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true,
+    noEmit: true, skipLibCheck: false,
+  }, files: ['smoke.ts'] }))
+  execFileSync(join(root, 'node_modules/.bin/tsc'), ['-p', join(scratch, 'tsconfig.json')], { cwd: scratch, stdio: 'inherit' })
   console.log('tarball-smoke: ok')
 } finally {
   rmSync(scratch, { recursive: true, force: true })

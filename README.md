@@ -114,6 +114,18 @@ the rest).
   chain and retirement
 - `encodePersistentInvitation`, `decodePersistentInvitation`,
   `requestPersistentRoomAdmission` - the v3 stored group invitation (1463)
+- `encodeEpochInvitationLink`, `parseEpochInvitationLink` - a separate v4
+  link carrying a bearer, pinned authority and relay hints, never an epoch key
+- `encodeEpochInvitation`, `decodeEpochInvitation`,
+  `prepareEpochInvitation`, `requestEpochAdmission` - a v4 stored welcome for
+  the current epoch, a pure fresh-bearer rotation bundle, and admission after
+  one complete stored query. `JsonValue` app data is strict JSON and at most
+  256 UTF-8 bytes. A valid retirement wins regardless of result order;
+  conflicting valid welcomes refuse. Old v1/v2/v3 codecs remain unchanged.
+- `StoredEventQuery`, `StoredEventQueryResult`, `assertCompleteStoredQuery` -
+  injected query seam. `eosed` means actual relay EOSE, and every queried
+  source must appear in exactly one of `eosed` or `unavailable`; a local
+  deadline is not EOSE. The kit opens no relay connection for v4 admission.
 
 ### Epochs (removal by rekey)
 
@@ -129,6 +141,75 @@ the rest).
   admin list
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,
   `RESERVED_CHANNELS` - the authority's signed channel list
+
+### Signer recovery and saved membership
+
+`decodeRekeyEnvelope(event, { roomId, authority, current })` validates the
+complete v1 rekey body without opening any recipient copy. Use this result for
+fork selection: a missing recipient copy must not change the winning event.
+The additive reader bounds content before hashing and requires the exact two
+tags and body fields emitted by `encodeRekeyEvent`. The existing synchronous
+`decodeRekeyEvent` and all old wire bytes remain unchanged.
+
+`decodeRekeyEventWithSigner(event, { roomId, authority, current, signer })`
+accepts a `Nip44Decryptor`: `{ pubkey, nip44: { decrypt(peer, ciphertext) } }`.
+It opens only that signer's recipient copy, after local authentication. No
+private participant key, signing permission or epoch desk is required. Include
+the person's public key in the existing encoder's `recipients` when creating
+that copy. No copy returns a valid notice without `secret`; invalid event or
+returned plaintext gives `null`; signer cancellation/disconnection throws
+`RekeySignerError` with the original cause. The caller retains the selected
+winner and decides when to retry an operational failure.
+
+`EpochFollower` coordinates stored rekeys without owning a relay or durable
+state. Give it a `RelayTransport` for live hints, a `StoredEventQuery` whose
+result records actual EOSE and every source outcome, the current checkpoint,
+and lookups for epoch keys and persisted winner ids. `catchUp()` queries kind
+1462 from the pinned authority and root room id with no `since`; concurrent
+calls share one run. It selects the lowest-id fully validated rekey body for
+each parent, regardless of recipient copy, and only then calls `openSecret`.
+It awaits `onTransition` before advancing. A late lower-id fork emits
+`replace` with `invalidateFromEpoch`, then refetches descendants under the
+new parent. The caller must durably store the winner, retain historical parent
+keys and winner ids for epochs it wants to recheck, and invalidate losing
+descendants before resolving the callback. The initial checkpoint is a trusted
+lower bound when historical parent keys are absent, even if its winning rekey id
+is known. Available historical parents still enable fork checks; losing an
+already-inspected parent, or a parent needed by a newly adopted epoch, fails
+catch-up. `start()` retains bounded live candidates
+alongside stored-query results, including a valid event omitted by that query;
+the query still supplies the completion barrier. `close()` cancels this follower
+without closing a shared transport. A query
+without real EOSE, one with incomplete source outcomes, or one exceeding the
+bounded candidate set cannot cause a transition. This is key-chain recovery,
+not authority to edit or publish; applications still check their own records.
+
+Retention is limited to 256 candidates and 8 MiB per follower instance. Valid
+observed events remain retained after adoption so that a later parent fork cannot
+make the follower forget a still-valid descendant minimum. Consequently, reaching
+this lifetime retention limit can stop further progress even when later queries
+complete. The follower fails closed; repeated refetches do not discard authenticated
+history to make room. Long-running applications need durable exact-event archival
+and a recovery procedure that preserves all still-relevant fork evidence. Recreating
+a follower without that evidence is not a safe way to clear the limit.
+
+`parseCircleMembership(unknown)` validates and copies a version-1 capability
+record with `roomId`, `authority`, `current: { epoch, secret }`, optional
+`invitation: { v, bearer, inviter }` and optional `authorityKey`. Secrets and
+bearers use canonical unpadded base64url, exactly 32 bytes. A keeper key must
+be a valid private scalar matching `authority`; epoch zero must derive the
+root room id. `circleMembershipEpoch(record)` and `circleAuthorityKey(record)`
+return fresh byte arrays and reject invalid records.
+
+A later-epoch record needs only its current secret, not the epoch-zero secret.
+Parsing stored data proves neither remote authority nor current standing:
+applications bind it through verified admission/rekey provenance and keep
+creation metadata, winner ids and historical epochs separately. This module
+reads or writes no storage. Invitation version 4 is representable in the
+record; the separate v4 link and admission codecs above carry the current
+epoch secret only. Applications retain the exact welcome and retirement
+events before publishing them and validate their own `app` schema after
+authentication.
 
 ### Scoped labels and sub-key certificates (a consuming app's own keys)
 
@@ -193,6 +274,7 @@ npm run typecheck    # type-check src/ and test/ (matching KithMoot, vectors/ is
 npm run vectors      # run only the vector-verification suites
 npm run diff-source  # compare moved modules against the pinned source commit (needs FOLD_KIT_SOURCE_DIR)
 npm run generate-fold # regenerate vectors/fold-vectors.json (needs a prior build)
+npm run generate-v4 # regenerate the separate v4 invitation vector (needs a prior build)
 npm run bundle-check # esbuild browser bundle check (needs a prior build)
 npm run check        # typecheck + test + diff-source
 ```
