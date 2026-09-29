@@ -88,6 +88,28 @@ describe('EpochFollower', () => {
     expect(h.transitions.map((change) => change.event.id)).toEqual([event.id])
   })
 
+  it('does not let a forged copy of an authentic claimed id suppress the authentic event', async () => {
+    const first = epoch(1, 62); const second = epoch(1, 63)
+    const [lower, higher] = [rekey(root, first, 103), rekey(root, second, 104)]
+      .sort((x, y) => x.id.localeCompare(y.id))
+    const h = harness()
+    h.events.push({ ...lower, sig: '0'.repeat(128) }, higher, lower)
+    await h.follower.catchUp()
+    expect(h.transitions.map((change) => change.event.id)).toEqual([lower.id])
+  })
+
+  it('retains a valid live lower fork that the completed stored query omits', async () => {
+    const first = epoch(1, 64); const second = epoch(1, 65)
+    const [lower, higher] = [rekey(root, first, 105), rekey(root, second, 106)]
+      .sort((x, y) => x.id.localeCompare(y.id))
+    const h = harness(); h.events.push(higher)
+    h.follower.start()
+    h.live.emit(lower)
+    await h.follower.catchUp()
+    expect(h.transitions.map((change) => change.event.id)).toEqual([lower.id])
+    h.follower.close()
+  })
+
   it('holds the barrier until real EOSE and shares concurrent calls', async () => {
     const next = epoch(1, 70); const event = rekey(root, next, 110)
     const h = harness(); h.events.push(event); h.secrets.set(event.id, next)
@@ -217,6 +239,41 @@ describe('EpochFollower', () => {
     expect(h.transitions.map((change) => change.kind)).toEqual(['replace', 'advance'])
     expect(h.winners.get(1)).toBe(lower.id)
     expect(h.winners.get(2)).toBe(lowChild.id)
+  })
+
+  it('rechecks a lower live fork before advancing on the old branch after a durable callback', async () => {
+    const first = epoch(1, 127); const second = epoch(1, 128)
+    const [lower, higher] = [rekey(root, first, 160), rekey(root, second, 161)]
+      .sort((x, y) => x.id.localeCompare(y.id))
+    const highSecret = higher.created_at === 160 ? first : second
+    const highChild = rekey(highSecret, epoch(2, 129), 162)
+    const h = harness(); h.events.push(higher, highChild)
+    h.secrets.set(lower.id, lower.created_at === 160 ? first : second)
+    h.secrets.set(higher.id, highSecret)
+    h.secrets.set(highChild.id, epoch(2, 129))
+    let started!: () => void; let release!: () => void
+    const entered = new Promise<void>((resolve) => { started = resolve })
+    const hold = new Promise<void>((resolve) => { release = resolve })
+    h.setPersist(async (change) => {
+      h.transitions.push(change)
+      if (h.transitions.length === 1) { started(); await hold }
+      if (change.kind === 'replace') {
+        h.keys.delete(2); h.winners.delete(2)
+      }
+      h.winners.set(change.notice.epoch, change.event.id)
+      if (change.notice.secret) h.keys.set(change.notice.epoch,
+        deriveEpoch({ epoch: change.notice.epoch, secret: change.notice.secret }))
+    })
+    h.follower.start()
+    const pending = h.follower.catchUp()
+    await entered
+    h.live.emit(lower) // deliberately absent from every stored-query result
+    release()
+    await pending
+    expect(h.transitions.map((change) => [change.kind, change.notice.epoch])).toEqual([
+      ['advance', 1], ['replace', 1],
+    ])
+    h.follower.close()
   })
 
   it('refuses partial source outcomes and bounded overflow before any transition', async () => {

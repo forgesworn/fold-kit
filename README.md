@@ -173,8 +173,10 @@ It awaits `onTransition` before advancing. A late lower-id fork emits
 new parent. The caller must durably store the winner, retain historical parent
 keys and winner ids for epochs it wants to recheck, and invalidate losing
 descendants before resolving the callback. An initial epoch with no historical
-winner id is a trusted lower bound. `start()` subscribes to live hints;
-`close()` cancels this follower without closing a shared transport. A query
+winner id is a trusted lower bound. `start()` retains bounded live candidates
+alongside stored-query results, including a valid event omitted by that query;
+the query still supplies the completion barrier. `close()` cancels this follower
+without closing a shared transport. A query
 without real EOSE, one with incomplete source outcomes, or one exceeding the
 bounded candidate set cannot cause a transition. This is key-chain recovery,
 not authority to edit or publish; applications still check their own records.

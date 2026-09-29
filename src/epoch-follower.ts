@@ -15,7 +15,7 @@ export const MAX_FOLLOWER_BYTES = 8 * 1024 * 1024
 export interface EpochTransition {
   kind: 'advance' | 'replace'
   parentEpoch: number
-  /** Exact signed winner, copied from the stored-query result. */
+  /** Exact signed winner, copied from a live or stored delivery. */
   event: Event
   previousWinnerId?: string
   /** Missing recipient copy is a valid winner without a secret. */
@@ -64,6 +64,13 @@ function eventBytes(event: Event): number {
     event.tags.reduce((total, tag) => total + tag.reduce((n, field) => n + field.length, 0), 0)
 }
 
+function sameEvent(a: Event, b: Event): boolean {
+  return a.id === b.id && a.sig === b.sig && a.pubkey === b.pubkey &&
+    a.kind === b.kind && a.created_at === b.created_at && a.content === b.content &&
+    a.tags.length === b.tags.length && a.tags.every((tag, i) =>
+      tag.length === b.tags[i]!.length && tag.every((field, j) => field === b.tags[i]![j]))
+}
+
 /**
  * Selects lowest-id complete rekeys without owning storage, sockets or signing.
  * A trusted initial checkpoint is the lower bound when earlier keys/winner ids
@@ -82,6 +89,9 @@ export class EpochFollower {
   #abort?: AbortController
   #liveVersion = 0
   #attemptVersion = 0
+  #liveCandidates: Event[] = []
+  #liveBytes = 0
+  #liveOverflow = false
 
   constructor(options: EpochFollowerOptions) {
     if (!Number.isSafeInteger(options.initial.epoch) || options.initial.epoch < 0 ||
@@ -94,15 +104,23 @@ export class EpochFollower {
     this.#filters = [{ kinds: [KINDS.ROOM_REKEY], authors: [this.#opts.authority], '#d': [this.#opts.roomId] }]
   }
 
-  /** Subscribe to live hints; the stored query, not a transport EOSE, decides completeness. */
+  /** Subscribe to bounded live candidates; only a stored-query EOSE decides completeness. */
   start(): void {
     if (this.#closed) throw new Error('epoch follower is closed')
     if (this.#started) return
     this.#started = true
     this.#unsubscribe = this.#opts.transport.subscribe(this.#filters, (event) => {
       if (this.#closed || !plausible(event, this.#opts.roomId, this.#opts.authority)) return
+      // A live delivery is an observed candidate even when a later stored
+      // query omits it. Only exact duplicates can be suppressed before auth:
+      // a forged copy with the same claimed id must not hide authentic bytes.
+      if (this.#liveCandidates.some((candidate) => sameEvent(candidate, event))) return
+      const size = eventBytes(event)
+      if (this.#liveCandidates.length >= MAX_FOLLOWER_CANDIDATES ||
+          this.#liveBytes + size > MAX_FOLLOWER_BYTES) this.#liveOverflow = true
+      else { this.#liveCandidates.push(copyEvent(event)); this.#liveBytes += size }
       this.#liveVersion++
-      // A live event is a hint to refetch the complete stored fork set.
+      // The query supplies completion evidence and any competing stored forks.
       if (!this.#serial) this.#startBackgroundQuery()
     })
   }
@@ -147,26 +165,27 @@ export class EpochFollower {
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       const version = this.#liveVersion
       this.#attemptVersion = version
-      const events = new Map<string, Event>()
-      let bytes = 0
-      let overflow = false
+      const events = this.#liveCandidates.map(copyEvent)
+      let bytes = this.#liveBytes
+      let overflow = this.#liveOverflow
       let accepting = true
       const result = await this.#opts.query(this.#filters, (event) => {
         if (!accepting || overflow || this.#closed || signal.aborted ||
-            !plausible(event, this.#opts.roomId, this.#opts.authority) || events.has(event.id)) return
+            !plausible(event, this.#opts.roomId, this.#opts.authority) ||
+            events.some((candidate) => sameEvent(candidate, event))) return
         const size = eventBytes(event)
-        if (events.size >= MAX_FOLLOWER_CANDIDATES || bytes + size > MAX_FOLLOWER_BYTES) {
+        if (events.length >= MAX_FOLLOWER_CANDIDATES || bytes + size > MAX_FOLLOWER_BYTES) {
           overflow = true; return
         }
         bytes += size
-        events.set(event.id, copyEvent(event))
+        events.push(copyEvent(event))
       }, signal)
       accepting = false
       if (this.#closed || signal.aborted) throw new Error('epoch follower cancelled')
       assertCompleteStoredQuery(result)
       if (overflow) throw new Error('stored rekey result is incomplete: candidate bound exceeded')
       if (version !== this.#liveVersion) continue
-      const decision = await this.#choose([...events.values()], signal)
+      const decision = await this.#choose(events, signal)
       if (decision === 'refetch' || version !== this.#liveVersion) continue
       return result
     }
@@ -217,7 +236,7 @@ export class EpochFollower {
       this.#epoch = epoch
       for (const key of this.#winnerIds.keys()) if (key > epoch) this.#winnerIds.delete(key)
       this.#winnerIds.set(epoch, winner.event.id)
-      if (change.kind === 'replace') return 'refetch'
+      if (change.kind === 'replace' || version !== this.#liveVersion) return 'refetch'
     }
     return 'stable'
   }
