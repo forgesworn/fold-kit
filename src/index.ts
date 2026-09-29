@@ -10,6 +10,8 @@ export { KINDS } from './kinds.js'
 export type { DeviceCredential, AccessTier, AgentRule, RoomPolicy, KindredProof } from './types.js'
 
 export type { RelayTransport } from './transport.js'
+export { assertCompleteStoredQuery } from './stored-query.js'
+export type { StoredEventQuery, StoredEventQueryResult } from './stored-query.js'
 
 export {
   createDeviceCredential,
@@ -107,6 +109,18 @@ export {
   PERSISTENT_INVITATION_LABELS,
 } from './persistent-invitation.js'
 export type { PersistentRoomAdmission } from './persistent-invitation.js'
+
+export {
+  EPOCH_INVITATION_KEY_INFO,
+  EPOCH_INVITATION_LABELS,
+  MAX_EPOCH_INVITATION_APP_BYTES,
+  encodeEpochInvitation,
+  decodeEpochInvitation,
+  prepareEpochInvitation,
+  requestEpochAdmission,
+} from './epoch-invitation.js'
+export type { JsonValue, EpochInvitation, EpochAdmission } from './epoch-invitation.js'
+export { encodeEpochInvitationLink, parseEpochInvitationLink } from './epoch-link.js'
 
 export {
   MAX_ROOM_LINK_FRAGMENT_LENGTH,

@@ -66,6 +66,11 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `hostRoomInvitation(opts)` / `requestRoomAdmission(opts)` - the live desk, both sides
 - `encodePersistentInvitation(opts)` / `decodePersistentInvitation(event, invitation)` - v3 stored group invitation (kind 1463)
 - `requestPersistentRoomAdmission(opts)` - joins from stored admission alone, no live desk needed
+- `encodeEpochInvitationLink(base, value)` / `parseEpochInvitationLink(url)` - separate v4 bearer/authority link; old parseRoomLink refuses v4
+- `encodeEpochInvitation(opts)` / `decodeEpochInvitation(event, invitation)` - authority-signed, bearer-encrypted kind 1463 welcome for the current epoch only, optional strict app JSON <=256 UTF-8 bytes
+- `prepareEpochInvitation(opts)` - pure fresh-bearer welcome plus optional old-bearer retirement; persist exact signed events before publish
+- `requestEpochAdmission({invitation,query,signal?})` - one query for welcome and retirement; real EOSE and all source outcomes required; retirement wins; conflicting valid bodies refuse
+- `StoredEventQuery`, `StoredEventQueryResult`, `assertCompleteStoredQuery` - caller-supplied stored-query seam, no sockets or relay defaults
 
 ### Epochs (removal by rekey)
 

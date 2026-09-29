@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url'
 import { ACCESS_LABELS } from './access.js'
 import { CHANNEL_LABELS, CHANNEL_ID_INFO, CHANNEL_KEY_INFO } from './channel.js'
 import { EPOCH_LABELS, EPOCH_ID_INFO, EPOCH_KEY_INFO } from './epoch.js'
+import { EPOCH_INVITATION_LABELS } from './epoch-invitation.js'
 import { INVITATION_LABELS } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
 import { ROOM_LABELS } from './room.js'
@@ -63,6 +64,7 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v2/invitation-id',
   'kithmoot/v2/invitation-request-key',
   'kithmoot/v3/group-invitation-key',
+  'kithmoot/v4/group-invitation-key',
 ]
 
 describe('kithmoot/ wire-format labels', () => {
@@ -93,6 +95,7 @@ const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = 
   ['access.ts', ACCESS_LABELS],
   ['channel.ts', CHANNEL_LABELS],
   ['epoch.ts', EPOCH_LABELS],
+  ['epoch-invitation.ts', EPOCH_INVITATION_LABELS],
   ['invitation.ts', INVITATION_LABELS],
   ['persistent-invitation.ts', PERSISTENT_INVITATION_LABELS],
   ['room.ts', ROOM_LABELS],

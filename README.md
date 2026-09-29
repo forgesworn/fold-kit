@@ -114,6 +114,18 @@ the rest).
   chain and retirement
 - `encodePersistentInvitation`, `decodePersistentInvitation`,
   `requestPersistentRoomAdmission` - the v3 stored group invitation (1463)
+- `encodeEpochInvitationLink`, `parseEpochInvitationLink` - a separate v4
+  link carrying a bearer, pinned authority and relay hints, never an epoch key
+- `encodeEpochInvitation`, `decodeEpochInvitation`,
+  `prepareEpochInvitation`, `requestEpochAdmission` - a v4 stored welcome for
+  the current epoch, a pure fresh-bearer rotation bundle, and admission after
+  one complete stored query. `JsonValue` app data is strict JSON and at most
+  256 UTF-8 bytes. A valid retirement wins regardless of result order;
+  conflicting valid welcomes refuse. Old v1/v2/v3 codecs remain unchanged.
+- `StoredEventQuery`, `StoredEventQueryResult`, `assertCompleteStoredQuery` -
+  injected query seam. `eosed` means actual relay EOSE, and every queried
+  source must appear in exactly one of `eosed` or `unavailable`; a local
+  deadline is not EOSE. The kit opens no relay connection for v4 admission.
 
 ### Epochs (removal by rekey)
 
@@ -162,7 +174,10 @@ Parsing stored data proves neither remote authority nor current standing:
 applications bind it through verified admission/rekey provenance and keep
 creation metadata, winner ids and historical epochs separately. This module
 reads or writes no storage. Invitation version 4 is representable in the
-record, but its link and admission codecs are a separate follow-up.
+record; the separate v4 link and admission codecs above carry the current
+epoch secret only. Applications retain the exact welcome and retirement
+events before publishing them and validate their own `app` schema after
+authentication.
 
 ### Scoped labels and sub-key certificates (a consuming app's own keys)
 
@@ -227,6 +242,7 @@ npm run typecheck    # type-check src/ and test/ (matching KithMoot, vectors/ is
 npm run vectors      # run only the vector-verification suites
 npm run diff-source  # compare moved modules against the pinned source commit (needs FOLD_KIT_SOURCE_DIR)
 npm run generate-fold # regenerate vectors/fold-vectors.json (needs a prior build)
+npm run generate-v4 # regenerate the separate v4 invitation vector (needs a prior build)
 npm run bundle-check # esbuild browser bundle check (needs a prior build)
 npm run check        # typecheck + test + diff-source
 ```

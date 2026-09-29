@@ -20,12 +20,11 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
   process.exit(1)
 }
 
-// Budgets are about 25% headroom over what the current build measures
-// (index: 35.8 KB minified / 11.0 KB gzip; lane: 0.9 KB / 0.5 KB), tight
-// enough to catch an accidental dependency or a bundled peer, loose enough
-// not to fail on ordinary code growth.
+// The additive v4 invitation/query API brings the index to 51.5 KB minified
+// / 15.0 KB gzip. Leave roughly 25% headroom while keeping the lane budget
+// fixed; the no-node-import and unbundled-peer checks still apply.
 const BUDGETS_KB = {
-  index: { minified: 45, gzip: 14 },
+  index: { minified: 65, gzip: 19 },
   lane: { minified: 1.2, gzip: 0.7 },
 }
 
