@@ -238,6 +238,25 @@ const CONFERENCE_CHANGES = {
   ],
 }
 
+/**
+ * Room relays (0.4.0, see EXTRACTION.md "Room relays"): the room's own relays
+ * in the group invitation body, after `ends`. Declared the same way, but as
+ * 0.4.0 text -> 0.3.0 text, and applied before the conference changes, which
+ * then take the 0.3.0 text back to the pinned source as before.
+ */
+const ROOM_RELAY_CHANGES = {
+  "src/persistent-invitation.ts": [
+    ["\nimport { isInvitationRelays, requireInvitationRelays } from './invitation-relays.js'", "", 1],
+    ["\n  /** The room's own relays, as its inviter signed them: every member's pool\n   *  includes them. Absent from an invitation written before 0.4.0. */\n  relays?: string[]", "", 1],
+    ["\n  /** The room's own relays: one to eight distinct safe URLs in canonical\n   *  form (see `isInvitationRelays`), else it throws. Omitted, the body is\n   *  byte-identical to 0.3.0's. */\n  relays?: readonly string[]", "", 1],
+    ["\n  const relays = opts.relays === undefined ? undefined : requireInvitationRelays(opts.relays)", "", 1],
+    [" ...(ends === undefined ? {} : { ends }), ...(relays === undefined ? {} : { relays }),", " ...(ends === undefined ? {} : { ends }),", 1],
+    ["    // The room's relays, when the body names them, must be a list the encoder\n    // would write; a malformed one refuses the envelope rather than half of it.\n    if (body.relays !== undefined && !isInvitationRelays(body.relays)) return null\n    const admission: PersistentRoomAdmission = ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }\n    if (body.relays !== undefined) admission.relays = [...body.relays]\n    return admission", "    return ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }", 1],
+    ["\n    let relaysAt = -1", "", 1],
+    ["\n        // Two signed copies that disagree on the room's relays: the newest\n        // copy that names any stands. A copy naming none (an older writer)\n        // says nothing about them, and on equal timestamps the first heard stays.\n        if (decoded.relays !== undefined && event.created_at > relaysAt) relaysAt = event.created_at\n        else if (admission?.relays !== undefined) decoded.relays = admission.relays", "", 1],
+  ],
+}
+
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
   for (const [kit, source, count] of changes) {
@@ -253,15 +272,15 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   const sourceText = readAtCommit(kitPath)
   if (text !== sourceText) {
     failures += 1
-    console.error(`FAIL (whole file, minus declared conference changes): ${kitPath} differs from ${kitPath}@${sourceCommit} beyond the declared import rewrites and conference changes`)
+    console.error(`FAIL (whole file, minus declared changes): ${kitPath} differs from ${kitPath}@${sourceCommit} beyond the declared import rewrites and declared changes`)
     printFirstDiffLine(text, sourceText, kitPath)
   } else {
-    console.log(`ok   (whole file, minus ${changes.length} declared conference changes): ${kitPath} == ${kitPath}@${sourceCommit}`)
+    console.log(`ok   (whole file, minus ${changes.length} declared changes): ${kitPath} == ${kitPath}@${sourceCommit}`)
   }
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, CONFERENCE_CHANGES[`src/${f}`], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

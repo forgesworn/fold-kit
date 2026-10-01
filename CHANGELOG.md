@@ -5,6 +5,32 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- Room relays: the relays a room is created on, carried in its signed group
+  invitation so every member's pool includes them and two members can never
+  end up on disjoint relays. `encodePersistentInvitation` takes an optional
+  `relays`: one to eight distinct strings, each a safe relay URL
+  (`isSafeRelayUrl`) in canonical form (`normalizeURL` from
+  `nostr-tools/utils`, e.g. `wss://relay.example.com/`) with no
+  credentials, else it throws. The encrypted v3 body carries them after
+  `ends` (key order `v, room, secret, ends, relays`; the version stays 3).
+  `decodePersistentInvitation` returns `relays` (and
+  `PersistentRoomAdmission` gains it) and returns null for the whole
+  envelope when the list is malformed - never a trimmed list.
+  `requestPersistentRoomAdmission` keeps the relays of the newest signed
+  copy (by `created_at`) that names any; a copy naming none says nothing
+  about them, and between equal timestamps the first heard stays. Contrast
+  `endsAt`, where the earliest end wins.
+- `isInvitationRelays`, `requireInvitationRelays` and
+  `MAX_INVITATION_RELAYS` (8): the rule, for callers that build the list.
+
+With no `relays`, the body is byte-identical to 0.3.0's, and a 0.3.0
+reader ignores the key. `scripts/diff-source.mjs` declares each added line
+(see EXTRACTION.md "Room relays").
+
 ## 0.3.0
 
 ### Added

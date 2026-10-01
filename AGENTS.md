@@ -47,7 +47,9 @@ hand - it prints a notice and exits 0 rather than failing.
   anywhere - see EXTRACTION.md "Phase 3 additions"), and `expiration.ts`
   (new: the conference-room expiration rule - see EXTRACTION.md "Conference
   rooms", which also covers the declared additions it brought to
-  `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`).
+  `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`), and
+  `invitation-relays.ts` (new: the room-relay list rule - see EXTRACTION.md
+  "Room relays").
 - `test/sim-relay.ts` - an in-process relay simulator (`SimRelay`,
   `SimTransport`) used by the invitation, persistent-invitation and epoch
   test suites.

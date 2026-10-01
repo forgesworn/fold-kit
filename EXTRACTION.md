@@ -317,6 +317,17 @@ the only differences, and a drifted line fails the check rather than
 widening it. KithMoot's own copies of these modules are re-export shims
 since its cutover, so it picks this up on its next version bump.
 
+## Room relays: declared additions to `persistent-invitation.ts`
+
+0.4.0 adds the room's own relays to the group invitation body, after
+`ends`: the relays a room is created on, which every member's pool then
+includes. The rule (one to eight distinct, safe, canonical URLs) lives in a
+new module, `src/invitation-relays.ts`, which moved from nowhere. With no
+`relays` the body is byte-identical to 0.3.0's. `scripts/diff-source.mjs`
+declares each added line in `ROOM_RELAY_CHANGES` as 0.4.0 text against
+0.3.0 text, applied before `CONFERENCE_CHANGES`, so the whole-file
+comparison against the pinned commit still holds.
+
 ## Public repository naming
 
 This repository is public. It does not name the private downstream app that
