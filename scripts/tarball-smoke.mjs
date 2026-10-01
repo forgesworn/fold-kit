@@ -60,6 +60,7 @@ const expectedMain = ${JSON.stringify([
       'encodeInvitationRetirement', 'decodeInvitationRetirement', 'decodeInvitationRetirementNotice', 'retirementError',
       'hostRoomInvitation', 'requestRoomAdmissionCapability', 'requestRoomAdmission', 'INVITATION_LABELS',
       'encodePersistentInvitation', 'decodePersistentInvitation', 'requestPersistentRoomAdmission', 'PERSISTENT_INVITATION_LABELS',
+      'withExpiration', 'isRoomEnds', 'requireRoomEnds', 'MAX_ROOM_ENDS_SECONDS',
       'MAX_ROOM_LINK_FRAGMENT_LENGTH', 'parseRoomLink', 'encodeRoomLink',
       'EPOCH_ID_INFO', 'EPOCH_KEY_INFO', 'MAX_EPOCH', 'EPOCH_REQUEST_KEY_INFO', 'generateEpochSecret', 'deriveEpoch',
       'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'deriveEpochRequestKey', 'epochRequestAdmission',

@@ -5,6 +5,35 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- Conference rooms: a persistent group that ends on a fixed date.
+  `encodePersistentInvitation` takes an optional `endsAt` (unix seconds,
+  after `now` and no more than 30 days beyond it, else it throws). With it,
+  the encrypted v3 body carries `ends` (the version stays 3) and the kind
+  1463 event carries a NIP-40 `['expiration', String(endsAt)]` tag, so
+  relays drop the invitation when the room ends. `decodePersistentInvitation`
+  returns `endsAt` (and `PersistentRoomAdmission` gains it) when the body
+  has a positive whole-number `ends`; it returns null when an `expiration`
+  tag is present and does not equal the body's `ends`, when there are two
+  `expiration` tags, or when `ends` is malformed. `requestPersistentRoomAdmission`
+  keeps the earliest `endsAt` among the signed copies it hears.
+- `encodeInvitationRetirement` takes `endsAt`, tagging the kind 1461
+  tombstone with the same expiration.
+- `encodeRekeyEvent`, `encodeEpochRequest`, `encodeEpochGrant`,
+  `hostRoomEpoch` and `requestRoomEpoch` take `expiresAt`, so a conference
+  room's epoch events lapse with it.
+- `withExpiration(tags, expiresAt)`, `isRoomEnds`, `requireRoomEnds` and
+  `MAX_ROOM_ENDS_SECONDS`: the expiration rule every event signed for a
+  conference room follows - add the end if the event has no expiration,
+  keep an earlier one, lower a later one, never two.
+
+With no `endsAt`/`expiresAt`, every encoder produces exactly the bytes it
+did in 0.2.0. `scripts/diff-source.mjs` declares each added line (see
+EXTRACTION.md "Conference rooms").
+
 ## 0.2.0
 
 ### Added

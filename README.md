@@ -113,7 +113,16 @@ the rest).
   `requestRoomAdmission` - the v2 live rendezvous invitation, its delegation
   chain and retirement
 - `encodePersistentInvitation`, `decodePersistentInvitation`,
-  `requestPersistentRoomAdmission` - the v3 stored group invitation (1463)
+  `requestPersistentRoomAdmission` - the v3 stored group invitation (1463).
+  Pass `endsAt` (unix seconds, after `now` and at most 30 days on) for a
+  conference room: the encrypted body carries `ends` and the event a NIP-40
+  `expiration` tag, so relays drop it when the room ends; the decoder returns
+  `endsAt` and refuses a tag that disagrees with the body
+- `withExpiration`, `isRoomEnds`, `requireRoomEnds`, `MAX_ROOM_ENDS_SECONDS` -
+  the conference-room expiration rule: add the end as an `expiration` tag,
+  keep an earlier one, lower a later one. `encodeInvitationRetirement` takes
+  `endsAt`, and the epoch encoders, `hostRoomEpoch` and `requestRoomEpoch`
+  take `expiresAt`, to tag what they sign the same way
 
 ### Epochs (removal by rekey)
 

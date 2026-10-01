@@ -43,8 +43,11 @@ hand - it prints a notice and exits 0 rather than failing.
   from (see EXTRACTION.md), except `kinds.ts`, `types.ts` and `access.ts`
   (subsetted), `channel.ts` (one function extracted from KithMoot's
   `chat.ts`), `transport.ts` (new: this kit's own `RelayTransport`
-  interface), and `scoped.ts`/`sub-cert.ts` (new: T3.1/T3.3, not moved from
-  anywhere - see EXTRACTION.md "Phase 3 additions").
+  interface), `scoped.ts`/`sub-cert.ts` (new: T3.1/T3.3, not moved from
+  anywhere - see EXTRACTION.md "Phase 3 additions"), and `expiration.ts`
+  (new: the conference-room expiration rule - see EXTRACTION.md "Conference
+  rooms", which also covers the declared additions it brought to
+  `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`).
 - `test/sim-relay.ts` - an in-process relay simulator (`SimRelay`,
   `SimTransport`) used by the invitation, persistent-invitation and epoch
   test suites.

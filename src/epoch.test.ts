@@ -391,3 +391,47 @@ describe('the channel list', () => {
     }
   })
 })
+
+describe('a conference room\'s epoch events', () => {
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const deviceSk = generateSecretKey()
+  const device = getPublicKey(deviceSk)
+  const identity = localIdentity(generateSecretKey())
+  const ends = NOW + 86_400
+  const expiration = ['expiration', String(ends)]
+
+  it('a rekey, a request and a grant all carry the room\'s end, and still decode', async () => {
+    const current = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
+    const next = { epoch: 1, secret: generateEpochSecret() }
+    const rekey = encodeRekeyEvent({ roomId, authoritySk, current, next, recipients: [device], removed: [], now: NOW, expiresAt: ends })
+    expect(rekey.tags).toEqual([['d', roomId], ['epoch', '1'], expiration])
+    expect(decodeRekeyEvent(rekey, { roomId, authority, current, deviceSk })).toMatchObject({ epoch: 1, secret: next.secret })
+
+    const credential = await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now })
+    const request = encodeEpochRequest({ roomId, authority, deviceSk, roomKey, credential, now: NOW, expiresAt: ends })
+    expect(request.tags).toEqual([['d', roomId], ['p', authority], expiration])
+    expect(decodeEpochRequest(request, { roomId, authoritySk, roomKey, now: NOW })).not.toBeNull()
+
+    const grant = encodeEpochGrant({ roomId, authoritySk, device, request: request.id, now: NOW, refused: 'closed', expiresAt: ends })
+    expect(grant.tags).toEqual([['d', roomId], ['p', device], expiration])
+    expect(decodeEpochGrant(grant, { roomId, authority, deviceSk, request: request.id, now: NOW })).toEqual({ refused: 'closed' })
+  })
+
+  it('without an end, the tags are exactly what they were', () => {
+    const current = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
+    const rekey = encodeRekeyEvent({ roomId, authoritySk, current, next: { epoch: 1, secret: generateEpochSecret() }, recipients: [device], removed: [], now: NOW })
+    expect(rekey.tags).toEqual([['d', roomId], ['epoch', '1']])
+  })
+
+  it('the desk and the asker pass the end through to what they publish', async () => {
+    const relay = new SimRelay()
+    const epoch = { epoch: 2, secret: generateEpochSecret() }
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => epoch, removed: () => new Set(), now, expiresAt: ends })
+    const credential = await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now })
+    await requestRoomEpoch({ transport: new SimTransport(relay), roomId, authority, deviceSk, roomKey, credential, now, timeoutMs: 1_000, expiresAt: ends })
+    desk.close()
+    expect(relay.published.map((e) => e.kind).sort()).toEqual([KINDS.EPOCH_REQUEST, KINDS.EPOCH_GRANT].sort())
+    for (const event of relay.published) expect(event.tags).toContainEqual(expiration)
+  })
+})
