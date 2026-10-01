@@ -12,6 +12,7 @@ import { deriveRoom } from './room.js'
 import { verifyDeviceCredential } from './credential.js'
 import { evaluateAccess } from './access.js'
 import { verifyEventUncached } from './verify.js'
+import { withExpiration } from './expiration.js'
 import type { RelayTransport } from './transport.js'
 import type { DeviceCredential, KindredProof, RoomPolicy } from './types.js'
 
@@ -182,6 +183,9 @@ export interface EncodeRekeyOptions {
    *  says so rather than leaving everybody to wonder. */
   closed?: boolean
   now: number
+  /** A conference room's end, in unix seconds: the event carries it as a
+   *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
+  expiresAt?: number
 }
 
 /** Announce the next epoch. See the module comment for what this is. */
@@ -211,10 +215,10 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
     {
       kind: KINDS.ROOM_REKEY,
       created_at: opts.now,
-      tags: [
+      tags: withExpiration([
         ['d', roomId],
         ['epoch', String(epoch)],
-      ],
+      ], opts.expiresAt),
       content: nip44.v2.encrypt(JSON.stringify(body), opts.current.key),
     },
     opts.authoritySk,
@@ -387,6 +391,9 @@ export interface EncodeEpochRequestOptions {
   credential: DeviceCredential
   proof?: KindredProof
   now: number
+  /** A conference room's end, in unix seconds: the event carries it as a
+   *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
+  expiresAt?: number
 }
 
 /** Ask the authority which epoch the room is at, and for its secret. */
@@ -406,10 +413,10 @@ export function encodeEpochRequest(opts: EncodeEpochRequestOptions): Event {
     {
       kind: KINDS.EPOCH_REQUEST,
       created_at: opts.now,
-      tags: [
+      tags: withExpiration([
         ['d', roomId],
         ['p', authority],
-      ],
+      ], opts.expiresAt),
       content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(opts.deviceSk, authority)),
     },
     opts.deviceSk,
@@ -502,6 +509,9 @@ export interface EncodeEpochGrantOptions {
   epoch?: RoomEpoch
   removed?: string[]
   refused?: EpochRefusal
+  /** A conference room's end, in unix seconds: the event carries it as a
+   *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
+  expiresAt?: number
 }
 
 /** Answer one request: the current epoch sealed to the asking device, or a
@@ -527,10 +537,10 @@ export function encodeEpochGrant(opts: EncodeEpochGrantOptions): Event {
     {
       kind: KINDS.EPOCH_GRANT,
       created_at: opts.now,
-      tags: [
+      tags: withExpiration([
         ['d', roomId],
         ['p', device],
-      ],
+      ], opts.expiresAt),
       content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(opts.authoritySk, device)),
     },
     opts.authoritySk,
@@ -599,6 +609,8 @@ export interface HostRoomEpochOptions {
   now?: () => number
   onGranted?: (request: EpochRequest) => void
   onRefused?: (request: EpochRequest, why: EpochRefusal) => void
+  /** A conference room's end: every grant carries it as an expiration. */
+  expiresAt?: number
 }
 
 /**
@@ -640,7 +652,7 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
       let grant: Event
       try {
         grant = refused
-          ? encodeEpochGrant({ roomId, authoritySk: opts.authoritySk, device: request.device, request: request.request, now: now(), refused })
+          ? encodeEpochGrant({ roomId, authoritySk: opts.authoritySk, device: request.device, request: request.request, now: now(), refused, expiresAt: opts.expiresAt })
           : encodeEpochGrant({
               roomId,
               authoritySk: opts.authoritySk,
@@ -649,6 +661,7 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
               now: now(),
               epoch: opts.current(),
               removed: [...opts.removed()],
+              expiresAt: opts.expiresAt,
             })
       } catch {
         return
@@ -679,6 +692,8 @@ export interface RequestRoomEpochOptions {
   now?: () => number
   timeoutMs?: number
   retryMs?: number
+  /** A conference room's end: the request carries it as an expiration. */
+  expiresAt?: number
 }
 
 /** Thrown when the authority answered, and the answer was no. */
@@ -706,6 +721,7 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
     credential: opts.credential,
     proof: opts.proof,
     now: now(),
+    expiresAt: opts.expiresAt,
   })
   return new Promise((resolve, reject) => {
     let settled = false

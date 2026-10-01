@@ -9,6 +9,7 @@ import { hexEquals, normaliseHex } from './hex.js'
 import { KINDS } from './kinds.js'
 import type { RelayTransport } from './transport.js'
 import { verifyEventUncached } from './verify.js'
+import { withExpiration } from './expiration.js'
 import { deriveRoom } from './room.js'
 
 const INVITATION_ID_INFO = 'kithmoot/v2/invitation-id'
@@ -466,6 +467,9 @@ export interface EncodeInvitationRetirementOptions {
   /** The room itself was ended, not just this link replaced. Additive: a
    * reader that predates it still sees an ordinary retirement. */
   ended?: boolean
+  /** A conference room's end, in unix seconds: the tombstone carries the
+   * same NIP-40 expiration as the invitation it retires, and lapses with it. */
+  endsAt?: number
 }
 
 /** What a joiner is told when a link was retired because its room ended. */
@@ -481,7 +485,7 @@ export function encodeInvitationRetirement(opts: EncodeInvitationRetirementOptio
     {
       kind: KINDS.INVITATION_RETIREMENT,
       created_at: opts.now,
-      tags: [['d', deriveInvitationId(opts.invitation)]],
+      tags: withExpiration([['d', deriveInvitationId(opts.invitation)]], opts.endsAt),
       content: JSON.stringify(opts.ended ? { v: 1, ended: true } : { v: 1 }),
     },
     opts.inviterSk,

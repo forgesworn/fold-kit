@@ -7,6 +7,7 @@ import { decodeInvitationRetirementNotice, deriveInvitationId, retirementError, 
 import { KINDS } from './kinds.js'
 import { deriveRoom } from './room.js'
 import { verifyEventUncached } from './verify.js'
+import { isRoomEnds, requireRoomEnds } from './expiration.js'
 import type { RelayTransport } from './transport.js'
 
 /** Durable membership is distinct from temporary permission to admit others.
@@ -15,6 +16,9 @@ export interface PersistentRoomAdmission {
   secret: Uint8Array
   persistent: true
   epoch: 0
+  /** When the room ends, in unix seconds: a conference room. Absent for a
+   *  group that runs until somebody ends it. */
+  endsAt?: number
 }
 
 function welcomeKey(invitation: RoomInvitation): Uint8Array {
@@ -31,15 +35,20 @@ export function encodePersistentInvitation(opts: {
   inviterSk: Uint8Array
   roomSecret: Uint8Array
   now: number
+  /** A conference room's end, in unix seconds: after `now` and no more than
+   *  30 days beyond it. Carried in the body and as a NIP-40 expiration, so
+   *  relays drop the invitation when the room ends. */
+  endsAt?: number
 }): Event {
   if (getPublicKey(opts.inviterSk) !== opts.invitation.inviter) throw new Error('only the inviter can publish a group invitation')
   const room = deriveRoom(opts.roomSecret).roomId
+  const ends = opts.endsAt === undefined ? undefined : requireRoomEnds(opts.endsAt, opts.now)
   return finalizeEvent({
     kind: KINDS.GROUP_INVITATION,
     created_at: opts.now,
-    tags: [['d', deriveInvitationId(opts.invitation)]],
+    tags: ends === undefined ? [['d', deriveInvitationId(opts.invitation)]] : [['d', deriveInvitationId(opts.invitation)], ['expiration', String(ends)]],
     content: nip44.v2.encrypt(JSON.stringify({
-      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret),
+      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }),
     }), welcomeKey(opts.invitation)),
   }, opts.inviterSk)
 }
@@ -54,7 +63,14 @@ export function decodePersistentInvitation(event: Event, invitation: RoomInvitat
     if (body.v !== 3 || typeof body.secret !== 'string') return null
     const secret = base64urlnopad.decode(body.secret)
     if (deriveRoom(secret).roomId !== body.room) return null
-    return { secret, persistent: true, epoch: 0 }
+    // A conference room's end rides in the body and, for relays, as a NIP-40
+    // expiration. The two must agree: a tag with no body end, a second tag,
+    // or an end that is not a whole number of seconds is refused outright.
+    const ends = body.ends === undefined ? undefined : isRoomEnds(body.ends) ? body.ends : null
+    const expirations = event.tags.filter(t => t[0] === 'expiration')
+    if (ends === null || expirations.length > 1) return null
+    if (expirations.length === 1 && (ends === undefined || expirations[0][1] !== String(ends))) return null
+    return ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }
   } catch { return null }
 }
 
@@ -99,6 +115,9 @@ export function requestPersistentRoomAdmission(opts: {
           finish(new Error('the group invitation names conflicting rooms'))
           return
         }
+        // Two signed copies that disagree on when the room ends: the earlier
+        // end stands, so a stale copy can never keep a room open longer.
+        if (admission?.endsAt !== undefined && (decoded.endsAt === undefined || decoded.endsAt > admission.endsAt)) decoded.endsAt = admission.endsAt
         admission = decoded
       }, () => {
         if (admission) finish()

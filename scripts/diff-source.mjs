@@ -196,8 +196,72 @@ for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints
     }
   }
 }
+/**
+ * Conference rooms (0.3.0, see EXTRACTION.md "Conference rooms"): a room
+ * with a fixed end, carried as a NIP-40 expiration on its group invitation,
+ * its retirement and its epoch events. That adds an optional `endsAt` /
+ * `expiresAt` to `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`
+ * and nothing else: with it absent every event is byte-identical to before.
+ *
+ * Each declared change is `[kit text, pinned source text, count]`: the kit
+ * text must occur exactly `count` times, and is put back to the source text
+ * before the usual whole-file comparison. A change that drifts from what is
+ * declared here stops matching its count and fails loudly, so nothing else
+ * can hide behind it.
+ */
+const CONFERENCE_CHANGES = {
+  "src/epoch.ts": [
+    ["\nimport { withExpiration } from './expiration.js'", "", 1],
+    ["\n  /** A conference room's end, in unix seconds: the event carries it as a\n   *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */\n  expiresAt?: number", "", 3],
+    ["tags: withExpiration([", "tags: [", 3],
+    ["], opts.expiresAt),", "],", 3],
+    ["\n  /** A conference room's end: every grant carries it as an expiration. */\n  expiresAt?: number", "", 1],
+    [", refused, expiresAt: opts.expiresAt })", ", refused })", 1],
+    ["\n              expiresAt: opts.expiresAt,", "", 1],
+    ["\n  /** A conference room's end: the request carries it as an expiration. */\n  expiresAt?: number", "", 1],
+    ["\n    expiresAt: opts.expiresAt,", "", 1],
+  ],
+  "src/invitation.ts": [
+    ["\nimport { withExpiration } from './expiration.js'", "", 1],
+    ["\n  /** A conference room's end, in unix seconds: the tombstone carries the\n   * same NIP-40 expiration as the invitation it retires, and lapses with it. */\n  endsAt?: number", "", 1],
+    ["tags: withExpiration([['d', deriveInvitationId(opts.invitation)]], opts.endsAt),", "tags: [['d', deriveInvitationId(opts.invitation)]],", 1],
+  ],
+  "src/persistent-invitation.ts": [
+    ["\nimport { isRoomEnds, requireRoomEnds } from './expiration.js'", "", 1],
+    ["\n  /** When the room ends, in unix seconds: a conference room. Absent for a\n   *  group that runs until somebody ends it. */\n  endsAt?: number", "", 1],
+    ["\n  /** A conference room's end, in unix seconds: after `now` and no more than\n   *  30 days beyond it. Carried in the body and as a NIP-40 expiration, so\n   *  relays drop the invitation when the room ends. */\n  endsAt?: number", "", 1],
+    ["\n  const ends = opts.endsAt === undefined ? undefined : requireRoomEnds(opts.endsAt, opts.now)", "", 1],
+    ["tags: ends === undefined ? [['d', deriveInvitationId(opts.invitation)]] : [['d', deriveInvitationId(opts.invitation)], ['expiration', String(ends)]],", "tags: [['d', deriveInvitationId(opts.invitation)]],", 1],
+    ["secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }),", "secret: base64urlnopad.encode(opts.roomSecret),", 1],
+    ["    // A conference room's end rides in the body and, for relays, as a NIP-40\n    // expiration. The two must agree: a tag with no body end, a second tag,\n    // or an end that is not a whole number of seconds is refused outright.\n    const ends = body.ends === undefined ? undefined : isRoomEnds(body.ends) ? body.ends : null\n    const expirations = event.tags.filter(t => t[0] === 'expiration')\n    if (ends === null || expirations.length > 1) return null\n    if (expirations.length === 1 && (ends === undefined || expirations[0][1] !== String(ends))) return null\n    return ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }", "    return { secret, persistent: true, epoch: 0 }", 1],
+    ["\n        // Two signed copies that disagree on when the room ends: the earlier\n        // end stands, so a stale copy can never keep a room open longer.\n        if (admission?.endsAt !== undefined && (decoded.endsAt === undefined || decoded.endsAt > admission.endsAt)) decoded.endsAt = admission.endsAt", "", 1],
+  ],
+}
+
+function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
+  let text = readKit(kitPath)
+  for (const [kit, source, count] of changes) {
+    const found = text.split(kit).length - 1
+    if (found !== count) {
+      failures += 1
+      console.error(`FAIL (declared change): ${kitPath} carries ${found} (not ${count}) of ${JSON.stringify(kit.trim().split('\n')[0].slice(0, 60))}... - update diff-source.mjs or restore it`)
+      return
+    }
+    text = text.split(kit).join(source)
+  }
+  for (const [from, to] of importRewrites) text = text.split(from).join(to)
+  const sourceText = readAtCommit(kitPath)
+  if (text !== sourceText) {
+    failures += 1
+    console.error(`FAIL (whole file, minus declared conference changes): ${kitPath} differs from ${kitPath}@${sourceCommit} beyond the declared import rewrites and conference changes`)
+    printFirstDiffLine(text, sourceText, kitPath)
+  } else {
+    console.log(`ok   (whole file, minus ${changes.length} declared conference changes): ${kitPath} == ${kitPath}@${sourceCommit}`)
+  }
+}
+
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFile(`src/${f}`, `src/${f}`, [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, CONFERENCE_CHANGES[`src/${f}`], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

@@ -108,6 +108,8 @@ export {
 } from './persistent-invitation.js'
 export type { PersistentRoomAdmission } from './persistent-invitation.js'
 
+export { withExpiration, isRoomEnds, requireRoomEnds, MAX_ROOM_ENDS_SECONDS } from './expiration.js'
+
 export {
   MAX_ROOM_LINK_FRAGMENT_LENGTH,
   parseRoomLink,

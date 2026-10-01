@@ -297,6 +297,26 @@ bug, unfixed; `CHANGELOG.md` says what has to change there (`M15` in its
 `vectors/verify-circle.test.ts` and `vectors/generate-circle.mjs`) in a
 paired PR.
 
+## Conference rooms: declared additions to three moved modules
+
+0.3.0 adds conference rooms - a persistent group with a fixed end, carried
+as a NIP-40 expiration - to `invitation.ts` (retirement `endsAt`),
+`persistent-invitation.ts` (invitation `endsAt`, body `ends`, the decoder's
+tag/body agreement check, earliest end wins in
+`requestPersistentRoomAdmission`) and `epoch.ts` (`expiresAt` on the rekey,
+request and grant encoders and both desk functions). The rule itself lives
+in a new module, `src/expiration.ts`, which moved from nowhere.
+
+Each addition is optional and additive: with it absent, every event these
+modules sign is byte-identical to before, and every existing vector still
+verifies. `scripts/diff-source.mjs` lists each added or altered line in
+`CONFERENCE_CHANGES` as `[kit text, pinned source text, count]`, checks
+each occurs exactly `count` times, puts the source text back, and then
+compares the whole file against the pinned commit as before - so these are
+the only differences, and a drifted line fails the check rather than
+widening it. KithMoot's own copies of these modules are re-export shims
+since its cutover, so it picks this up on its next version bump.
+
 ## Public repository naming
 
 This repository is public. It does not name the private downstream app that
