@@ -109,6 +109,7 @@ export {
 export type { PersistentRoomAdmission } from './persistent-invitation.js'
 
 export { withExpiration, isRoomEnds, requireRoomEnds, MAX_ROOM_ENDS_SECONDS } from './expiration.js'
+export { isInvitationRelays, requireInvitationRelays, MAX_INVITATION_RELAYS } from './invitation-relays.js'
 
 export {
   MAX_ROOM_LINK_FRAGMENT_LENGTH,

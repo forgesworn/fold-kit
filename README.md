@@ -118,6 +118,14 @@ the rest).
   conference room: the encrypted body carries `ends` and the event a NIP-40
   `expiration` tag, so relays drop it when the room ends; the decoder returns
   `endsAt` and refuses a tag that disagrees with the body
+- Room relays: pass `relays` (one to eight distinct safe relay URLs in
+  canonical `normalizeURL` form, e.g. `wss://relay.example.com/`) and the
+  encrypted body carries them after `ends`. Every member's pool includes
+  them, so members never land on disjoint relays. The decoder returns
+  `relays` and refuses the whole envelope on a malformed list;
+  `requestPersistentRoomAdmission` keeps the relays of the newest signed
+  copy that names any. `isInvitationRelays`, `requireInvitationRelays` and
+  `MAX_INVITATION_RELAYS` are the rule
 - `withExpiration`, `isRoomEnds`, `requireRoomEnds`, `MAX_ROOM_ENDS_SECONDS` -
   the conference-room expiration rule: add the end as an `expiration` tag,
   keep an earlier one, lower a later one. `encodeInvitationRetirement` takes

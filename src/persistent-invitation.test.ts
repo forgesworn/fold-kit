@@ -186,6 +186,116 @@ describe('persistent group invitations', () => {
     expect(encodeInvitationRetirement({ ...host, now: NOW }).tags).toEqual([['d', deriveInvitationId(host.invitation)]])
   })
 
+  describe('room relays', () => {
+    const RELAYS = ['wss://relay.example.com/', 'wss://relay.example.org/nostr', 'ws://localhost:7777/']
+    /** Seal any body under the welcome key, as a writer the encoder would refuse. */
+    function sealed(host: ReturnType<typeof createRoomInvitation>, roomSecret: Uint8Array, extra: Record<string, unknown>, now = NOW) {
+      return finalizeEvent({
+        kind: KINDS.GROUP_INVITATION,
+        created_at: now,
+        tags: [['d', deriveInvitationId(host.invitation)]],
+        content: nip44.v2.encrypt(JSON.stringify({ v: 3, room: deriveRoom(roomSecret).roomId, secret: base64urlnopad.encode(roomSecret), ...extra }), welcome(host.invitation.bearer)),
+      }, host.inviterSk)
+    }
+
+    it('round trips the room relays, in order, through the signed invitation', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const event = encodePersistentInvitation({ ...host, roomSecret, now: NOW, relays: RELAYS })
+      expect(event.tags).toEqual([['d', deriveInvitationId(host.invitation)]])
+      expect(decodePersistentInvitation(event, host.invitation)).toEqual({ secret: roomSecret, persistent: true, epoch: 0, relays: RELAYS })
+      await expect(requestPersistentRoomAdmission({ transport: replay([event]), invitation: host.invitation }))
+        .resolves.toEqual({ secret: roomSecret, persistent: true, epoch: 0, relays: RELAYS })
+    })
+
+    it('writes the body keys in the order v, room, secret, ends, relays', () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const both = encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 3_600, relays: RELAYS })
+      expect(Object.keys(JSON.parse(nip44.v2.decrypt(both.content, welcome(host.invitation.bearer))))).toEqual(['v', 'room', 'secret', 'ends', 'relays'])
+      const relaysOnly = encodePersistentInvitation({ ...host, roomSecret, now: NOW, relays: RELAYS })
+      expect(Object.keys(JSON.parse(nip44.v2.decrypt(relaysOnly.content, welcome(host.invitation.bearer))))).toEqual(['v', 'room', 'secret', 'relays'])
+      expect(decodePersistentInvitation(both, host.invitation)).toEqual({ secret: roomSecret, persistent: true, epoch: 0, endsAt: NOW + 3_600, relays: RELAYS })
+    })
+
+    it('with no relays, the plaintext is byte for byte what 0.3.0 wrote', () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const room = deriveRoom(roomSecret).roomId
+      const secret = base64urlnopad.encode(roomSecret)
+      const plain = (event: Event) => nip44.v2.decrypt(event.content, welcome(host.invitation.bearer))
+      expect(plain(encodePersistentInvitation({ ...host, roomSecret, now: NOW }))).toBe(`{"v":3,"room":"${room}","secret":"${secret}"}`)
+      expect(plain(encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 60 })))
+        .toBe(`{"v":3,"room":"${room}","secret":"${secret}","ends":${NOW + 60}}`)
+      expect(decodePersistentInvitation(encodePersistentInvitation({ ...host, roomSecret, now: NOW }), host.invitation)).not.toHaveProperty('relays')
+    })
+
+    it.each<[string, unknown]>([
+      ['empty', []],
+      ['more than eight', Array.from({ length: 9 }, (_, i) => `wss://relay${i}.example.com/`)],
+      ['repeated', ['wss://relay.example.com/', 'wss://relay.example.com/']],
+      ['not a string', ['wss://relay.example.com/', 7]],
+      ['plain ws off loopback', ['ws://relay.example.com/']],
+      ['an https URL', ['https://relay.example.com/']],
+      ['not canonical: no trailing slash', ['wss://relay.example.com']],
+      ['not canonical: upper case', ['wss://Relay.Example.com/']],
+      ['not canonical: default port', ['wss://relay.example.com:443/']],
+      ['not canonical: trailing path slash', ['wss://relay.example.com/nostr/']],
+      ['credentials', ['wss://user:pw@relay.example.com/']],
+      ['a fragment', ['wss://relay.example.com/#x']],
+      ['not a list', 'wss://relay.example.com/'],
+      ['null', null],
+    ])('refuses the whole envelope when the relays are %s', (_label, relays) => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      expect(decodePersistentInvitation(sealed(host, roomSecret, { relays }), host.invitation)).toBeNull()
+      if (Array.isArray(relays)) expect(() => encodePersistentInvitation({ ...host, roomSecret, now: NOW, relays: relays as string[] })).toThrow(/relay/)
+    })
+
+    it('accepts exactly eight relays', () => {
+      const host = createRoomInvitation(true)
+      const relays = Array.from({ length: 8 }, (_, i) => `wss://relay${i}.example.com/`)
+      const event = encodePersistentInvitation({ ...host, roomSecret: generateRoomSecret(), now: NOW, relays })
+      expect(decodePersistentInvitation(event, host.invitation)?.relays).toEqual(relays)
+    })
+
+    it('a reader that knows nothing of a newer key still decodes the invitation', () => {
+      // What makes the field safe for a 0.3.0 reader: an unknown key is ignored.
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      expect(decodePersistentInvitation(sealed(host, roomSecret, { relays: RELAYS, later: { anything: true } }), host.invitation))
+        .toEqual({ secret: roomSecret, persistent: true, epoch: 0, relays: RELAYS })
+    })
+
+    it('two signed copies that disagree on the relays admit with the newest that names any', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const older = encodePersistentInvitation({ ...host, roomSecret, now: NOW, relays: ['wss://old.example.com/'] })
+      const newer = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 10, relays: ['wss://new.example.com/'] })
+      const silent = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 20 })
+      for (const order of [[older, newer, silent], [silent, newer, older], [newer, silent, older], [older, silent, newer]]) {
+        await expect(requestPersistentRoomAdmission({ transport: replay(order), invitation: host.invitation }))
+          .resolves.toHaveProperty('relays', ['wss://new.example.com/'])
+      }
+      await expect(requestPersistentRoomAdmission({ transport: replay([silent]), invitation: host.invitation })).resolves.not.toHaveProperty('relays')
+      // Equal timestamps: the first copy heard stands.
+      const twin = encodePersistentInvitation({ ...host, roomSecret, now: NOW, relays: ['wss://twin.example.com/'] })
+      await expect(requestPersistentRoomAdmission({ transport: replay([older, twin]), invitation: host.invitation }))
+        .resolves.toHaveProperty('relays', ['wss://old.example.com/'])
+    })
+
+    it('the relays and the end merge independently: newest relays, earliest end', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const early = encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 3_600, relays: ['wss://old.example.com/'] })
+      const late = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 10, endsAt: NOW + 7_200, relays: ['wss://new.example.com/'] })
+      for (const order of [[early, late], [late, early]]) {
+        await expect(requestPersistentRoomAdmission({ transport: replay(order), invitation: host.invitation }))
+          .resolves.toEqual({ secret: roomSecret, persistent: true, epoch: 0, endsAt: NOW + 3_600, relays: ['wss://new.example.com/'] })
+      }
+    })
+  })
+
   // The upstream kithmoot suite also has a test here that joins via
   // `RoomAgent.join` (`app`-level agent runtime) to prove an agent can send
   // chat from stored admission alone. `RoomAgent` is not part of the kit's
