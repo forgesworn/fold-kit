@@ -142,6 +142,18 @@ the rest).
   catch-up for a device that missed a rekey
 - `hostRoomEpoch`, `requestRoomEpoch`, `EpochRefusedError` - the live
   request/grant desk
+- Member epoch catch-up (`docs/member-epoch-catch-up.md`): any current
+  member can bring an admitted, non-removed device up to date when the
+  authority is offline, and the device checks the answer against the
+  authority's own signatures rather than trusting the member.
+  `encodeRekeyEvent({ commit: true })` writes the epoch commitment
+  (`epochCommitment`) into the rekey body; `hostMemberEpochDesk` answers
+  member requests (kinds 20471/20472, `MEMBER_EPOCH_KINDS`);
+  `requestRoomEpoch({ members: memberEpochSource(...) })` asks members as
+  well as the authority, and `requestMemberEpoch` asks members alone. Codecs:
+  `encodeMemberEpochRequest`, `decodeMemberEpochRequest`,
+  `encodeMemberEpochGrant`, `decodeMemberEpochGrant`, `readRekeyEvidence`,
+  `deriveMemberEpochRequestKey`. Vectors: `vectors/member-epoch-vectors.json`
 - `canonicalAdmins`, `signAdmins`, `verifyAdmins` - the authority's signed
   admin list
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,
