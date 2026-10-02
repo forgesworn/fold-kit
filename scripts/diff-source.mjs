@@ -257,6 +257,29 @@ const ROOM_RELAY_CHANGES = {
   ],
 }
 
+/**
+ * Member epoch catch-up (unreleased, see EXTRACTION.md "Member epoch
+ * catch-up" and docs/member-epoch-catch-up.md): an optional `commit` on the
+ * rekey encoder, written into the body only when asked, and an optional
+ * `members` source on `requestRoomEpoch`. With both absent every event is
+ * byte-identical to 0.4.0's and the function behaves as before. Declared as
+ * new text -> 0.4.0 text and applied first, before the conference changes
+ * take the 0.4.0 text back to the pinned source.
+ */
+const MEMBER_EPOCH_CHANGES = {
+  "src/epoch.ts": [
+    ["\nimport { epochCommitment } from './epoch-commit.js'", "", 1],
+    ["\nimport type { MemberEpochSource } from './member-epoch.js'", "", 1],
+    ["\n  /** `epochCommitment(roomId, epoch, secret)`: lets a member hand this epoch\n   *  on and the requester check it. Absent from a rekey written without it. */\n  commit?: string", "", 1],
+    ["\n  /** Write the epoch commitment into the body, so any current member can\n   *  bring a device that missed this rekey up to date (see\n   *  `member-epoch.ts`). Omitted, the event is byte-identical to before. */\n  commit?: boolean", "", 1],
+    ["\n    ...(opts.commit ? { commit: epochCommitment(roomId, epoch, opts.next.secret) } : {}),", "", 1],
+    ["\n  /** Ask the room's current members too (`memberEpochSource`): the first\n   *  answer that checks out, the authority's or a member's, settles it. */\n  members?: MemberEpochSource", "", 1],
+    ["\n    let stopMembers = () => {}", "", 1],
+    ["\n      stopMembers()\n      settle()", "\n      settle()", 1],
+    ["\n    if (opts.members && !settled) {\n      stopMembers = opts.members.start((grant) => finish(() => resolve(grant)))\n      if (settled) stopMembers()\n    }", "", 1],
+  ],
+}
+
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
   for (const [kit, source, count] of changes) {
@@ -280,7 +303,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 
