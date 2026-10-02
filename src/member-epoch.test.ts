@@ -139,7 +139,6 @@ describe('member epoch grants: what the requester accepts', () => {
     const epochs = chain.epochs.slice(from + 1)
     return encodeMemberEpochGrant({
       roomId,
-      deviceSk: memberDeviceSk,
       device: requesterDevice,
       request: requestId,
       epochs: opts.tamper ? opts.tamper(epochs) : epochs,
@@ -168,7 +167,6 @@ describe('member epoch grants: what the requester accepts', () => {
     expect(grant).not.toBeNull()
     expect(grant!.epoch).toEqual(chain.epochs[2])
     expect(grant!.removed).toEqual([gone.pubkey, known].sort())
-    expect(grant!.from).toBe(getPublicKey(memberDeviceSk))
     // From epoch 1, the same room needs only the last step.
     const fromOne = decode(grantFrom(chain, 1), { current: keysOf(chain.epochs[1]!) })
     expect(fromOne!.epoch).toEqual(chain.epochs[2])
@@ -192,7 +190,7 @@ describe('member epoch grants: what the requester accepts', () => {
       now: NOW,
     })
     const forked = encodeMemberEpochGrant({
-      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId,
+      roomId, device: requesterDevice, request: requestId,
       epochs: [{ epoch: 1, secret: generateEpochSecret() }], rekeys: [fork], now: NOW,
     })
     expect(decode(forked)).toBeNull()
@@ -216,7 +214,7 @@ describe('member epoch grants: what the requester accepts', () => {
   it('rejects a grant that stops short of a rekey the requester has seen, another request, or another device', () => {
     const chain = buildChain([{ commit: true }, { commit: true }])
     const short = encodeMemberEpochGrant({
-      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId,
+      roomId, device: requesterDevice, request: requestId,
       epochs: [chain.epochs[1]!], rekeys: [chain.rekeys[0]!], now: NOW,
     })
     expect(decode(short)).not.toBeNull()
@@ -335,22 +333,22 @@ describe('the member desk', () => {
     const relay = new SimRelay()
     const chain = buildChain([{ commit: true }])
     // A dishonest member answers first, with a secret of its own.
-    const liarSk = generateSecretKey()
     const liarRelayView = new SimTransport(relay)
     const unsubLiar = liarRelayView.subscribe([{ kinds: [MEMBER_EPOCH_KINDS.REQUEST], '#d': [roomId] }], (event) => {
       const request = decodeMemberEpochRequest(event, { roomId, authority, roomKey, now: NOW })
       if (!request) return
       liarRelayView.publish(encodeMemberEpochGrant({
-        roomId, deviceSk: liarSk, device: request.device, request: request.request,
+        roomId, device: request.device, request: request.request,
         epochs: [{ epoch: 1, secret: generateEpochSecret() }], rekeys: [chain.rekeys[0]!], now: NOW,
       })).catch(() => {})
     })
-    const honestSk = generateSecretKey()
-    const first = desk(relay, chain, {}, honestSk)
+    const honest: string[] = []
+    const first = desk(relay, chain, { onGranted: (r) => honest.push(r.request) }, generateSecretKey())
     const second = desk(relay, chain)
     const grant = await ask(relay)
+    // The liar's secret is random: only the honest chain's secret matches.
     expect(grant.epoch).toEqual(chain.epochs[1])
-    expect(grant.from).toBe(getPublicKey(honestSk))
+    expect(honest.length).toBeGreaterThan(0)
     unsubLiar()
     first.close()
     second.close()
@@ -368,7 +366,7 @@ describe('the member desk', () => {
     // Somebody else's grant to the same device lands during the wait. It
     // could be junk: the desk cannot read it, and stands down only once.
     await transport.publish(encodeMemberEpochGrant({
-      roomId, deviceSk: generateSecretKey(), device: requesterDevice, request: r1.id,
+      roomId, device: requesterDevice, request: r1.id,
       epochs: [chain.epochs[1]!], rekeys: [chain.rekeys[0]!], now: NOW,
     }))
     await new Promise((r) => setTimeout(r, 150))
@@ -376,7 +374,7 @@ describe('the member desk', () => {
     const r2 = encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW + 1 })
     await transport.publish(r2)
     await transport.publish(encodeMemberEpochGrant({
-      roomId, deviceSk: generateSecretKey(), device: requesterDevice, request: r2.id,
+      roomId, device: requesterDevice, request: r2.id,
       epochs: [chain.epochs[1]!], rekeys: [chain.rekeys[0]!], now: NOW,
     }))
     await new Promise((r) => setTimeout(r, 150))
@@ -530,7 +528,7 @@ describe('member epoch refusals the other tests do not reach', () => {
     // The same authority, the same epoch-0 key as this room, another room id.
     const spliced = encodeRekeyEvent({ roomId: otherRoom, authoritySk, current: keysOf(E0), next, recipients: [], removed: [], commit: true, now: NOW })
     const grant = encodeMemberEpochGrant({
-      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW,
+      roomId, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW,
     })
     expect(decode(grant)).toBeNull()
     // In the middle of a chain, where no commitment is checked, the room tag
@@ -538,12 +536,12 @@ describe('member epoch refusals the other tests do not reach', () => {
     const top = { epoch: 2, secret: generateEpochSecret() }
     const onTop = encodeRekeyEvent({ roomId, authoritySk, current: deriveEpoch(next), next: top, recipients: [], removed: [], commit: true, now: NOW })
     expect(decode(encodeMemberEpochGrant({
-      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next, top], rekeys: [spliced, onTop], now: NOW,
+      roomId, device: requesterDevice, request: requestId, epochs: [next, top], rekeys: [spliced, onTop], now: NOW,
     }))).toBeNull()
     // The same splice is accepted in the room the rekey names: the refusal is
     // the room binding, not something else.
     expect(decodeMemberEpochGrant(
-      encodeMemberEpochGrant({ roomId: otherRoom, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW }),
+      encodeMemberEpochGrant({ roomId: otherRoom, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW }),
       { roomId: otherRoom, authority, deviceSk: requesterDeviceSk, requests, current: keysOf(E0), participant: requester.pubkey, now: NOW },
     )).not.toBeNull()
   })
@@ -651,5 +649,89 @@ describe('the requester waits for the rekey replay before it asks', () => {
       credential: await credentialFor(requesterDeviceSk, requester), current: keysOf(E0), now, timeoutMs: 400, retryMs: 50,
     })).rejects.toThrow(/no current member/)
     stale.close()
+  })
+})
+
+describe('grants are signed by a one-time key', () => {
+  it('never by the answering device, and never the same key twice', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true }])
+    const handle = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[1], rekeyAt: (n) => chain.rekeys[n - 1], removed: () => new Set(), jitterMs: 0, now,
+    })
+    const credential = await credentialFor(requesterDeviceSk, requester)
+    const transport = new SimTransport(relay)
+    for (const at of [NOW, NOW + 1]) {
+      await transport.publish(encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: at }))
+    }
+    const grants = relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)
+    expect(grants).toHaveLength(2)
+    expect(grants.map((g) => g.pubkey)).not.toContain(getPublicKey(memberDeviceSk))
+    expect(grants[0]!.pubkey).not.toBe(grants[1]!.pubkey)
+    // Still sealed to, and only readable by, the asking device.
+    expect(grants[0]!.tags).toContainEqual(['p', requesterDevice])
+    expect(decodeMemberEpochGrant(grants[0]!, {
+      roomId, authority, deviceSk: requesterDeviceSk, requests: new Set(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.REQUEST).map((e) => e.id)),
+      current: keysOf(E0), participant: requester.pubkey, now: NOW,
+    })?.epoch).toEqual(chain.epochs[1])
+    handle.close()
+  })
+
+  it('a desk does not take its own grant for another member\'s and stand down', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true }])
+    const draws = [0.1, 0.99]
+    const granted: string[] = []
+    const handle = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[1], rekeyAt: (n) => chain.rekeys[n - 1], removed: () => new Set(),
+      jitterMs: 60, random: () => draws.shift() ?? 0, now, onGranted: (r) => granted.push(r.request),
+    })
+    const credential = await credentialFor(requesterDeviceSk, requester)
+    const transport = new SimTransport(relay)
+    const r1 = encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW })
+    const r2 = encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW + 1 })
+    await transport.publish(r1)
+    await transport.publish(r2)
+    // r1 is answered first; that grant lands during r2's wait, and is this
+    // desk's own, so r2 is answered too.
+    await new Promise((r) => setTimeout(r, 150))
+    expect(granted).toEqual([r1.id, r2.id])
+    handle.close()
+  })
+})
+
+describe('the requester reads a one-shot `removed` once', () => {
+  it('so a refused grant does not use it up before the one that verifies', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true }])
+    const known = 'cd'.repeat(32)
+    // A liar answers every request first, with a chain that gets as far as
+    // the removed set before its commitment fails.
+    const liar = new SimTransport(relay)
+    const unsubLiar = liar.subscribe([{ kinds: [MEMBER_EPOCH_KINDS.REQUEST], '#d': [roomId] }], (event) => {
+      const request = decodeMemberEpochRequest(event, { roomId, authority, roomKey, now: NOW })
+      if (!request) return
+      liar.publish(encodeMemberEpochGrant({
+        roomId, device: request.device, request: request.request,
+        epochs: [{ epoch: 1, secret: generateEpochSecret() }], rekeys: [chain.rekeys[0]!], now: NOW,
+      })).catch(() => {})
+    })
+    const handle = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[1], rekeyAt: (n) => chain.rekeys[n - 1], removed: () => new Set(), jitterMs: 0, now,
+    })
+    function* removed() {
+      yield known
+    }
+    const grant = await requestMemberEpoch({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey,
+      credential: await credentialFor(requesterDeviceSk, requester), current: keysOf(E0), removed: removed(), now, timeoutMs: 1_000, retryMs: 50,
+    })
+    expect(grant.epoch).toEqual(chain.epochs[1])
+    expect(grant.removed).toEqual([known])
+    unsubLiar()
+    handle.close()
   })
 })

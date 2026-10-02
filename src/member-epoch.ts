@@ -2,7 +2,7 @@ import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import { base64urlnopad } from '@scure/base'
 import { nip44 } from 'nostr-tools'
-import { finalizeEvent, getPublicKey, type Event } from 'nostr-tools/pure'
+import { finalizeEvent, generateSecretKey, getPublicKey, type Event } from 'nostr-tools/pure'
 import { hexEquals, normaliseHex } from './hex.js'
 import { verifyDeviceCredential } from './credential.js'
 import { evaluateAccess } from './access.js'
@@ -62,8 +62,9 @@ export const MEMBER_EPOCH_KINDS = {
    *  missed. Encrypted under a key from the epoch-0 room key, so any
    *  admitted device can read it and a relay cannot. */
   REQUEST: 20471,
-  /** A member's answer, signed by its device key and sealed to the asking
-   *  device: secrets plus the authority-signed rekeys that prove them. */
+  /** A member's answer, signed by a one-time key made for that grant and
+   *  sealed to the asking device: secrets plus the authority-signed rekeys
+   *  that prove them. */
   GRANT: 20472,
 } as const
 
@@ -270,8 +271,6 @@ interface MemberEpochGrantBody {
 
 export interface EncodeMemberEpochGrantOptions {
   roomId: string
-  /** The answering member's device key. It signs and seals the grant. */
-  deviceSk: Uint8Array
   /** The asking device. */
   device: string
   request: string
@@ -288,9 +287,16 @@ function plainEvent(event: Event): Event {
   return { id, pubkey, created_at, kind, tags, content, sig } as Event
 }
 
-/** Answer one member epoch request with the epochs it missed. */
+/**
+ * Answer one member epoch request with the epochs it missed.
+ *
+ * The grant is signed, and sealed to the asking device, by a fresh key made
+ * for it alone and then dropped, not by the answering member's device key.
+ * Nothing about a grant is trusted on its signer (the authority's
+ * signatures are what the requester checks), so the member's key would add
+ * nothing but a public line from that device to the room id in the `d` tag.
+ */
 export function encodeMemberEpochGrant(opts: EncodeMemberEpochGrantOptions): Event {
-  if (opts.deviceSk.length !== 32) throw new Error('device secret key must be 32 bytes')
   const roomId = requireHex32(opts.roomId, 'room id')
   const device = requireHex32(opts.device, 'device pubkey')
   const request = requireHex32(opts.request, 'request id')
@@ -302,6 +308,8 @@ export function encodeMemberEpochGrant(opts: EncodeMemberEpochGrantOptions): Eve
     if (i > 0 && e.epoch !== opts.epochs[i - 1]!.epoch + 1) throw new Error('epochs must be consecutive')
     if (e.epoch < 1) throw new Error('a member grant never carries epoch 0')
   }
+  // Drawn before anything else, so a vector records it first.
+  const signerSk = generateSecretKey()
   const body: MemberEpochGrantBody = {
     v: 1,
     request,
@@ -317,9 +325,9 @@ export function encodeMemberEpochGrant(opts: EncodeMemberEpochGrantOptions): Eve
         ['d', roomId],
         ['p', device],
       ], opts.expiresAt),
-      content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(opts.deviceSk, device)),
+      content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(signerSk, device)),
     },
-    opts.deviceSk,
+    signerSk,
   )
 }
 
@@ -335,7 +343,8 @@ export interface DecodeMemberEpochGrantOptions {
   /** The participant this device speaks for: a chain that removes it is
    *  refused. */
   participant: string
-  /** The cumulative removed set this device already knows. */
+  /** The cumulative removed set this device already knows. Read once per
+   *  call. */
   removed?: Iterable<string>
   /** The highest epoch this device has seen a valid rekey for. A grant
    *  that stops short of it is refused, so a member removed at that epoch
@@ -350,9 +359,6 @@ export interface MemberEpochGrant {
   epoch: RoomEpoch
   /** Cumulative: `opts.removed` plus every removal in the chain. */
   removed: string[]
-  /** The answering member's device pubkey. It is not what the grant is
-   *  trusted on - the authority's signatures are - so this is informational. */
-  from: string
 }
 
 /**
@@ -404,7 +410,7 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
       }
       previous = deriveEpoch({ epoch: evidence.epoch, secret })
     }
-    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort(), from: normaliseHex(event.pubkey) }
+    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort() }
   } catch {
     return null
   }
@@ -418,7 +424,8 @@ export interface HostMemberEpochDeskOptions {
   transport: RelayTransport
   roomId: string
   authority: string
-  /** This member's device key: it signs and seals what it hands over. */
+  /** This member's device key: the desk ignores requests from it. Grants
+   *  are signed by a one-time key each (see `encodeMemberEpochGrant`). */
   deviceSk: Uint8Array
   /** The epoch-0 room key: opens requests and checks admission proofs. */
   roomKey: Uint8Array
@@ -482,6 +489,9 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
   const grantSeen = new Set<string>()
   /** Requesting devices this desk has already stood down for once. */
   const stoodDown = new Set<string>()
+  /** Ids of the grants this desk published: each is signed by a one-time
+   *  key, so its own grants are told apart by id, not by signer. */
+  const mine = new Set<string>()
   const timers = new Set<ReturnType<typeof setTimeout>>()
   let closed = false
 
@@ -538,7 +548,6 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     try {
       grant = encodeMemberEpochGrant({
         roomId,
-        deviceSk: opts.deviceSk,
         device: request.device,
         request: request.request,
         epochs: chain.epochs,
@@ -550,12 +559,14 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
       return
     }
     if (JSON.stringify(grant).length > (opts.maxGrantBytes ?? DEFAULT_MAX_GRANT_BYTES)) return
+    mine.add(grant.id)
+    bound(mine)
     opts.transport.publish(grant).catch(() => {})
     opts.onGranted?.(request)
   }
 
   const unsubGrants = opts.transport.subscribe([{ kinds: [MEMBER_EPOCH_KINDS.GRANT], '#d': [roomId] }], (event) => {
-    if (closed || hexEquals(event.pubkey, self)) return
+    if (closed || mine.has(event.id)) return
     const to = event.tags.find((t) => t[0] === 'p')?.[1]
     if (to === undefined || !HEX64.test(to)) return
     grantSeen.add(normaliseHex(to))
@@ -619,8 +630,11 @@ export interface MemberEpochRequestOptions {
   proof?: KindredProof
   /** Where this device is now. Asked each time a request goes out. */
   current: EpochKeys | (() => EpochKeys)
-  /** The cumulative removed set this device already knows. */
-  removed?: Iterable<string>
+  /** The cumulative removed set this device already knows. A function is
+   *  asked on every grant; anything else is read once, when the source is
+   *  made, so a generator or other one-shot iterable is not used up by the
+   *  first grant and seen as empty by the next. */
+  removed?: Iterable<string> | (() => Iterable<string>)
   /** The highest epoch a valid rekey has been seen for: see
    *  `DecodeMemberEpochGrantOptions.expected`. The source also watches the
    *  room's rekeys on `transport` itself and floors every grant at the
@@ -657,6 +671,8 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
   const device = getPublicKey(opts.deviceSk)
   const current = (): EpochKeys => (typeof opts.current === 'function' ? opts.current() : opts.current)
   const expected = (): number | undefined => (typeof opts.expected === 'function' ? opts.expected() : opts.expected)
+  const knownRemoved: readonly string[] | undefined = typeof opts.removed === 'function' || opts.removed === undefined ? undefined : [...opts.removed]
+  const removedNow = (): Iterable<string> | undefined => (typeof opts.removed === 'function' ? opts.removed() : knownRemoved)
   const verdict = verifyDeviceCredential(opts.credential, { roomId, now: now() })
   if (!verdict.ok) throw new Error(`device credential refused: ${verdict.reason}`)
   const participant = verdict.participant
@@ -710,7 +726,7 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
           requests,
           current: current(),
           participant,
-          removed: opts.removed,
+          removed: removedNow(),
           expected: floor(),
           now: now(),
         })

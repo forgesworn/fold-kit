@@ -18,6 +18,9 @@ import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bytesToHex } from '@noble/hashes/utils'
+import { hkdf } from '@noble/hashes/hkdf'
+import { sha256 } from '@noble/hashes/sha2'
+import { schnorr } from '@noble/curves/secp256k1.js'
 import { getPublicKey } from 'nostr-tools/pure'
 import { seed32, deriveSecretKey, finalizeDeterministic, withStubbedRandomness } from '../vectors/lib/determinism.mjs'
 import {
@@ -125,20 +128,30 @@ const request = recorded(['request/body', 'request/aux'], () =>
   }),
 )
 
+/** The 48-byte draw `generateSecretKey` (schnorr.utils.randomSecretKey)
+ *  makes for a grant's one-time signing key. */
+const seed48 = (label) => hkdf(sha256, seed32(`member-epoch/random/${label}`), undefined, 'member-epoch/seed48', 48)
+
 function grant(label, epochs, rekeys) {
-  return {
-    epochs: epochs.map((e) => ({ epoch: e.epoch, secretHex: hex(e.secret) })),
-    ...recorded([`${label}/body`, `${label}/aux`], () =>
+  const signerDraw = seed48(`${label}/signer`)
+  const signerSk = schnorr.utils.randomSecretKey(signerDraw)
+  const draws = [signerDraw, r(`${label}/body`), r(`${label}/aux`)]
+  const event = withStubbedRandomness(draws, () =>
     encodeMemberEpochGrant({
       roomId,
-      deviceSk: MEMBER_DEVICE_SK,
       device: REQUESTER_DEVICE,
       request: request.event.id,
       epochs,
       rekeys: rekeys.map((x) => x.event),
       now: NOW,
     }),
-  ),
+  )
+  if (event.pubkey !== getPublicKey(signerSk)) throw new Error(`${label}: the grant was not signed by the recorded one-time key`)
+  return {
+    epochs: epochs.map((e) => ({ epoch: e.epoch, secretHex: hex(e.secret) })),
+    event: plain(event),
+    randomHex: draws.map(hex),
+    signerSkHex: hex(signerSk),
   }
 }
 
@@ -166,7 +179,7 @@ function decodeResult(g, extra = {}) {
     ...(input.expected !== undefined ? { expected: input.expected } : {}),
     now: input.now,
   })
-  return { input, result: out && { epoch: out.epoch.epoch, secretHex: hex(out.epoch.secret), removed: out.removed, from: out.from } }
+  return { input, result: out && { epoch: out.epoch.epoch, secretHex: hex(out.epoch.secret), removed: out.removed } }
 }
 
 function grantVector(name, kind, note, g, rekeys, extra = {}) {
@@ -176,7 +189,7 @@ function grantVector(name, kind, note, g, rekeys, extra = {}) {
     name,
     kind,
     note,
-    input: { ...input, memberDeviceSkHex: hex(MEMBER_DEVICE_SK), grant: g, rekeys },
+    input: { ...input, grant: g, rekeys },
     output: { result },
   }
 }
@@ -232,7 +245,7 @@ const vectors = [
   grantVector(
     'member-grant-accepted',
     'positive',
-    'Kind 20472, tags [["d", roomId], ["p", asking device]], signed by the answering member\'s device and NIP-44-sealed to the asking device. Body: {"v":1,"request","epoch","secrets":[base64url, epochs have+1..epoch],"rekeys":[the authority\'s rekey events, same order]}. The asker, at epoch 0, checks: each rekey is the authority\'s, for the next epoch, and decrypts under the key of the epoch before it (epoch 1\'s legacy rekey under its own epoch-0 key; epoch 2\'s under the key derived from the offered epoch-1 secret, which proves that secret); the last rekey carries a commitment equal to epochCommitment(roomId, 2, offered epoch-2 secret); nothing in the chain closes the room or removes the asker. `removed` is the asker\'s known set plus the chain\'s removals.',
+    'Kind 20472, tags [["d", roomId], ["p", asking device]], signed by a one-time key made for this grant alone (never the answering member\'s device key, so the grant does not tie that device to the room id) and NIP-44-sealed from it to the asking device. `grant.randomHex` lists the encoder\'s draws in order: the 48-byte seed `generateSecretKey` (schnorr.utils.randomSecretKey) turns into the one-time key (`grant.signerSkHex`), the body nonce, the signature aux-rand. Body: {"v":1,"request","epoch","secrets":[base64url, epochs have+1..epoch],"rekeys":[the authority\'s rekey events, same order]}. The asker, at epoch 0, checks: each rekey is the authority\'s, for the next epoch, and decrypts under the key of the epoch before it (epoch 1\'s legacy rekey under its own epoch-0 key; epoch 2\'s under the key derived from the offered epoch-1 secret, which proves that secret); the last rekey carries a commitment equal to epochCommitment(roomId, 2, offered epoch-2 secret); nothing in the chain closes the room or removes the asker. `removed` is the asker\'s known set plus the chain\'s removals.',
     accepted,
     [rekey1Legacy, rekey2],
   ),

@@ -14,8 +14,9 @@ import { hkdf } from '@noble/hashes/hkdf'
 import { hmac } from '@noble/hashes/hmac'
 import { sha256 } from '@noble/hashes/sha2'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
+import { schnorr } from '@noble/curves/secp256k1.js'
 import { nip44 } from 'nostr-tools'
-import type { Event } from 'nostr-tools/pure'
+import { getPublicKey, type Event } from 'nostr-tools/pure'
 import { withStubbedRandomness } from './lib/determinism.mjs'
 import { deriveEpoch, encodeRekeyEvent } from '../src/epoch.js'
 import { epochCommitment } from '../src/epoch-commit.js'
@@ -117,12 +118,16 @@ describe('member-epoch-vectors', () => {
   for (const v of vectors.filter((x) => x.name.startsWith('member-grant-'))) {
     it(`${v.name}: the real encoder rebuilds it byte for byte, and the real decoder gives the recorded result`, () => {
       const i = v.input
-      expect(i.grant.event.pubkey).toBe(memberDevice)
+      // Signed by the recorded one-time key - the first, 48-byte draw, made a
+      // key exactly as generateSecretKey does - and never by a member device.
+      expect(i.grant.randomHex[0]).toHaveLength(96)
+      expect(bytesToHex(schnorr.utils.randomSecretKey(hexToBytes(i.grant.randomHex[0])))).toBe(i.grant.signerSkHex)
+      expect(i.grant.event.pubkey).toBe(getPublicKey(hexToBytes(i.grant.signerSkHex)))
+      expect(i.grant.event.pubkey).not.toBe(memberDevice)
       expect(i.requests).toEqual([request.id])
       const rebuilt = withStubbedRandomness(draws(i.grant.randomHex), () =>
         encodeMemberEpochGrant({
           roomId: i.roomId,
-          deviceSk: hexToBytes(i.memberDeviceSkHex),
           device: request.pubkey,
           request: request.id,
           epochs: i.grant.epochs.map((e: Any) => ({ epoch: e.epoch, secret: hexToBytes(e.secretHex) })),
@@ -142,7 +147,7 @@ describe('member-epoch-vectors', () => {
         ...(i.expected !== undefined ? { expected: i.expected } : {}),
         now: i.now,
       })
-      const result = decoded && { epoch: decoded.epoch.epoch, secretHex: bytesToHex(decoded.epoch.secret), removed: decoded.removed, from: decoded.from }
+      const result = decoded && { epoch: decoded.epoch.epoch, secretHex: bytesToHex(decoded.epoch.secret), removed: decoded.removed }
       expect(result).toEqual(v.output.result)
       expect(v.kind === 'positive').toBe(result !== null)
     })

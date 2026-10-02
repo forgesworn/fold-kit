@@ -31,6 +31,12 @@ the one place its behaviour has deliberately diverged.
     grant that stops short of the newest authority-signed one, so a member
     removed at epoch E cannot hold a requester at E-1 when the caller
     passes no `expected`.
+  - Member grants (20472) are signed by a one-time key per grant, not the
+    answering member's device key, so a grant does not publicly tie that
+    device to the room. `MemberEpochGrant` has no `from`, and
+    `encodeMemberEpochGrant` takes no `deviceSk`.
+  - `memberEpochSource`'s `removed` is a function or an iterable read once,
+    so a generator is not used up by the first grant.
   - Two new wire labels: `kithmoot/v1/epoch-commit:` and
     `kithmoot/v1/member-epoch-request-key`.
   - `vectors/member-epoch-vectors.json` (KithMoot vector format, shipped in

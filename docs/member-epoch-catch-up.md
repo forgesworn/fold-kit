@@ -97,8 +97,13 @@ Without `commit`, `encodeRekeyEvent` produces exactly the 0.4.0 event (the
 ### 3. Member epoch grant, kind 20472 (ephemeral)
 
 - Tags: `["d", roomId]`, `["p", asking device]`, plus `expiration`.
-- Signed by the answering member's **device** key, and NIP-44 v2 to the
-  asking device, as the authority's grant is.
+- Signed by a **one-time key** made for this grant alone and then dropped,
+  never by the answering member's device key, and NIP-44 v2 from that key
+  to the asking device. Nothing about a grant is trusted on its signer, so
+  a device key would add only a public line from the answering device to
+  the room id in `d`. A desk tells its own grants apart by event id. Vectors
+  record the 48-byte draw the key is made from, before the body nonce and
+  the signature aux-rand.
 - Body: `{"v":1,"request":<request id>,"epoch":N,"secrets":[base64url secret
   for have+1 .. N],"rekeys":[the authority's kind-1462 events for have+1 ..
   N]}`. One grant carries at most 32 epochs (`MAX_MEMBER_EPOCH_CHAIN`).
@@ -146,8 +151,9 @@ all of these hold:
      is a legacy epoch, and only the authority can hand it on. **This is
      what proves the last secret.**
 5. Result: `{ epoch: { epoch: N, secret: secret N }, removed: known ∪ every
-   removal in the chain, from: member device }`. `removed` is cumulative,
-   with the same meaning as the authority grant's.
+   removal in the chain }`. `removed` is cumulative, with the same meaning
+   as the authority grant's. Nothing names the member that answered: its
+   grant was signed by a one-time key.
 
 The answering member's identity plays no part in correctness. The trust
 root is the authority's signatures plus the key-committing NIP-44 MAC and
@@ -247,10 +253,9 @@ bells and media keys of an epoch. The parties involved are:
 - **A relay** sees, per request, the room id, the asking device's pubkey and
   a time. The existing 20468 already shows it exactly that, plus the
   authority's pubkey in `p`. Per grant it sees the room id, the asking
-  device and the answering device. The last of these is new: it shows that
-  two device keys are in the same room, which the roster's own publication
-  pattern already shows to a relay that watches it. Grant contents are
-  NIP-44 to the requester's device, as the authority's grant is.
+  device and a one-time key, so it learns nothing about which member
+  answered. Grant contents are NIP-44 to the requester's device, as the
+  authority's grant is.
 - **Forgery.** Without the authority's key, nobody can mint a rekey that
   passes `peekRekeyEvent`. Without the real key j-1, nobody can find another
   secret under which an authority-signed ciphertext decrypts (NIP-44's MAC
@@ -287,6 +292,9 @@ authority's absence used to deny is what is restored.
 - `encodeMemberEpochGrant` / `decodeMemberEpochGrant`
 - `hostMemberEpochDesk(opts)` is the answering side
 - `memberEpochSource(opts)`, used as `requestRoomEpoch({ members })`, and
-  `requestMemberEpoch(opts)` are the asking side
+  `requestMemberEpoch(opts)` are the asking side. Their `removed` (the set
+  the device already knows) is a function, asked on every grant, or any
+  iterable, read once when the source is made, so a generator is not used
+  up by the first grant.
 - `MEMBER_EPOCH_KINDS` (`{ REQUEST: 20471, GRANT: 20472 }`),
   `MAX_MEMBER_EPOCH_CHAIN`
