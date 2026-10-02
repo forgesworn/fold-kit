@@ -5,6 +5,45 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- Member epoch catch-up: any current member can bring an admitted,
+  non-removed device up to date while the authority is offline, and the
+  device verifies the answer against the authority's signatures instead of
+  trusting the member. See `docs/member-epoch-catch-up.md`.
+  - `encodeRekeyEvent` takes an optional `commit: true`, which writes
+    `commit: epochCommitment(roomId, epoch, secret)` into the encrypted
+    body (key order `v, epoch, removed, by, closed, commit, keys`; the body
+    version stays 1 and a 0.4.0 reader ignores the key). Without it the
+    event is byte-identical to 0.4.0's.
+  - New module `epoch-commit.ts`: `epochCommitment`, `EPOCH_COMMIT_PREFIX`.
+  - New module `member-epoch.ts`: kinds 20471 (member epoch request) and
+    20472 (member epoch grant) as `MEMBER_EPOCH_KINDS`;
+    `hostMemberEpochDesk`, `memberEpochSource`, `requestMemberEpoch`,
+    `encodeMemberEpochRequest`, `decodeMemberEpochRequest`,
+    `encodeMemberEpochGrant`, `decodeMemberEpochGrant`, `readRekeyEvidence`,
+    `deriveMemberEpochRequestKey`, `MAX_MEMBER_EPOCH_CHAIN`.
+  - `requestRoomEpoch` takes an optional `members` source; without it, it
+    behaves exactly as before.
+  - `memberEpochSource` watches the room's rekeys and refuses a member
+    grant that stops short of the newest authority-signed one, so a member
+    removed at epoch E cannot hold a requester at E-1 when the caller
+    passes no `expected`.
+  - Member grants (20472) are signed by a one-time key per grant, not the
+    answering member's device key, so a grant does not publicly tie that
+    device to the room. `MemberEpochGrant` has no `from`, and
+    `encodeMemberEpochGrant` takes no `deviceSk`.
+  - `memberEpochSource`'s `removed` is a function or an iterable read once,
+    so a generator is not used up by the first grant.
+  - Two new wire labels: `kithmoot/v1/epoch-commit:` and
+    `kithmoot/v1/member-epoch-request-key`.
+  - `vectors/member-epoch-vectors.json` (KithMoot vector format, shipped in
+    the package) and `scripts/generate-member-epoch.mjs`.
+- The browser bundle budget for the main entry rises to 64 KB minified /
+  19 KB gzip (measured 51.2 / 14.9).
+
 ## 0.4.0
 
 ### Added

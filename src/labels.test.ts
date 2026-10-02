@@ -18,6 +18,8 @@ import { fileURLToPath } from 'node:url'
 import { ACCESS_LABELS } from './access.js'
 import { CHANNEL_LABELS, CHANNEL_ID_INFO, CHANNEL_KEY_INFO } from './channel.js'
 import { EPOCH_LABELS, EPOCH_ID_INFO, EPOCH_KEY_INFO } from './epoch.js'
+import { EPOCH_COMMIT_LABELS } from './epoch-commit.js'
+import { MEMBER_EPOCH_LABELS } from './member-epoch.js'
 import { INVITATION_LABELS } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
 import { ROOM_LABELS } from './room.js'
@@ -52,11 +54,13 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v1/channel-id/',
   'kithmoot/v1/channel-key/',
   'kithmoot/v1/channels:',
+  'kithmoot/v1/epoch-commit:',
   'kithmoot/v1/epoch-id',
   'kithmoot/v1/epoch-key',
   'kithmoot/v1/epoch-request-key',
   'kithmoot/v1/epoch-request:',
   'kithmoot/v1/kindred:',
+  'kithmoot/v1/member-epoch-request-key',
   'kithmoot/v1/room-id',
   'kithmoot/v1/room-key',
   'kithmoot/v2/invitation-delegation:',
@@ -93,6 +97,8 @@ const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = 
   ['access.ts', ACCESS_LABELS],
   ['channel.ts', CHANNEL_LABELS],
   ['epoch.ts', EPOCH_LABELS],
+  ['epoch-commit.ts', EPOCH_COMMIT_LABELS],
+  ['member-epoch.ts', MEMBER_EPOCH_LABELS],
   ['invitation.ts', INVITATION_LABELS],
   ['persistent-invitation.ts', PERSISTENT_INVITATION_LABELS],
   ['room.ts', ROOM_LABELS],

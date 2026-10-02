@@ -13,8 +13,10 @@ import { verifyDeviceCredential } from './credential.js'
 import { evaluateAccess } from './access.js'
 import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
+import { epochCommitment } from './epoch-commit.js'
 import type { RelayTransport } from './transport.js'
 import type { DeviceCredential, KindredProof, RoomPolicy } from './types.js'
+import type { MemberEpochSource } from './member-epoch.js'
 
 /**
  * Room epochs: how a member is removed.
@@ -157,6 +159,9 @@ interface RekeyBody {
   removed: string[]
   by?: string
   closed?: true
+  /** `epochCommitment(roomId, epoch, secret)`: lets a member hand this epoch
+   *  on and the requester check it. Absent from a rekey written without it. */
+  commit?: string
   /** Device pubkey to a NIP-44 envelope, from the authority to that device,
    *  carrying the new secret. Inside the body, so who was kept is known
    *  only to the epoch being left. */
@@ -182,6 +187,10 @@ export interface EncodeRekeyOptions {
   /** True when the room is being closed: nobody is kept, and the event
    *  says so rather than leaving everybody to wonder. */
   closed?: boolean
+  /** Write the epoch commitment into the body, so any current member can
+   *  bring a device that missed this rekey up to date (see
+   *  `member-epoch.ts`). Omitted, the event is byte-identical to before. */
+  commit?: boolean
   now: number
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
@@ -209,6 +218,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
     removed,
     ...(opts.by !== undefined ? { by: requireHex32(opts.by, 'admin') } : {}),
     ...(opts.closed ? { closed: true } : {}),
+    ...(opts.commit ? { commit: epochCommitment(roomId, epoch, opts.next.secret) } : {}),
     keys,
   }
   return finalizeEvent(
@@ -694,6 +704,9 @@ export interface RequestRoomEpochOptions {
   retryMs?: number
   /** A conference room's end: the request carries it as an expiration. */
   expiresAt?: number
+  /** Ask the room's current members too (`memberEpochSource`): the first
+   *  answer that checks out, the authority's or a member's, settles it. */
+  members?: MemberEpochSource
 }
 
 /** Thrown when the authority answered, and the answer was no. */
@@ -728,12 +741,14 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
     let retry: ReturnType<typeof setInterval> | undefined
     let expiry: ReturnType<typeof setTimeout> | undefined
     let unsub = () => {}
+    let stopMembers = () => {}
     const finish = (settle: () => void): void => {
       if (settled) return
       settled = true
       if (retry !== undefined) clearInterval(retry)
       if (expiry !== undefined) clearTimeout(expiry)
       unsub()
+      stopMembers()
       settle()
     }
     unsub = opts.transport.subscribe([{ kinds: [KINDS.EPOCH_GRANT], '#d': [roomId], '#p': [device] }], (event) => {
@@ -743,6 +758,10 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
       else finish(() => resolve(grant))
     })
     if (settled) unsub()
+    if (opts.members && !settled) {
+      stopMembers = opts.members.start((grant) => finish(() => resolve(grant)))
+      if (settled) stopMembers()
+    }
     const ask = (): void => {
       if (!settled) opts.transport.publish(request).catch(() => {})
     }

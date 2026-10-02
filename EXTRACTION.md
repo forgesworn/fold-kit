@@ -328,6 +328,27 @@ declares each added line in `ROOM_RELAY_CHANGES` as 0.4.0 text against
 0.3.0 text, applied before `CONFERENCE_CHANGES`, so the whole-file
 comparison against the pinned commit still holds.
 
+## Member epoch catch-up: declared additions to `epoch.ts`
+
+Unreleased. Any current member can now hand an admitted, non-removed device
+the epochs it missed, with the authority's own rekeys as evidence (see
+`docs/member-epoch-catch-up.md`). The new code lives in two new modules
+that moved from nowhere: `src/epoch-commit.ts` (the commitment, a leaf with
+no imports from `epoch.ts`, so there is no import cycle) and
+`src/member-epoch.ts` (the member request and grant, the desk and the
+requester). Its kinds, 20471 and 20472, are exported from there as
+`MEMBER_EPOCH_KINDS` rather than added to `KINDS`, whose body
+`scripts/diff-source.mjs` proves is exactly the pinned source's.
+
+`epoch.ts` gains two optional, additive options: `commit` on
+`encodeRekeyEvent` (writes the commitment into the body) and `members` on
+`requestRoomEpoch` (a second source of answers). With both absent, every
+event is byte-identical to 0.4.0's and every existing vector still verifies.
+`scripts/diff-source.mjs` declares each added line in
+`MEMBER_EPOCH_CHANGES`, as new text against 0.4.0 text, applied before
+`ROOM_RELAY_CHANGES` and `CONFERENCE_CHANGES`, so the whole-file comparison
+against the pinned commit still holds.
+
 ## Public repository naming
 
 This repository is public. It does not name the private downstream app that

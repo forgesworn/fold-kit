@@ -20,6 +20,7 @@
     "dist",
     "vectors/kithmoot-vectors.json",
     "vectors/circle-vectors.json",
+    "vectors/member-epoch-vectors.json",
     "LICENSE",
     "README.md",
     "llms.txt"
@@ -31,6 +32,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json",
     "diff-source": "node scripts/diff-source.mjs",
     "generate-fold": "node scripts/generate-fold.mjs",
+    "generate-member-epoch": "node scripts/generate-member-epoch.mjs",
     "bundle-check": "node scripts/bundle-check.mjs",
     "tarball-smoke": "node scripts/tarball-smoke.mjs",
     "vectors": "vitest run vectors/",

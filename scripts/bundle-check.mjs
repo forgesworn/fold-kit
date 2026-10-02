@@ -21,11 +21,12 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
 }
 
 // Budgets are about 25% headroom over what the current build measures
-// (index: 35.8 KB minified / 11.0 KB gzip; lane: 0.9 KB / 0.5 KB), tight
-// enough to catch an accidental dependency or a bundled peer, loose enough
-// not to fail on ordinary code growth.
+// (index: 51.2 KB minified / 14.9 KB gzip, since member epoch catch-up added
+// about 9 KB of its own code to 0.4.0's 41.8 KB; lane: 0.9 KB / 0.5 KB),
+// tight enough to catch an accidental dependency or a bundled peer, loose
+// enough not to fail on ordinary code growth.
 const BUDGETS_KB = {
-  index: { minified: 45, gzip: 14 },
+  index: { minified: 64, gzip: 19 },
   lane: { minified: 1.2, gzip: 0.7 },
 }
 

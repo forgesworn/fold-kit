@@ -170,6 +170,35 @@ export type {
   VerifyAdminsOptions,
 } from './epoch.js'
 
+export { EPOCH_COMMIT_PREFIX, epochCommitment, EPOCH_COMMIT_LABELS } from './epoch-commit.js'
+export {
+  MEMBER_EPOCH_KINDS,
+  MEMBER_EPOCH_REQUEST_KEY_INFO,
+  MAX_MEMBER_EPOCH_CHAIN,
+  deriveMemberEpochRequestKey,
+  readRekeyEvidence,
+  encodeMemberEpochRequest,
+  decodeMemberEpochRequest,
+  encodeMemberEpochGrant,
+  decodeMemberEpochGrant,
+  hostMemberEpochDesk,
+  memberEpochSource,
+  requestMemberEpoch,
+  MEMBER_EPOCH_LABELS,
+} from './member-epoch.js'
+export type {
+  RekeyEvidence,
+  EncodeMemberEpochRequestOptions,
+  DecodeMemberEpochRequestOptions,
+  MemberEpochRequest,
+  EncodeMemberEpochGrantOptions,
+  DecodeMemberEpochGrantOptions,
+  MemberEpochGrant,
+  HostMemberEpochDeskOptions,
+  MemberEpochRequestOptions,
+  MemberEpochSource,
+} from './member-epoch.js'
+
 export { deriveChannel, CHANNEL_ID_INFO, CHANNEL_KEY_INFO, MAX_CHANNEL_NAME_LENGTH, CHANNEL_LABELS } from './channel.js'
 
 export {

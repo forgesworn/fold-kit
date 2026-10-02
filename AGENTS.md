@@ -22,6 +22,7 @@ npm run typecheck       # type-check src/ and test/, no emit (vectors/ is vitest
 npm run vectors         # run only the vector-verification suites
 npm run diff-source      # compare moved modules against the pinned source commit
 npm run generate-fold    # regenerate vectors/fold-vectors.json (T3.1/T3.3/#205 vectors; needs a prior build)
+npm run generate-member-epoch  # regenerate vectors/member-epoch-vectors.json (needs a prior build)
 npm run bundle-check     # esbuild browser bundle check (needs a prior build)
 npm run tarball-smoke    # npm pack, install into a scratch dir, import every export
 npm run check            # typecheck + test + diff-source
@@ -49,7 +50,9 @@ hand - it prints a notice and exits 0 rather than failing.
   rooms", which also covers the declared additions it brought to
   `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`), and
   `invitation-relays.ts` (new: the room-relay list rule - see EXTRACTION.md
-  "Room relays").
+  "Room relays"), and `epoch-commit.ts`/`member-epoch.ts` (new: member epoch
+  catch-up - see EXTRACTION.md "Member epoch catch-up" and
+  `docs/member-epoch-catch-up.md`).
 - `test/sim-relay.ts` - an in-process relay simulator (`SimRelay`,
   `SimTransport`) used by the invitation, persistent-invitation and epoch
   test suites.
@@ -58,8 +61,11 @@ hand - it prints a notice and exits 0 rather than failing.
   group-for-group), `circle-vectors.json` (gaps KithMoot's original file
   did not cover, from the T0 vector-review branch), and `fold-vectors.json`
   (this kit's own T3.1/T3.3/#205 vectors, with no KithMoot counterpart - see
-  `scripts/generate-fold.mjs`). `vectors/verify.test.ts`,
-  `vectors/verify-circle.test.ts` and `vectors/verify-fold.test.ts` run this
+  `scripts/generate-fold.mjs`), and `member-epoch-vectors.json` (member
+  epoch catch-up, in KithMoot's vector format so it can be copied into
+  KithMoot's `vectors/` verbatim - see `scripts/generate-member-epoch.mjs`).
+  `vectors/verify.test.ts`, `vectors/verify-circle.test.ts`,
+  `vectors/verify-fold.test.ts` and `vectors/verify-member-epoch.test.ts` run this
   kit's own functions against them. `vectors/lib/determinism.mjs` and
   `vectors/lib/fixtures.mjs` are copied from KithMoot unchanged (fixed
   labelled inputs, no KithMoot-specific behaviour).
