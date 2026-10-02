@@ -38,8 +38,7 @@ const E0: RoomEpoch = { epoch: 0, secret: ROOM_SECRET }
 const authoritySk = generateSecretKey()
 const authority = getPublicKey(authoritySk)
 
-/** Participants: a member who answers, a requester, and one who is removed. */
-const member = localIdentity(generateSecretKey())
+/** Devices and participants: a member device that answers, a requester, and one who is removed. */
 const memberDeviceSk = generateSecretKey()
 const requester = localIdentity(generateSecretKey())
 const requesterDeviceSk = generateSecretKey()
@@ -427,5 +426,75 @@ describe('requestRoomEpoch with members', () => {
     expect('from' in grant).toBe(false)
     authorityDesk.close()
     memberDesk.close()
+  })
+})
+
+describe('the requester floors a member grant at the newest rekey its relays replay', () => {
+  /** Publish the authority's rekeys to the relay, as the authority's client does. */
+  async function publishRekeys(relay: SimRelay, chain: Chain) {
+    const transport = new SimTransport(relay)
+    for (const rekey of chain.rekeys) await transport.publish(rekey)
+  }
+
+  async function askWithoutExpected(relay: SimRelay, timeoutMs = 300) {
+    return requestMemberEpoch({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey,
+      credential: await credentialFor(requesterDeviceSk, requester), current: keysOf(E0), now, timeoutMs, retryMs: 50,
+    })
+  }
+
+  it('refuses a stale chain from a member removed at the top, though the caller passed no `expected`', async () => {
+    const relay = new SimRelay({ replay: true })
+    const chain = buildChain([{ commit: true }, { commit: true }, { commit: true, removed: [gone.pubkey] }])
+    await publishRekeys(relay, chain)
+    // `gone` was removed at epoch 3: it still holds epoch 2 and every rekey to
+    // it, and its own removed set does not name the requester.
+    const stale = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: goneDeviceSk, roomKey,
+      current: () => chain.epochs[2], secretAt: (n) => chain.epochs[n]?.secret, rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set(), jitterMs: 0, now,
+    })
+    await expect(askWithoutExpected(relay)).rejects.toThrow(/no current member/)
+    expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT).length).toBeGreaterThan(0)
+    stale.close()
+  })
+
+  it('still accepts a chain that reaches the newest rekey', async () => {
+    const relay = new SimRelay({ replay: true })
+    const chain = buildChain([{ commit: true }, { commit: true }])
+    await publishRekeys(relay, chain)
+    const honest = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[2], secretAt: (n) => chain.epochs[n]?.secret, rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set(), jitterMs: 0, now,
+    })
+    const grant = await askWithoutExpected(relay, 1_000)
+    expect(grant.epoch).toEqual(chain.epochs[2])
+    honest.close()
+  })
+
+  it('ignores a rekey the authority did not sign, or one for another room, when setting the floor', async () => {
+    const relay = new SimRelay({ replay: true })
+    const chain = buildChain([{ commit: true }])
+    await publishRekeys(relay, chain)
+    const transport = new SimTransport(relay)
+    // A rekey to epoch 9 signed by somebody else, and a real authority rekey
+    // to epoch 9 for a different room: neither may raise the floor.
+    await transport.publish(encodeRekeyEvent({
+      roomId, authoritySk: generateSecretKey(), current: { epoch: 8, id: '', key: roomKey },
+      next: { epoch: 9, secret: generateEpochSecret() }, recipients: [], removed: [], now: NOW,
+    }))
+    const otherRoom = deriveRoom(new Uint8Array(32).fill(5))
+    await transport.publish(encodeRekeyEvent({
+      roomId: otherRoom.roomId, authoritySk, current: { epoch: 8, id: '', key: otherRoom.roomKey },
+      next: { epoch: 9, secret: generateEpochSecret() }, recipients: [], removed: [], now: NOW,
+    }))
+    const honest = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[1], rekeyAt: (n) => chain.rekeys[n - 1], removed: () => new Set(), jitterMs: 0, now,
+    })
+    const grant = await askWithoutExpected(relay, 1_000)
+    expect(grant.epoch).toEqual(chain.epochs[1])
+    honest.close()
   })
 })

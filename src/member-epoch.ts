@@ -9,6 +9,7 @@ import { evaluateAccess } from './access.js'
 import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
 import { epochCommitment } from './epoch-commit.js'
+import { KINDS } from './kinds.js'
 import {
   MAX_EPOCH,
   deriveEpoch,
@@ -618,7 +619,10 @@ export interface MemberEpochRequestOptions {
   /** The cumulative removed set this device already knows. */
   removed?: Iterable<string>
   /** The highest epoch a valid rekey has been seen for: see
-   *  `DecodeMemberEpochGrantOptions.expected`. */
+   *  `DecodeMemberEpochGrantOptions.expected`. The source also watches the
+   *  room's rekeys on `transport` itself and floors every grant at the
+   *  newest authority-signed one it sees, so this is only for what the
+   *  caller learnt elsewhere. */
   expected?: number | (() => number | undefined)
   now?: () => number
   /** How often a fresh request goes out. Default 4000 ms. */
@@ -636,6 +640,12 @@ export interface MemberEpochSource {
  * The member side of a catch-up, for `requestRoomEpoch({ members })`. Each
  * round publishes a fresh request (a new id, so a desk that stood down once
  * answers it), and the first grant that verifies is handed to `onGrant`.
+ *
+ * It subscribes to the room's rekeys (kind 1462) before it asks, and refuses
+ * any grant that stops short of the newest one the authority signed: rule 3
+ * of `docs/member-epoch-catch-up.md`, enforced here rather than left to the
+ * caller, because a member removed at epoch E still holds E-1 and every
+ * rekey up to it, and would otherwise hold the requester on a key it shares.
  */
 export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochSource {
   const roomId = requireHex32(opts.roomId, 'room id')
@@ -657,6 +667,20 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
         stopped = true
         if (retry !== undefined) clearInterval(retry)
         unsub()
+        unsubRekeys()
+      }
+      // The floor: the newest epoch the authority has signed a rekey into, as
+      // the relays replay it. `peekRekeyEvent` checks the signer, the room and
+      // the signature, so nobody else can raise it.
+      let seen = 0
+      const unsubRekeys = opts.transport.subscribe([{ kinds: [KINDS.ROOM_REKEY], '#d': [roomId] }], (event) => {
+        const epoch = peekRekeyEvent(event, { roomId, authority })
+        if (epoch !== null && epoch > seen) seen = epoch
+      })
+      const floor = (): number | undefined => {
+        const given = expected()
+        const top = Math.max(seen, given ?? 0)
+        return top > 0 ? top : undefined
       }
       const unsub = opts.transport.subscribe([{ kinds: [MEMBER_EPOCH_KINDS.GRANT], '#d': [roomId], '#p': [device] }], (event) => {
         if (stopped) return
@@ -668,7 +692,7 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
           current: current(),
           participant,
           removed: opts.removed,
-          expected: expected(),
+          expected: floor(),
           now: now(),
         })
         if (!grant) return

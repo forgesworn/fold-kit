@@ -27,6 +27,10 @@ the one place its behaviour has deliberately diverged.
     `deriveMemberEpochRequestKey`, `MAX_MEMBER_EPOCH_CHAIN`.
   - `requestRoomEpoch` takes an optional `members` source; without it, it
     behaves exactly as before.
+  - `memberEpochSource` watches the room's rekeys and refuses a member
+    grant that stops short of the newest authority-signed one, so a member
+    removed at epoch E cannot hold a requester at E-1 when the caller
+    passes no `expected`.
   - Two new wire labels: `kithmoot/v1/epoch-commit:` and
     `kithmoot/v1/member-epoch-request-key`.
   - `vectors/member-epoch-vectors.json` (KithMoot vector format, shipped in

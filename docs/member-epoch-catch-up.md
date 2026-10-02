@@ -118,10 +118,17 @@ all of these hold:
    request ids.
 2. `secrets` and `rekeys` have the same length L, with 1 <= L <= 32, and
    `epoch = k + L`.
-3. If the requester has seen a valid rekey up to epoch E (`expected`, from
-   `peekRekeyEvent` on what the relays replay), then `epoch >= E`. This
-   blocks a rollback: a member removed at E still holds secret E-1 and could
-   otherwise keep the requester one epoch back on a key it shares.
+3. If the requester has seen a valid rekey up to epoch E, then `epoch >=
+   E`. This blocks a rollback: a member removed at E still holds secret E-1
+   and could otherwise keep the requester one epoch back on a key it shares.
+   `decodeMemberEpochGrant` takes E as `expected`; `memberEpochSource` (and
+   so `requestRoomEpoch({ members })` and `requestMemberEpoch`) subscribes to
+   the room's kind-1462 events before it asks and sets E itself, from
+   `peekRekeyEvent` on whatever the relays replay, raised further by any
+   `expected` the caller passes. A relay that withholds rekey E from the
+   requester while serving it a removed member's grant can still hold it at
+   E-1, so a client should keep watching rekeys after it settles, as it
+   already does to learn of the next one.
 4. For each j = k+1 .. N, in order:
    - `peekRekeyEvent(rekeys[j])` returns j. That means kind 1462, the
      authority's signature, this room and an epoch tag of j.
@@ -220,6 +227,22 @@ bells and media keys of an epoch. The parties involved are:
 - **A stranger** with the room id and the authority pubkey from a public
   rekey cannot read a member request (no `roomKey₀`), cannot produce an
   admission proof, and is never answered.
+- **A newly admitted device** that claims a low `have` is handed every
+  secret from there to the current epoch (up to 32), where the authority's
+  grant hands over only the current one. Verification has to start from a
+  key the requester already holds, and every admitted device holds the
+  epoch-0 key, so a desk cannot tell a device that really is at epoch 0 from
+  one that only says so. The member path therefore gives a newcomer that
+  passes the room's policy the keys to the history of earlier epochs, which
+  the authority path did not. Epochs exist to shut the removed out, not to
+  hide the past from the admitted, so this is accepted, but it is a
+  difference.
+- **Any holder of the link**, including a removed member, can open a member
+  request and read the asking device's credential and kindred proof: its
+  participant, its current device key, and that it is behind. The
+  authority's request shows that to the authority alone. For a removed
+  member this includes device keys made after its removal, which the epoch-0
+  roster it can still read does not.
 - **A relay** sees, per request, the room id, the asking device's pubkey and
   a time. The existing 20468 already shows it exactly that, plus the
   authority's pubkey in `p`. Per grant it sees the room id, the asking
