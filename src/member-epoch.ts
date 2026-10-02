@@ -76,6 +76,9 @@ const MAX_AGE_SECONDS = 90
 const DEFAULT_TIMEOUT_MS = 30_000
 const DEFAULT_RETRY_MS = 4_000
 const DEFAULT_JITTER_MS = 1_500
+/** How long a requester waits for its relays to finish replaying the room's
+ *  rekeys before it asks anyway. */
+const REKEY_REPLAY_WAIT_MS = 1_500
 /** Many relays refuse events much over 64 KiB. A grant inlines whole rekey
  *  events, each with a seal per device, so a long chain in a big room can
  *  pass that; a desk does not send one that would. */
@@ -661,11 +664,17 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
     start(onGrant) {
       const requests = new Set<string>()
       let stopped = false
+      let begun = false
+      /** Set once everything below is wired up; EOSE can arrive before. */
+      let ready = false
+      let replayed = false
       let retry: ReturnType<typeof setInterval> | undefined
+      let replayWait: ReturnType<typeof setTimeout> | undefined
       const stop = (): void => {
         if (stopped) return
         stopped = true
         if (retry !== undefined) clearInterval(retry)
+        if (replayWait !== undefined) clearTimeout(replayWait)
         unsub()
         unsubRekeys()
       }
@@ -673,10 +682,20 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
       // the relays replay it. `peekRekeyEvent` checks the signer, the room and
       // the signature, so nobody else can raise it.
       let seen = 0
-      const unsubRekeys = opts.transport.subscribe([{ kinds: [KINDS.ROOM_REKEY], '#d': [roomId] }], (event) => {
-        const epoch = peekRekeyEvent(event, { roomId, authority })
-        if (epoch !== null && epoch > seen) seen = epoch
-      })
+      // The first request waits for the relays to finish replaying them
+      // (EOSE), or for REKEY_REPLAY_WAIT_MS, so that a member answering
+      // faster than the replay cannot slip a stale chain in under the floor.
+      const unsubRekeys = opts.transport.subscribe(
+        [{ kinds: [KINDS.ROOM_REKEY], '#d': [roomId] }],
+        (event) => {
+          const epoch = peekRekeyEvent(event, { roomId, authority })
+          if (epoch !== null && epoch > seen) seen = epoch
+        },
+        () => {
+          replayed = true
+          if (ready) begin()
+        },
+      )
       const floor = (): number | undefined => {
         const given = expected()
         const top = Math.max(seen, given ?? 0)
@@ -721,9 +740,20 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
         if (requests.size > 16) requests.delete(requests.values().next().value!)
         opts.transport.publish(request).catch(() => {})
       }
-      retry = setInterval(ask, opts.retryMs ?? DEFAULT_RETRY_MS)
-      ;(retry as unknown as { unref?: () => void }).unref?.()
-      ask()
+      function begin(): void {
+        if (begun || stopped) return
+        begun = true
+        if (replayWait !== undefined) clearTimeout(replayWait)
+        retry = setInterval(ask, opts.retryMs ?? DEFAULT_RETRY_MS)
+        ;(retry as unknown as { unref?: () => void }).unref?.()
+        ask()
+      }
+      ready = true
+      if (replayed) begin()
+      else {
+        replayWait = setTimeout(begin, REKEY_REPLAY_WAIT_MS)
+        ;(replayWait as unknown as { unref?: () => void }).unref?.()
+      }
       return stop
     },
   }

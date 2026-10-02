@@ -612,3 +612,44 @@ describe('member epoch refusals the other tests do not reach', () => {
     handle.close()
   })
 })
+
+describe('the requester waits for the rekey replay before it asks', () => {
+  /** A relay that replays stored rekeys, then EOSE, only after `delayMs`:
+   *  what a real relay does over a network. Everything else is immediate. */
+  function slowReplay(relay: SimRelay, delayMs: number) {
+    const inner = new SimTransport(relay)
+    return {
+      publish: (event: Event) => inner.publish(event),
+      close: () => inner.close(),
+      subscribe(filters: Parameters<SimTransport['subscribe']>[0], onEvent: (event: Event) => void, onEose?: () => void) {
+        if (!filters.some((f) => f.kinds?.includes(1462))) return inner.subscribe(filters, onEvent, onEose)
+        let off = () => {}
+        let gone = false
+        const timer = setTimeout(() => {
+          if (!gone) off = inner.subscribe(filters, onEvent, onEose)
+        }, delayMs)
+        return () => {
+          gone = true
+          clearTimeout(timer)
+          off()
+        }
+      },
+    }
+  }
+
+  it('so a member removed at the top cannot answer faster than the relays replay', async () => {
+    const relay = new SimRelay({ replay: true })
+    const chain = buildChain([{ commit: true }, { commit: true }, { commit: true, removed: [gone.pubkey] }])
+    for (const rekey of chain.rekeys) await new SimTransport(relay).publish(rekey)
+    const stale = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: goneDeviceSk, roomKey,
+      current: () => chain.epochs[2], secretAt: (n) => chain.epochs[n]?.secret, rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set(), jitterMs: 0, now,
+    })
+    await expect(requestMemberEpoch({
+      transport: slowReplay(relay, 50), roomId, authority, deviceSk: requesterDeviceSk, roomKey,
+      credential: await credentialFor(requesterDeviceSk, requester), current: keysOf(E0), now, timeoutMs: 400, retryMs: 50,
+    })).rejects.toThrow(/no current member/)
+    stale.close()
+  })
+})

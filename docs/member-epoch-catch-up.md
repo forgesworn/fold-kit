@@ -123,9 +123,10 @@ all of these hold:
    and could otherwise keep the requester one epoch back on a key it shares.
    `decodeMemberEpochGrant` takes E as `expected`; `memberEpochSource` (and
    so `requestRoomEpoch({ members })` and `requestMemberEpoch`) subscribes to
-   the room's kind-1462 events before it asks and sets E itself, from
-   `peekRekeyEvent` on whatever the relays replay, raised further by any
-   `expected` the caller passes. A relay that withholds rekey E from the
+   the room's kind-1462 events and sets E itself, from `peekRekeyEvent` on
+   whatever the relays replay, raised further by any `expected` the caller
+   passes. Its first request waits for that replay to end (EOSE, or 1.5 s
+   at most), so a member cannot answer before the floor is known. A relay that withholds rekey E from the
    requester while serving it a removed member's grant can still hold it at
    E-1, so a client should keep watching rekeys after it settles, as it
    already does to learn of the next one.
