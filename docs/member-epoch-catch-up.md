@@ -169,7 +169,13 @@ A member answers a request only when all of these hold:
   own epoch (`secretAt`, `rekeyAt`), and the chain is no more than 32 long;
 - when it can read the last rekey itself (it holds the key before it), that
   rekey carries a commitment. A member that joined at the current epoch
-  cannot check this, so it sends the grant and the requester decides.
+  cannot check this, so it sends the grant and the requester decides;
+- the serialised grant fits its byte budget (`maxGrantBytes`, default
+  60000, under the 64 KiB many relays enforce). The grant inlines whole
+  rekey events, each with one seal per kept device, so a long chain in a
+  large room can outgrow a relay's limit, and such a chain is left to the
+  authority. The requester can already fetch the durable 1462s from its
+  relays, so a later revision could carry rekey ids in place of the events.
 
 The requester re-checks everything, so a desk bug cannot weaken anything.
 At worst it costs bandwidth.

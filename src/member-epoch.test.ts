@@ -307,6 +307,15 @@ describe('the member desk', () => {
     handle.close()
   })
 
+  it('does not publish a grant larger than its byte budget', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true }])
+    const handle = desk(relay, chain, { maxGrantBytes: 500 })
+    await expect(ask(relay, { timeoutMs: 200 })).rejects.toThrow(/no current member/)
+    expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(0)
+    handle.close()
+  })
+
   it('does not answer a stranger with the room id and no room key', async () => {
     const relay = new SimRelay()
     const chain = buildChain([{ commit: true }])
@@ -351,7 +360,7 @@ describe('the member desk', () => {
     const relay = new SimRelay()
     const chain = buildChain([{ commit: true }])
     const granted: string[] = []
-    const handle = desk(relay, chain, { jitterMs: 40, random: () => 0.99, onGranted: (r) => granted.push(r.request) })
+    const handle = desk(relay, chain, { jitterMs: 20, random: () => 0.99, onGranted: (r) => granted.push(r.request) })
     const transport = new SimTransport(relay)
     const credential = await credentialFor(requesterDeviceSk, requester)
     const r1 = encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW })
@@ -362,7 +371,7 @@ describe('the member desk', () => {
       roomId, deviceSk: generateSecretKey(), device: requesterDevice, request: r1.id,
       epochs: [chain.epochs[1]!], rekeys: [chain.rekeys[0]!], now: NOW,
     }))
-    await new Promise((r) => setTimeout(r, 80))
+    await new Promise((r) => setTimeout(r, 150))
     expect(granted).toEqual([])
     const r2 = encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW + 1 })
     await transport.publish(r2)
@@ -370,7 +379,7 @@ describe('the member desk', () => {
       roomId, deviceSk: generateSecretKey(), device: requesterDevice, request: r2.id,
       epochs: [chain.epochs[1]!], rekeys: [chain.rekeys[0]!], now: NOW,
     }))
-    await new Promise((r) => setTimeout(r, 80))
+    await new Promise((r) => setTimeout(r, 150))
     expect(granted).toEqual([r2.id])
     handle.close()
   })

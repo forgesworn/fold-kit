@@ -75,6 +75,10 @@ const MAX_AGE_SECONDS = 90
 const DEFAULT_TIMEOUT_MS = 30_000
 const DEFAULT_RETRY_MS = 4_000
 const DEFAULT_JITTER_MS = 1_500
+/** Many relays refuse events much over 64 KiB. A grant inlines whole rekey
+ *  events, each with a seal per device, so a long chain in a big room can
+ *  pass that; a desk does not send one that would. */
+const DEFAULT_MAX_GRANT_BYTES = 60_000
 const HEX64 = /^[0-9a-f]{64}$/i
 
 function requireHex32(value: string, what: string): string {
@@ -434,6 +438,10 @@ export interface HostMemberEpochDeskOptions {
   jitterMs?: number
   /** For tests: a source of numbers in [0, 1). Default `Math.random`. */
   random?: () => number
+  /** The largest serialised grant this desk will publish. Default 60000:
+   *  under the 64 KiB many relays enforce. A longer chain is left to the
+   *  authority. */
+  maxGrantBytes?: number
   onGranted?: (request: MemberEpochRequest) => void
   /** Called when this desk declines a removed participant or a closed room.
    *  Nothing is published either way: a member's refusal is not something a
@@ -537,6 +545,7 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     } catch {
       return
     }
+    if (JSON.stringify(grant).length > (opts.maxGrantBytes ?? DEFAULT_MAX_GRANT_BYTES)) return
     opts.transport.publish(grant).catch(() => {})
     opts.onGranted?.(request)
   }
