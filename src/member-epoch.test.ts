@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { generateSecretKey, getPublicKey, type Event } from 'nostr-tools/pure'
+import { finalizeEvent, generateSecretKey, getPublicKey, type Event } from 'nostr-tools/pure'
 import { nip44 } from 'nostr-tools'
+import { base64urlnopad } from '@scure/base'
 import { SimRelay, SimTransport } from '../test/sim-relay.js'
 import { createDeviceCredential } from './credential.js'
 import { localIdentity } from './identity.js'
@@ -496,5 +497,118 @@ describe('the requester floors a member grant at the newest rekey its relays rep
     const grant = await askWithoutExpected(relay, 1_000)
     expect(grant.epoch).toEqual(chain.epochs[1])
     honest.close()
+  })
+})
+
+describe('member epoch refusals the other tests do not reach', () => {
+  const requestId = 'ab'.repeat(32)
+  const requests = new Set([requestId])
+  const memberDevice = getPublicKey(memberDeviceSk)
+
+  function decode(grant: Event, extra: Partial<Parameters<typeof decodeMemberEpochGrant>[1]> = {}) {
+    return decodeMemberEpochGrant(grant, {
+      roomId, authority, deviceSk: requesterDeviceSk, requests, current: keysOf(E0), participant: requester.pubkey, now: NOW, ...extra,
+    })
+  }
+
+  /** A grant built by hand, for shapes `encodeMemberEpochGrant` will not make. */
+  function rawGrant(body: unknown, tags: string[][] = [['d', roomId], ['p', requesterDevice]], createdAt = NOW): Event {
+    return finalizeEvent(
+      {
+        kind: MEMBER_EPOCH_KINDS.GRANT,
+        created_at: createdAt,
+        tags,
+        content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(memberDeviceSk, requesterDevice)),
+      },
+      memberDeviceSk,
+    )
+  }
+
+  it('refuses an authority-signed rekey for another room spliced into the chain, even one that decrypts', () => {
+    const otherRoom = deriveRoom(new Uint8Array(32).fill(4)).roomId
+    const next = { epoch: 1, secret: generateEpochSecret() }
+    // The same authority, the same epoch-0 key as this room, another room id.
+    const spliced = encodeRekeyEvent({ roomId: otherRoom, authoritySk, current: keysOf(E0), next, recipients: [], removed: [], commit: true, now: NOW })
+    const grant = encodeMemberEpochGrant({
+      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW,
+    })
+    expect(decode(grant)).toBeNull()
+    // In the middle of a chain, where no commitment is checked, the room tag
+    // alone refuses it.
+    const top = { epoch: 2, secret: generateEpochSecret() }
+    const onTop = encodeRekeyEvent({ roomId, authoritySk, current: deriveEpoch(next), next: top, recipients: [], removed: [], commit: true, now: NOW })
+    expect(decode(encodeMemberEpochGrant({
+      roomId, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next, top], rekeys: [spliced, onTop], now: NOW,
+    }))).toBeNull()
+    // The same splice is accepted in the room the rekey names: the refusal is
+    // the room binding, not something else.
+    expect(decodeMemberEpochGrant(
+      encodeMemberEpochGrant({ roomId: otherRoom, deviceSk: memberDeviceSk, device: requesterDevice, request: requestId, epochs: [next], rekeys: [spliced], now: NOW }),
+      { roomId: otherRoom, authority, deviceSk: requesterDeviceSk, requests, current: keysOf(E0), participant: requester.pubkey, now: NOW },
+    )).not.toBeNull()
+  })
+
+  it('refuses a chain longer than 32 epochs', () => {
+    const chain = buildChain(Array.from({ length: 33 }, () => ({ commit: true })))
+    const body = {
+      v: 1, request: requestId, epoch: 33,
+      secrets: chain.epochs.slice(1).map((e) => base64urlnopad.encode(e.secret)),
+      rekeys: chain.rekeys,
+    }
+    expect(decode(rawGrant(body))).toBeNull()
+    // One shorter, from epoch 1, is accepted.
+    const from1 = { ...body, secrets: body.secrets.slice(1), rekeys: body.rekeys.slice(1) }
+    expect(decode(rawGrant(from1), { current: keysOf(chain.epochs[1]!) })).not.toBeNull()
+  })
+
+  it('refuses a grant whose `p` names another device, and a stale one', () => {
+    const chain = buildChain([{ commit: true }])
+    const body = { v: 1, request: requestId, epoch: 1, secrets: [base64urlnopad.encode(chain.epochs[1]!.secret)], rekeys: chain.rekeys }
+    expect(decode(rawGrant(body))).not.toBeNull()
+    expect(decode(rawGrant(body, [['d', roomId], ['p', memberDevice]]))).toBeNull()
+    expect(decode(rawGrant(body, [['d', roomId], ['p', requesterDevice]], NOW - 600))).toBeNull()
+  })
+
+  it('a desk re-checks removal and closure after its wait, and answers nothing it learnt of meanwhile', async () => {
+    for (const change of ['removed', 'closed'] as const) {
+      const relay = new SimRelay()
+      const chain = buildChain([{ commit: true }])
+      const removed = new Set<string>()
+      let closed = false
+      const granted: string[] = []
+      const handle = hostMemberEpochDesk({
+        transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+        current: () => chain.epochs[1], rekeyAt: (n) => chain.rekeys[n - 1], removed: () => removed, closed: () => closed,
+        jitterMs: 40, random: () => 0.99, now, onGranted: (r) => granted.push(r.request),
+      })
+      const credential = await credentialFor(requesterDeviceSk, requester)
+      await new SimTransport(relay).publish(
+        encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW }),
+      )
+      if (change === 'removed') removed.add(requester.pubkey)
+      else closed = true
+      await new Promise((r) => setTimeout(r, 120))
+      expect(granted).toEqual([])
+      expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(0)
+      handle.close()
+    }
+  })
+
+  it('a desk leaves a requester more than 32 epochs behind to the authority', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain(Array.from({ length: 33 }, () => ({ commit: true })))
+    const handle = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[33], secretAt: (n) => chain.epochs[n]?.secret, rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set(), jitterMs: 0, now, maxGrantBytes: 10_000_000,
+    })
+    const credential = await credentialFor(requesterDeviceSk, requester)
+    const transport = new SimTransport(relay)
+    await transport.publish(encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 0, now: NOW }))
+    expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(0)
+    // From epoch 1 the chain is 32 long, and it is answered.
+    await transport.publish(encodeMemberEpochRequest({ roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, have: 1, now: NOW + 1 }))
+    expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(1)
+    handle.close()
   })
 })
