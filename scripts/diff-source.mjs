@@ -277,6 +277,8 @@ const MEMBER_EPOCH_CHANGES = {
     ["\n    let stopMembers = () => {}", "", 1],
     ["\n      stopMembers()\n      settle()", "\n      settle()", 1],
     ["\n    if (opts.members && !settled) {\n      stopMembers = opts.members.start((grant) => finish(() => resolve(grant)))\n      if (settled) stopMembers()\n    }", "", 1],
+    // The epochs a member grant carried past, typed on the grant (0.5.1).
+    ["  | {\n      epoch: RoomEpoch | { epoch: 0 }\n      removed: string[]\n      /** Present on a member's answer through `requestRoomEpoch({ members })`:\n       *  the epochs it carried between the requester's and `epoch`. See\n       *  `MemberEpochGrant.passed`. The authority's own answer has none. */\n      passed?: RoomEpoch[]\n      refused?: undefined\n    }", "  | { epoch: RoomEpoch | { epoch: 0 }; removed: string[]; refused?: undefined }", 1],
   ],
 }
 
