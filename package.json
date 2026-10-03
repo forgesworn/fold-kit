@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/fold-kit",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
   "type": "module",
   "main": "./dist/index.js",
