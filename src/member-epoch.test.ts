@@ -241,6 +241,9 @@ describe('the member desk', () => {
       secretAt: (n) => chain.epochs[n]?.secret,
       rekeyAt: (n) => chain.rekeys[n - 1],
       removed: () => new Set([gone.pubkey]),
+      // The requester is a member the room knows: it was there before the
+      // removal. See 'the known-members gate' for everybody else.
+      known: (p) => p === requester.pubkey,
       jitterMs: 0,
       now,
       ...extra,
@@ -383,6 +386,117 @@ describe('the member desk', () => {
     await new Promise((r) => setTimeout(r, 150))
     expect(granted).toEqual([r2.id])
     handle.close()
+  })
+})
+
+describe('the member desk and the known-members gate (#207)', () => {
+  function desk(relay: SimRelay, chain: Chain, extra: Partial<Parameters<typeof hostMemberEpochDesk>[0]> = {}) {
+    return hostMemberEpochDesk({
+      transport: new SimTransport(relay),
+      roomId,
+      authority,
+      deviceSk: memberDeviceSk,
+      roomKey,
+      current: () => chain.epochs[chain.epochs.length - 1],
+      secretAt: (n) => chain.epochs[n]?.secret,
+      rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set([gone.pubkey]),
+      jitterMs: 0,
+      now,
+      ...extra,
+    })
+  }
+
+  async function ask(relay: SimRelay, id: ReturnType<typeof localIdentity>, timeoutMs = 300) {
+    const deviceSk = generateSecretKey()
+    return requestMemberEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authority,
+      deviceSk,
+      roomKey,
+      credential: await credentialFor(deviceSk, id),
+      current: keysOf(E0),
+      now,
+      timeoutMs,
+      retryMs: 20,
+    })
+  }
+
+  it('does not answer a removed person back under a fresh key, and reports them once', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true, removed: [gone.pubkey] }])
+    const unknown: string[] = []
+    const refused: string[] = []
+    const fresh = localIdentity(generateSecretKey())
+    const handle = desk(relay, chain, {
+      known: (p) => p === requester.pubkey,
+      onUnknown: (r) => unknown.push(r.participant),
+      onRefused: (_r, why) => refused.push(why),
+    })
+    await expect(ask(relay, fresh)).rejects.toThrow(/no current member/)
+    // Asked afresh every 20 ms for 300 ms, and reported once.
+    expect(unknown).toEqual([fresh.pubkey])
+    expect(refused.every((why) => why === 'unknown')).toBe(true)
+    expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(0)
+    handle.close()
+  })
+
+  it('reports somebody still asking again a minute later, not every retry', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true, removed: [gone.pubkey] }])
+    let t = NOW
+    const unknown: string[] = []
+    const fresh = localIdentity(generateSecretKey())
+    const handle = desk(relay, chain, { now: () => t, onUnknown: (r) => unknown.push(r.participant) })
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    t = NOW + 59
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    expect(unknown).toEqual([fresh.pubkey])
+    t = NOW + 60
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    expect(unknown).toEqual([fresh.pubkey, fresh.pubkey])
+    handle.close()
+  })
+
+  it('answers somebody let in on their next ask', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true, removed: [gone.pubkey] }])
+    const letIn = new Set<string>()
+    const handle = desk(relay, chain, { known: (p) => letIn.has(p), onUnknown: (r) => letIn.add(r.participant) })
+    const grant = await ask(relay, localIdentity(generateSecretKey()), 1_000)
+    expect(grant.epoch).toEqual(chain.epochs[1])
+    handle.close()
+  })
+
+  it('answers a newcomer as before in a room that never removed anybody', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true }])
+    const handle = desk(relay, chain, { removed: () => new Set() })
+    expect((await ask(relay, localIdentity(generateSecretKey()), 1_000)).epoch).toEqual(chain.epochs[1])
+    handle.close()
+  })
+
+  it('hands on the newest member list a chain carries', () => {
+    const steps = [{ commit: true }, { commit: true, removed: [gone.pubkey] }]
+    const epochs: RoomEpoch[] = [E0]
+    const rekeys: Event[] = []
+    const lists = [[requester.pubkey, gone.pubkey], [requester.pubkey]]
+    steps.forEach((step, i) => {
+      const next = { epoch: i + 1, secret: generateEpochSecret() }
+      rekeys.push(encodeRekeyEvent({
+        roomId, authoritySk, current: deriveEpoch(epochs[i]!), next, recipients: [getPublicKey(memberDeviceSk)],
+        removed: step.removed ?? [], commit: step.commit, members: lists[i], now: NOW - 100 + i,
+      }))
+      epochs.push(next)
+    })
+    expect(readRekeyEvidence(rekeys[0]!, { roomId, authority, previous: keysOf(E0) })?.members).toEqual([gone.pubkey, requester.pubkey].sort())
+    const request = 'ab'.repeat(32)
+    const grant = encodeMemberEpochGrant({ roomId, device: requesterDevice, request, epochs: epochs.slice(1), rekeys, now: NOW })
+    const read = decodeMemberEpochGrant(grant, {
+      roomId, authority, deviceSk: requesterDeviceSk, requests: new Set([request]), current: keysOf(E0), participant: requester.pubkey, now: NOW,
+    })
+    expect(read?.members).toEqual([requester.pubkey])
   })
 })
 

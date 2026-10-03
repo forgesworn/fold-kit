@@ -5,6 +5,37 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Changed
+
+- The known-members gate (#207). The epoch desks' admission proof is made
+  under the epoch-0 room key, which a removed member keeps, so a removed
+  person could ask again under a fresh participant key and be handed the
+  current epoch. Once a room has removed anybody, `hostRoomEpoch` and
+  `hostMemberEpochDesk` now grant only to participants for which the new
+  `known(participant)` option says yes, and report anybody else through
+  `onUnknown`: once per participant, and again every `reportUnknownEvery`
+  seconds (default 60) while they keep asking. **A desk given no `known` lets nobody through after a
+  removal**: wire `known` before taking this release. Rooms that have
+  never removed anybody behave exactly as before.
+- New refusal `'unknown'` (`EpochRefusal`): the authority's answer to a
+  participant it does not know. Not final: `requestRoomEpoch` keeps asking,
+  calls its new `onUnknown` once, and rejects with
+  `EpochRefusedError('unknown')` only at its timeout. A decoder from 0.5.1
+  reads it as no answer and keeps asking.
+
+### Added
+
+- `encodeRekeyEvent({ members })`: the authority's member list in the
+  encrypted rekey body (after `commit`, before `keys`), removed
+  participants dropped. Read as `RekeyNotice.members`,
+  `RekeyEvidence.members` and `MemberEpochGrant.members`.
+  `hostRoomEpoch({ members })` and `encodeEpochGrant({ members })` carry it
+  in the authority's grant (`EpochGrant.members`). `readMemberList`.
+  Omitted, every event is byte-identical to 0.5.1's.
+- Vector `rekey-with-members` in `vectors/member-epoch-vectors.json`.
+
 ## 0.5.1
 
 ### Added

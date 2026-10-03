@@ -79,7 +79,7 @@ function recorded(labels, fn) {
 const e0 = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
 const e1 = deriveEpoch(EPOCH_1)
 
-function rekey(label, { current, next, removed = [], commit, closed }) {
+function rekey(label, { current, next, removed = [], commit, closed, members }) {
   return recorded([`${label}/seal`, `${label}/body`, `${label}/aux`].slice(closed ? 1 : 0), () =>
     encodeRekeyEvent({
       roomId,
@@ -90,6 +90,7 @@ function rekey(label, { current, next, removed = [], commit, closed }) {
       removed,
       ...(commit ? { commit: true } : {}),
       ...(closed ? { closed: true } : {}),
+      ...(members ? { members } : {}),
       now: NOW - 1000 + next.epoch,
     }),
   )
@@ -101,6 +102,10 @@ const rekey2 = rekey('rekey-2', { current: e1, next: EPOCH_2, removed: [GONE], c
 const rekey1Committed = rekey('rekey-1-committed', { current: e0, next: EPOCH_1, commit: true })
 const rekey2RemovesRequester = rekey('rekey-2-removes-requester', { current: e1, next: EPOCH_2, removed: [REQUESTER], commit: true })
 const rekey2Closed = rekey('rekey-2-closed', { current: e1, next: EPOCH_2, commit: true, closed: true })
+// The known-members gate (#207): the authority's member list, given with the
+// removed participant in it to show the encoder drops them.
+const rekey2Members = rekey('rekey-2-members', { current: e1, next: EPOCH_2, removed: [GONE], commit: true, members: [REQUESTER, GONE] })
+const evidence2Members = readRekeyEvidence(rekey2Members.event, { roomId, authority: AUTHORITY, previous: e1 })
 
 // The requester's device credential, signed deterministically.
 const credential = await createDeviceCredential({
@@ -234,6 +239,13 @@ const vectors = [
     note: 'The same encoder without `commit`: byte-identical in shape to every rekey before this existed (body keys v, epoch, removed, keys). Readable as evidence, with no commitment - so its epoch can be vouched for only by a later rekey decrypting under it, never on its own.',
     input: { roomId, authority: AUTHORITY, previousEpoch: 0, previousKeyHex: hex(e0.key), next: { epoch: 1, secretHex: hex(EPOCH_1.secret) }, recipients: [MEMBER_DEVICE], removed: [], authoritySkHex: hex(AUTHORITY_SK), createdAt: NOW - 999, ...rekey1Legacy },
     output: { evidence: evidence1 },
+  },
+  {
+    name: 'rekey-with-members',
+    kind: 'positive',
+    note: 'The rekey to epoch 2 with the authority\'s member list (`encodeRekeyEvent({ members })`, #207): the participants it knows to be in the room, the removed ones dropped even when passed in, lower-case, deduplicated and sorted. Body key order: v, epoch, removed, commit, members, keys. A desk hands an epoch on, once anybody has been removed, only to a participant the room knows; this list is where a member learns who that is. A list that is not an array of 32-byte hex keys is read as absent, which makes nobody known.',
+    input: { roomId, authority: AUTHORITY, previousEpoch: 1, previousSecretHex: hex(EPOCH_1.secret), previousKeyHex: hex(e1.key), next: { epoch: 2, secretHex: hex(EPOCH_2.secret) }, recipients: [MEMBER_DEVICE], removed: [GONE], members: [REQUESTER, GONE], authoritySkHex: hex(AUTHORITY_SK), createdAt: NOW - 998, ...rekey2Members },
+    output: { evidence: evidence2Members },
   },
   {
     name: 'member-request',

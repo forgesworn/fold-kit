@@ -66,7 +66,12 @@ describe('member-epoch-vectors', () => {
     expect(bytesToHex(hkdf(sha256, roomKey, undefined, 'kithmoot/v1/member-epoch-request-key', 32))).toBe(v.output.keyHex)
   })
 
-  for (const name of ['rekey-with-commitment', 'rekey-without-commitment']) {
+  const bodyKeys: Record<string, string[]> = {
+    'rekey-with-commitment': ['v', 'epoch', 'removed', 'commit', 'keys'],
+    'rekey-without-commitment': ['v', 'epoch', 'removed', 'keys'],
+    'rekey-with-members': ['v', 'epoch', 'removed', 'commit', 'members', 'keys'],
+  }
+  for (const name of Object.keys(bodyKeys)) {
     it(`${name}: the real encoder reproduces the event, and it reads as the recorded evidence`, () => {
       const v = vec(name)
       const i = v.input
@@ -79,15 +84,16 @@ describe('member-epoch-vectors', () => {
           next: { epoch: i.next.epoch, secret: hexToBytes(i.next.secretHex) },
           recipients: i.recipients,
           removed: i.removed,
-          ...(name === 'rekey-with-commitment' ? { commit: true } : {}),
+          ...(name !== 'rekey-without-commitment' ? { commit: true } : {}),
+          ...(i.members ? { members: i.members } : {}),
           now: i.createdAt,
         }),
       )
       expect(JSON.parse(JSON.stringify(event))).toEqual(i.event)
       expect(readRekeyEvidence(i.event as Event, { roomId: i.roomId, authority: i.authority, previous })).toEqual(v.output.evidence)
       const body = JSON.parse(nip44.v2.decrypt(i.event.content, previous.key))
-      expect(Object.keys(body)).toEqual(name === 'rekey-with-commitment' ? ['v', 'epoch', 'removed', 'commit', 'keys'] : ['v', 'epoch', 'removed', 'keys'])
-      if (name === 'rekey-with-commitment') {
+      expect(Object.keys(body)).toEqual(bodyKeys[name])
+      if (name !== 'rekey-without-commitment') {
         expect(i.previousKeyHex).toBe(bytesToHex(deriveEpoch({ epoch: 1, secret: hexToBytes(i.previousSecretHex) }).key))
       }
     })

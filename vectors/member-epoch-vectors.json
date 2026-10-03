@@ -137,6 +137,70 @@
         }
       },
       {
+        "name": "rekey-with-members",
+        "kind": "positive",
+        "note": "The rekey to epoch 2 with the authority's member list (`encodeRekeyEvent({ members })`, #207): the participants it knows to be in the room, the removed ones dropped even when passed in, lower-case, deduplicated and sorted. Body key order: v, epoch, removed, commit, members, keys. A desk hands an epoch on, once anybody has been removed, only to a participant the room knows; this list is where a member learns who that is. A list that is not an array of 32-byte hex keys is read as absent, which makes nobody known.",
+        "input": {
+          "roomId": "76c7081ef2322b7619d5cb5e690779fb942d63964f0b819e3d852db6c6a264f9",
+          "authority": "a5098de007349f8c12d6a854dfc069074b803470f59484697c50c5211b13c810",
+          "previousEpoch": 1,
+          "previousSecretHex": "cf6c5602daa51ecab29fbcbcef0da517b303cd59ee2904c15e226b7dd00e7752",
+          "previousKeyHex": "e038a7fca65628eebee35c562410ac63cce191b776ba0e8e5a1d241d9417f733",
+          "next": {
+            "epoch": 2,
+            "secretHex": "d4f5a0426e6880797fa29d914bb6977d193dfcd4f46b2a3acc576226eeec3ac9"
+          },
+          "recipients": [
+            "ef4396c842882c47ad1106d846d5c7e712c8928b69c92bc1798fa63deb9dd76b"
+          ],
+          "removed": [
+            "298cf780bc6d1b93c4900b20c89a911286ee3488ab94f543d96d567c70eb9ed2"
+          ],
+          "members": [
+            "588c59130ea8b9d81e836d0c5a89daa6b888923357c1415359b48595b4937f53",
+            "298cf780bc6d1b93c4900b20c89a911286ee3488ab94f543d96d567c70eb9ed2"
+          ],
+          "authoritySkHex": "825cf62829b0262bc5b46870d5cc054d6049e54a68cf1ea393c3da56226c456b",
+          "createdAt": 1799999002,
+          "event": {
+            "id": "d8d5c810c2e22d87493d8a10f908e38e68b5e4611ad5a230103ca01d5ba7a954",
+            "pubkey": "a5098de007349f8c12d6a854dfc069074b803470f59484697c50c5211b13c810",
+            "created_at": 1799999002,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "76c7081ef2322b7619d5cb5e690779fb942d63964f0b819e3d852db6c6a264f9"
+              ],
+              [
+                "epoch",
+                "2"
+              ]
+            ],
+            "content": "AjCp1V9xfa32TYx5FAmMp1toqAM2yKrdBWdygJs+bFNGNIls48ZUufb0m3Cs51qusvmVJF51AEvXiW82LyhO6o/2J9Sra65b80+cyj8Km+LrLCXx6qyLPIYjKdISORDS6UhDKXa9UInbnZnGf87KKruDujB82QKDo26ImrXPbzy246dYMCvon7dYLGa+y3Qk9u5OLVKSrYVhDhFRHZX2XMltl478SRQ7GuvzbibZbFrNz1EvWSJOqbxf8YLpvYzbq55xmr9CA1rjk9vBKTzaHGX23ZvPPdaQFHh53YXCzYGN4+p54P/gH9PgZREZt+5Jel5kDhVfk8YMinaSzaBQ7MvEUEEIGDUPc6xbmZ3twlam+y/4H0vuugQtOm85tU7sozohPj65hlpaxRmTdenWivldIAWyPAEsUjOtGcvnFur5Hbg9H+WEsyXAX6tLZZV3jNFcCPLkoWB9O3iFasN3m2P0larhRTr9lhReqzt3UxtGBp14rErj0uZEZlwrz4n3ZiFgH/qc1X/pFlskh4dQJV/PGCEe6F7v7fd4aChiYHA1ghq2cy4fKW44+FU2EKPEezWcD96sOshiCoh0xWxHJoNbWhKJ5P8EcyK7TCH9UJVk9OyAiGVYnnxh+cuDgVfCOdRR6VbxWopqclvhlV+NGBullxSv5aQJSj6fS5O+QxSCwZrR8DA2SMKRSFU+kXHQxOgEvZW1cPdHWMtUr1dwsRrMd3ayNyZqSIjjyktqzsmrD+Pl6Ikk5tbE3kyNYdWHX7Mz",
+            "sig": "90c5666a5ca4c5d4c1a0e4b3b4422aa7462d4300986f82afff435a88edb48a41e3191192c6404b17401712204de56ba2269a6b4376f0ef224ad9798728550710"
+          },
+          "randomHex": [
+            "ff9c267263a44961a1d49a09c831ef35fa2d53e4d4cfc572d72f506478e61045",
+            "30a9d55f717dadf64d8c7914098ca75b68a80336c8aadd056772809b3e6c5346",
+            "11ae6ba1ae1e25f1493588462e919538089a63c28e68b7f5734bd0df2ba395e3"
+          ]
+        },
+        "output": {
+          "evidence": {
+            "epoch": 2,
+            "removed": [
+              "298cf780bc6d1b93c4900b20c89a911286ee3488ab94f543d96d567c70eb9ed2"
+            ],
+            "closed": false,
+            "commit": "3472885df839fc5d48d809476e28e36c458c3e4717e35c2ec0d69bbbdf94f896",
+            "members": [
+              "588c59130ea8b9d81e836d0c5a89daa6b888923357c1415359b48595b4937f53"
+            ]
+          }
+        }
+      },
+      {
         "name": "member-request",
         "kind": "positive",
         "note": "Kind 20471, tags [[\"d\", roomId]], signed by the asking device. Body (NIP-44 under the member request key): {\"v\":1,\"credential\":<device credential>,\"admission\":<epochRequestAdmission, exactly as the authority desk checks it>,\"have\":<the asker's epoch>}. `randomHex`: body nonce, aux-rand.",

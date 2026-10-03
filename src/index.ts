@@ -127,6 +127,8 @@ export {
   deriveEpoch,
   encodeRekeyEvent,
   peekRekeyEvent,
+  readMemberList,
+  REPORT_UNKNOWN_EVERY_SECONDS,
   decodeRekeyEvent,
   deriveEpochRequestKey,
   epochRequestAdmission,
