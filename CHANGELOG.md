@@ -5,7 +5,7 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
-## Unreleased
+## 0.5.1
 
 ### Added
 
