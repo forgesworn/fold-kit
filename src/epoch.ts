@@ -567,7 +567,15 @@ export interface DecodeEpochGrantOptions {
 }
 
 export type EpochGrant =
-  | { epoch: RoomEpoch | { epoch: 0 }; removed: string[]; refused?: undefined }
+  | {
+      epoch: RoomEpoch | { epoch: 0 }
+      removed: string[]
+      /** Present on a member's answer through `requestRoomEpoch({ members })`:
+       *  the epochs it carried between the requester's and `epoch`. See
+       *  `MemberEpochGrant.passed`. The authority's own answer has none. */
+      passed?: RoomEpoch[]
+      refused?: undefined
+    }
   | { refused: EpochRefusal }
 
 /** Read the authority's answer to this device's own request. Null for

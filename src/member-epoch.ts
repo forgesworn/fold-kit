@@ -359,6 +359,11 @@ export interface MemberEpochGrant {
   epoch: RoomEpoch
   /** Cumulative: `opts.removed` plus every removal in the chain. */
   removed: string[]
+  /** The epochs between the requester's and `epoch`, oldest first, each
+   *  proven by the next rekey in the chain decrypting under it. Empty for a
+   *  grant one epoch ahead. Kept, they let the requester read what was said
+   *  in the epochs it skipped, and hand them on from its own member desk. */
+  passed: RoomEpoch[]
 }
 
 /**
@@ -391,6 +396,7 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
     const removed = new Set([...(opts.removed ?? [])].map(normaliseHex))
     let previous: EpochKeys = opts.current
     let secret: Uint8Array | undefined
+    const passed: RoomEpoch[] = []
     for (let i = 0; i < length; i += 1) {
       const evidence = readRekeyEvidence(body.rekeys[i] as Event, { roomId, authority: opts.authority, previous })
       if (!evidence) return null
@@ -409,8 +415,9 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
         if (!constantTimeEquals(evidence.commit, epochCommitment(roomId, evidence.epoch, secret))) return null
       }
       previous = deriveEpoch({ epoch: evidence.epoch, secret })
+      if (i < length - 1) passed.push({ epoch: evidence.epoch, secret })
     }
-    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort() }
+    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort(), passed }
   } catch {
     return null
   }

@@ -170,6 +170,9 @@ describe('member epoch grants: what the requester accepts', () => {
     // From epoch 1, the same room needs only the last step.
     const fromOne = decode(grantFrom(chain, 1), { current: keysOf(chain.epochs[1]!) })
     expect(fromOne!.epoch).toEqual(chain.epochs[2])
+    // The epoch it skipped comes with it, proven by the rekey after it.
+    expect(grant!.passed).toEqual([chain.epochs[1]])
+    expect(fromOne!.passed).toEqual([])
   })
 
   it('rejects a forged or mismatched secret, at the top of the chain or in the middle', () => {
@@ -400,6 +403,27 @@ describe('requestRoomEpoch with members', () => {
       transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, now, timeoutMs: 1_000, members,
     })
     expect(grant.epoch).toEqual(chain.epochs[1])
+    memberDesk.close()
+  })
+
+  it('hands the requester the epochs a member grant carried past', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{}, { commit: true }])
+    const memberDesk = hostMemberEpochDesk({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,
+      current: () => chain.epochs[2], secretAt: (n) => chain.epochs[n]?.secret, rekeyAt: (n) => chain.rekeys[n - 1],
+      removed: () => new Set(), jitterMs: 0, now,
+    })
+    const credential = await credentialFor(requesterDeviceSk, requester)
+    const members = memberEpochSource({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential,
+      current: keysOf(E0), now, retryMs: 50,
+    })
+    const grant = await requestRoomEpoch({
+      transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, now, timeoutMs: 1_000, members,
+    })
+    expect(grant.epoch).toEqual(chain.epochs[2])
+    expect(grant.passed).toEqual([chain.epochs[1]])
     memberDesk.close()
   })
 
