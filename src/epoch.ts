@@ -527,6 +527,11 @@ export function decodeEpochRequest(event: Event, opts: DecodeEpochRequestOptions
   }
 }
 
+/** How often a desk reports the same unknown participant while they keep
+ *  asking: often enough that a missed "let them in?" comes back, rarely
+ *  enough that it is not a nag. */
+export const REPORT_UNKNOWN_EVERY_SECONDS = 60
+
 /** Why the authority would not hand an epoch over. `unknown` is not final:
  *  the room has removed somebody, and does not yet know this participant,
  *  so it waits for a member to let them in (#207). */
@@ -674,10 +679,13 @@ export interface HostRoomEpochOptions {
    *  desk knows them too. Asked on every grant. */
   members?: () => readonly string[]
   /** Somebody the room does not know asked, after a removal: what an app
-   *  turns into "let them in?". Called once per participant until they are
-   *  known, however often they ask. Letting them in
+   *  turns into "let them in?". Called once per participant, and again
+   *  every `reportUnknownEvery` seconds while they keep asking. Letting them in
    *  is making `known` say yes; the requester's next ask is then granted. */
   onUnknown?: (request: EpochRequest) => void
+  /** Seconds before a participant still unknown and still asking is
+   *  reported again. Default 60. */
+  reportUnknownEvery?: number
   policy?: RoomPolicy
   legacyParticipants?: ReadonlySet<string>
   now?: () => number
@@ -714,9 +722,9 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   /** Requests answered `unknown`, which the requester sends again while it
    *  waits: answered again only once they are known. */
   const waiting = new Set<string>()
-  /** Participants already reported through `onUnknown`, so a requester
-   *  that starts a fresh request is not reported twice. */
-  const reported = new Set<string>()
+  /** When each unknown participant was last reported through `onUnknown`,
+   *  so one still waiting is reported again only after `reportUnknownEvery`. */
+  const reported = new Map<string, number>()
   const bound = (set: Set<string>): void => {
     if (set.size > 256) set.delete(set.values().next().value!)
   }
@@ -766,9 +774,9 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
         return
       }
       opts.transport.publish(grant).catch(() => {})
-      if (refused === 'unknown' && !reported.has(request.participant)) {
-        reported.add(request.participant)
-        bound(reported)
+      if (refused === 'unknown' && now() - (reported.get(request.participant) ?? -Infinity) >= (opts.reportUnknownEvery ?? REPORT_UNKNOWN_EVERY_SECONDS)) {
+        reported.set(request.participant, now())
+        if (reported.size > 256) reported.delete(reported.keys().next().value!)
         opts.onUnknown?.(request)
       }
       if (!refused) reported.delete(request.participant)

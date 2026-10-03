@@ -442,6 +442,23 @@ describe('the member desk and the known-members gate (#207)', () => {
     handle.close()
   })
 
+  it('reports somebody still asking again a minute later, not every retry', async () => {
+    const relay = new SimRelay()
+    const chain = buildChain([{ commit: true, removed: [gone.pubkey] }])
+    let t = NOW
+    const unknown: string[] = []
+    const fresh = localIdentity(generateSecretKey())
+    const handle = desk(relay, chain, { now: () => t, onUnknown: (r) => unknown.push(r.participant) })
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    t = NOW + 59
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    expect(unknown).toEqual([fresh.pubkey])
+    t = NOW + 60
+    await expect(ask(relay, fresh, 150)).rejects.toThrow(/no current member/)
+    expect(unknown).toEqual([fresh.pubkey, fresh.pubkey])
+    handle.close()
+  })
+
   it('answers somebody let in on their next ask', async () => {
     const relay = new SimRelay()
     const chain = buildChain([{ commit: true, removed: [gone.pubkey] }])

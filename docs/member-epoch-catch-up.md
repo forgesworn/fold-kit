@@ -182,7 +182,7 @@ A member answers a request only when all of these hold:
   knows the requester's participant (`known(participant)`): on the
   authority's latest member list, in the current roster, or let in from
   this device. Otherwise it calls `onUnknown` and `onRefused('unknown')`
-  once per participant and stays silent; the requester's next ask is looked at
+  once per participant (again a minute later if they are still asking, `reportUnknownEvery`) and stays silent; the requester's next ask is looked at
   afresh, so letting them in is making `known` say yes. See "The
   known-members gate" below;
 - this device is in step (`current()` is defined) and ahead of `have`;

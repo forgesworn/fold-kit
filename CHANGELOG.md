@@ -15,7 +15,8 @@ the one place its behaviour has deliberately diverged.
   current epoch. Once a room has removed anybody, `hostRoomEpoch` and
   `hostMemberEpochDesk` now grant only to participants for which the new
   `known(participant)` option says yes, and report anybody else through
-  `onUnknown`. **A desk given no `known` lets nobody through after a
+  `onUnknown`: once per participant, and again every `reportUnknownEvery`
+  seconds (default 60) while they keep asking. **A desk given no `known` lets nobody through after a
   removal**: wire `known` before taking this release. Rooms that have
   never removed anybody behave exactly as before.
 - New refusal `'unknown'` (`EpochRefusal`): the authority's answer to a

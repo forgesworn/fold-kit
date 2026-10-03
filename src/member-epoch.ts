@@ -12,6 +12,7 @@ import { epochCommitment } from './epoch-commit.js'
 import { KINDS } from './kinds.js'
 import {
   MAX_EPOCH,
+  REPORT_UNKNOWN_EVERY_SECONDS,
   deriveEpoch,
   epochRequestAdmission,
   peekRekeyEvent,
@@ -467,9 +468,13 @@ export interface HostMemberEpochDeskOptions {
    */
   known?: (participant: string) => boolean
   /** Somebody the room does not know asked, after a removal. Called once
-   *  per participant until they are known; nothing is published. Letting them in is making `known`
+   *  per participant, and again every `reportUnknownEvery` seconds while
+   *  they keep asking; nothing is published. Letting them in is making `known`
    *  say yes, and their next ask is answered. */
   onUnknown?: (request: MemberEpochRequest) => void
+  /** Seconds before a participant still unknown and still asking is
+   *  reported again. Default 60 (`REPORT_UNKNOWN_EVERY_SECONDS`). */
+  reportUnknownEvery?: number
   policy?: RoomPolicy
   now?: () => number
   /** Upper bound of the random wait before answering, so several members do
@@ -519,10 +524,10 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
   const grantSeen = new Set<string>()
   /** Requesting devices this desk has already stood down for once. */
   const stoodDown = new Set<string>()
-  /** Participants the room does not know, already reported. A requester
-   *  asks afresh every `retryMs` while it waits, so this is by participant,
-   *  not by request: one "let them in?" each, not one a retry. */
-  const reported = new Set<string>()
+  /** When each unknown participant was last reported. A requester asks
+   *  afresh every `retryMs` while it waits, so this is by participant, not
+   *  by request: one "let them in?" a `reportUnknownEvery`, not one a retry. */
+  const reported = new Map<string, number>()
   /** Ids of the grants this desk published: each is signed by a one-time
    *  key, so its own grants are told apart by id, not by signer. */
   const mine = new Set<string>()
@@ -630,9 +635,10 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
       return
     }
     if (!admissible(request)) {
-      if (reported.has(request.participant)) return
-      reported.add(request.participant)
-      bound(reported)
+      const last = reported.get(request.participant)
+      if (last !== undefined && now() - last < (opts.reportUnknownEvery ?? REPORT_UNKNOWN_EVERY_SECONDS)) return
+      reported.set(request.participant, now())
+      if (reported.size > 256) reported.delete(reported.keys().next().value!)
       opts.onUnknown?.(request)
       opts.onRefused?.(request, 'unknown')
       return
