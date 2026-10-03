@@ -154,6 +154,12 @@ the rest).
   `encodeMemberEpochRequest`, `decodeMemberEpochRequest`,
   `encodeMemberEpochGrant`, `decodeMemberEpochGrant`, `readRekeyEvidence`,
   `deriveMemberEpochRequestKey`. Vectors: `vectors/member-epoch-vectors.json`
+- The known-members gate (#207, `docs/member-epoch-catch-up.md`): once a
+  room has removed anybody, both desks grant only to participants the room
+  knows (`known`), and send anybody else to approval (`onUnknown`; the
+  authority answers `refused: 'unknown'`, which `requestRoomEpoch` waits
+  through). `encodeRekeyEvent({ members })` and `hostRoomEpoch({ members })`
+  carry the authority's member list (`readMemberList` reads one)
 - `canonicalAdmins`, `signAdmins`, `verifyAdmins` - the authority's signed
   admin list
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,

@@ -211,6 +211,7 @@ describe('epoch requests and grants', () => {
       roomKey,
       current: () => epoch,
       removed: () => new Set([removedIdentity.pubkey]),
+      known: (p) => p === identity.pubkey,
       now,
     })
     const granted = await requestRoomEpoch({
@@ -333,6 +334,104 @@ describe('epoch requests and grants', () => {
         retryMs: 10,
       }),
     ).rejects.toThrow(/not answering/)
+  })
+})
+
+describe('the known-members gate (#207)', () => {
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const member = localIdentity(generateSecretKey())
+  const gone = localIdentity(generateSecretKey())
+  const epoch = { epoch: 2, secret: generateEpochSecret() }
+
+  async function ask(relay: SimRelay, who: ReturnType<typeof localIdentity>, extra: Partial<Parameters<typeof requestRoomEpoch>[0]> = {}) {
+    const sk = generateSecretKey()
+    return requestRoomEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authority,
+      deviceSk: sk,
+      roomKey,
+      credential: await createDeviceCredential({ identity: who, devicePubkey: getPublicKey(sk), roomId, expiresAt: NOW + 3600, now }),
+      now,
+      timeoutMs: 300,
+      retryMs: 20,
+      ...extra,
+    })
+  }
+
+  function desk(relay: SimRelay, extra: Partial<Parameters<typeof hostRoomEpoch>[0]> = {}) {
+    return hostRoomEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authoritySk,
+      roomKey,
+      current: () => epoch,
+      removed: () => new Set([gone.pubkey]),
+      known: (p) => p === member.pubkey,
+      now,
+      ...extra,
+    })
+  }
+
+  it('a rekey carries the member list it was given, less the removed, and nothing when not given one', () => {
+    const current = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
+    const keptSk = generateSecretKey()
+    const base = { roomId, authoritySk, current, next: { epoch: 1, secret: generateEpochSecret() }, recipients: [getPublicKey(keptSk)], removed: [gone.pubkey], now: NOW }
+    const listed = encodeRekeyEvent({ ...base, members: [member.pubkey.toUpperCase(), gone.pubkey, member.pubkey] })
+    expect(decodeRekeyEvent(listed, { roomId, authority, current, deviceSk: keptSk })?.members).toEqual([member.pubkey])
+    const unlisted = encodeRekeyEvent(base)
+    const body = JSON.parse(nip44.v2.decrypt(unlisted.content, current.key)) as Record<string, unknown>
+    expect('members' in body).toBe(false)
+    expect(decodeRekeyEvent(unlisted, { roomId, authority, current, deviceSk: keptSk })?.members).toBeUndefined()
+  })
+
+  it('a removed person back under a fresh key is told the room does not know them, and gets no epoch', async () => {
+    const relay = new SimRelay()
+    const unknownAtDesk: string[] = []
+    const handle = desk(relay, { onUnknown: (r) => unknownAtDesk.push(r.participant) })
+    const fresh = localIdentity(generateSecretKey())
+    let toldUnknown = 0
+    const refusal = await ask(relay, fresh, { onUnknown: () => { toldUnknown += 1 } }).catch((e: unknown) => e)
+    expect(refusal).toBeInstanceOf(EpochRefusedError)
+    expect((refusal as EpochRefusedError).refused).toBe('unknown')
+    expect(toldUnknown).toBe(1)
+    // Asked many times while it waited, reported once, answered once.
+    expect(unknownAtDesk).toEqual([fresh.pubkey])
+    expect(relay.published.filter((e) => e.kind === KINDS.EPOCH_GRANT)).toHaveLength(1)
+    handle.close()
+  })
+
+  it('a member the room knows is granted, and told who the room knows', async () => {
+    const relay = new SimRelay()
+    const handle = desk(relay, { members: () => [member.pubkey] })
+    const grant = await ask(relay, member)
+    expect(grant.epoch).toEqual(epoch)
+    expect(grant.members).toEqual([member.pubkey])
+    handle.close()
+  })
+
+  it('somebody let in while they wait is granted on their next ask', async () => {
+    const relay = new SimRelay()
+    const letIn = new Set<string>()
+    const handle = desk(relay, { known: (p) => letIn.has(p), onUnknown: (r) => letIn.add(r.participant) })
+    const grant = await ask(relay, localIdentity(generateSecretKey()))
+    expect(grant.epoch).toEqual(epoch)
+    handle.close()
+  })
+
+  it('before anybody is removed, a newcomer is granted as before, with or without `known`', async () => {
+    const relay = new SimRelay()
+    const handle = desk(relay, { removed: () => new Set(), known: undefined })
+    expect((await ask(relay, localIdentity(generateSecretKey()))).epoch).toEqual(epoch)
+    handle.close()
+  })
+
+  it('after a removal, a desk with no `known` lets nobody through', async () => {
+    const relay = new SimRelay()
+    const handle = desk(relay, { known: undefined })
+    await expect(ask(relay, member)).rejects.toMatchObject({ refused: 'unknown' })
+    handle.close()
   })
 })
 

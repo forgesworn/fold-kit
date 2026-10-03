@@ -102,6 +102,14 @@ function require32(bytes: Uint8Array, what: string): void {
   if (bytes.length !== 32) throw new Error(`${what} must be 32 bytes`)
 }
 
+/** A participant list as a body carries it: lower-case, deduplicated and
+ *  sorted, or undefined when the field is absent or is not a list of keys.
+ *  Undefined is the safe reading, since it makes nobody known. */
+export function readMemberList(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw) || !raw.every((p) => typeof p === 'string' && HEX64.test(p))) return undefined
+  return [...new Set((raw as string[]).map(normaliseHex))].sort()
+}
+
 function requireHex32(value: string, what: string): string {
   if (!HEX64.test(value)) throw new Error(`${what} must be 32-byte hex`)
   return normaliseHex(value)
@@ -162,6 +170,11 @@ interface RekeyBody {
   /** `epochCommitment(roomId, epoch, secret)`: lets a member hand this epoch
    *  on and the requester check it. Absent from a rekey written without it. */
   commit?: string
+  /** The participants the authority knows to be in the room as it rekeys,
+   *  removed ones excepted. A member desk hands an epoch on only to
+   *  participants it knows once anyone has been removed (#207). Absent
+   *  from a rekey written without it. */
+  members?: string[]
   /** Device pubkey to a NIP-44 envelope, from the authority to that device,
    *  carrying the new secret. Inside the body, so who was kept is known
    *  only to the epoch being left. */
@@ -191,10 +204,21 @@ export interface EncodeRekeyOptions {
    *  bring a device that missed this rekey up to date (see
    *  `member-epoch.ts`). Omitted, the event is byte-identical to before. */
   commit?: boolean
+  /** Every participant the authority knows to be in the room, not only the
+   *  ones present now: a member who is offline as the room rekeys is still
+   *  a member. Removed participants are dropped. Omitted, the event is
+   *  byte-identical to before. */
+  members?: string[]
   now: number
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
   expiresAt?: number
+}
+
+function memberListOf(members: readonly string[], removed: readonly string[]): string[] {
+  const out = new Set(members.map((p) => requireHex32(p, 'member participant')))
+  for (const p of removed) out.delete(normaliseHex(p))
+  return [...out].sort()
 }
 
 /** Announce the next epoch. See the module comment for what this is. */
@@ -219,6 +243,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
     ...(opts.by !== undefined ? { by: requireHex32(opts.by, 'admin') } : {}),
     ...(opts.closed ? { closed: true } : {}),
     ...(opts.commit ? { commit: epochCommitment(roomId, epoch, opts.next.secret) } : {}),
+    ...(opts.members !== undefined ? { members: memberListOf(opts.members, removed) } : {}),
     keys,
   }
   return finalizeEvent(
@@ -245,6 +270,9 @@ export interface RekeyNotice {
    *  device that was removed, or that was not in the room when the
    *  authority rekeyed. */
   secret?: Uint8Array
+  /** The participants the authority listed as in the room. Absent from a
+   *  rekey written without the list. */
+  members?: string[]
   /** True for a current-state grant, whose removed list is cumulative.
    *  It synchronises this session; it does not describe a new removal. */
   catchUp?: true
@@ -307,6 +335,8 @@ export function decodeRekeyEvent(event: Event, opts: DecodeRekeyOptions): RekeyN
       at: event.created_at,
     }
     if (typeof body.by === 'string' && HEX64.test(body.by)) notice.by = normaliseHex(body.by)
+    const members = readMemberList(body.members)
+    if (members) notice.members = members
     const device = getPublicKey(opts.deviceSk)
     const mine = Object.entries(body.keys).find(([to]) => hexEquals(to, device))?.[1]
     if (typeof mine === 'string') {
@@ -497,8 +527,10 @@ export function decodeEpochRequest(event: Event, opts: DecodeEpochRequestOptions
   }
 }
 
-/** Why the authority would not hand an epoch over. */
-export type EpochRefusal = 'removed' | 'closed'
+/** Why the authority would not hand an epoch over. `unknown` is not final:
+ *  the room has removed somebody, and does not yet know this participant,
+ *  so it waits for a member to let them in (#207). */
+export type EpochRefusal = 'removed' | 'closed' | 'unknown'
 
 interface EpochGrantBody {
   v: 1
@@ -506,6 +538,7 @@ interface EpochGrantBody {
   epoch?: number
   secret?: string
   removed?: string[]
+  members?: string[]
   refused?: EpochRefusal
 }
 
@@ -518,6 +551,9 @@ export interface EncodeEpochGrantOptions {
   /** The current epoch. Omitted when refusing. */
   epoch?: RoomEpoch
   removed?: string[]
+  /** The participants the authority knows, so the requester's own member
+   *  desk knows them too. Omitted, the body is as before. */
+  members?: string[]
   refused?: EpochRefusal
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
@@ -542,6 +578,7 @@ export function encodeEpochGrant(opts: EncodeEpochGrantOptions): Event {
       body.secret = base64urlnopad.encode(opts.epoch.secret)
     }
     body.removed = [...new Set((opts.removed ?? []).map((p) => requireHex32(p, 'removed participant')))].sort()
+    if (opts.members !== undefined) body.members = memberListOf(opts.members, body.removed)
   }
   return finalizeEvent(
     {
@@ -574,6 +611,8 @@ export type EpochGrant =
        *  the epochs it carried between the requester's and `epoch`. See
        *  `MemberEpochGrant.passed`. The authority's own answer has none. */
       passed?: RoomEpoch[]
+      /** The participants the room knows, when the answer carried them. */
+      members?: string[]
       refused?: undefined
     }
   | { refused: EpochRefusal }
@@ -595,16 +634,18 @@ export function decodeEpochGrant(event: Event, opts: DecodeEpochGrantOptions): E
       nip44.v2.decrypt(event.content, nip44.v2.utils.getConversationKey(opts.deviceSk, event.pubkey)),
     ) as Partial<EpochGrantBody>
     if (body.v !== 1 || typeof body.request !== 'string' || !hexEquals(body.request, opts.request)) return null
-    if (body.refused === 'removed' || body.refused === 'closed') return { refused: body.refused }
+    if (body.refused === 'removed' || body.refused === 'closed' || body.refused === 'unknown') return { refused: body.refused }
     if (!Number.isSafeInteger(body.epoch) || (body.epoch as number) < 0 || (body.epoch as number) > MAX_EPOCH) return null
     const removed = Array.isArray(body.removed)
       ? [...new Set(body.removed.filter((p): p is string => typeof p === 'string' && HEX64.test(p)).map(normaliseHex))].sort()
       : []
-    if (body.epoch === 0) return { epoch: { epoch: 0 }, removed }
+    const members = readMemberList(body.members)
+    const listed = members ? { members } : {}
+    if (body.epoch === 0) return { epoch: { epoch: 0 }, removed, ...listed }
     if (typeof body.secret !== 'string') return null
     const secret = base64urlnopad.decode(body.secret)
     if (secret.length !== 32) return null
-    return { epoch: { epoch: body.epoch as number, secret }, removed }
+    return { epoch: { epoch: body.epoch as number, secret }, removed, ...listed }
   } catch {
     return null
   }
@@ -622,6 +663,20 @@ export interface HostRoomEpochOptions {
   removed: () => ReadonlySet<string>
   /** True once the room has been closed: every request is refused. */
   closed?: () => boolean
+  /**
+   * Whether the room knows this participant: on the authority's member
+   * list, in the room now, or let in. Consulted only once somebody has been
+   * removed, and then everybody else is answered `unknown` (#207). Without
+   * it, after a removal, nobody is known. Asked on every request.
+   */
+  known?: (participant: string) => boolean
+  /** The participants to tell a granted device about, so its own member
+   *  desk knows them too. Asked on every grant. */
+  members?: () => readonly string[]
+  /** Somebody the room does not know asked, after a removal: what an app
+   *  turns into "let them in?". Called once per request. Letting them in
+   *  is making `known` say yes; the requester's next ask is then granted. */
+  onUnknown?: (request: EpochRequest) => void
   policy?: RoomPolicy
   legacyParticipants?: ReadonlySet<string>
   now?: () => number
@@ -640,6 +695,13 @@ export interface HostRoomEpochOptions {
  * *secret*, which opens epoch 0 and nothing after it. A request with no
  * admission proof, or one made under some other key, is not answered at
  * all: a stranger learns nothing, not even that a desk is here.
+ *
+ * The admission proof is made under the epoch-0 room key, which a removed
+ * member still holds, so removal by participant alone is undone by a fresh
+ * key (#207). Once anyone has been removed the desk therefore grants only
+ * to participants the room knows (`known`), and answers anybody else
+ * `unknown` until a member lets them in. A room that has never removed
+ * anybody is answered exactly as before.
  */
 export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   require32(opts.authoritySk, 'authority secret key')
@@ -648,6 +710,12 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   const authority = getPublicKey(opts.authoritySk)
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
   const answered = new Set<string>()
+  /** Requests answered `unknown`, which the requester sends again while it
+   *  waits: answered again only once they are known. */
+  const waiting = new Set<string>()
+  const bound = (set: Set<string>): void => {
+    if (set.size > 256) set.delete(set.values().next().value!)
+  }
   let closed = false
   const unsub = opts.transport.subscribe(
     [{ kinds: [KINDS.EPOCH_REQUEST], '#d': [roomId], '#p': [authority] }],
@@ -662,11 +730,19 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
         legacyParticipants: opts.legacyParticipants,
       })
       if (!request || answered.has(request.request)) return
-      answered.add(request.request)
-      if (answered.size > 256) answered.delete(answered.values().next().value!)
       let refused: EpochRefusal | undefined
       if (opts.closed?.()) refused = 'closed'
       else if (opts.removed().has(request.participant)) refused = 'removed'
+      else if (opts.removed().size > 0 && !opts.known?.(request.participant)) refused = 'unknown'
+      if (refused === 'unknown') {
+        if (waiting.has(request.request)) return
+        waiting.add(request.request)
+        bound(waiting)
+      } else {
+        waiting.delete(request.request)
+        answered.add(request.request)
+        bound(answered)
+      }
       let grant: Event
       try {
         grant = refused
@@ -679,12 +755,14 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
               now: now(),
               epoch: opts.current(),
               removed: [...opts.removed()],
+              ...(opts.members ? { members: [...opts.members()] } : {}),
               expiresAt: opts.expiresAt,
             })
       } catch {
         return
       }
       opts.transport.publish(grant).catch(() => {})
+      if (refused === 'unknown') opts.onUnknown?.(request)
       if (refused) opts.onRefused?.(request, refused)
       else opts.onGranted?.(request)
     },
@@ -715,13 +793,22 @@ export interface RequestRoomEpochOptions {
   /** Ask the room's current members too (`memberEpochSource`): the first
    *  answer that checks out, the authority's or a member's, settles it. */
   members?: MemberEpochSource
+  /** The authority said the room does not know this participant yet. Not
+   *  final: the ask goes on, and a member letting them in settles it. */
+  onUnknown?: () => void
 }
 
 /** Thrown when the authority answered, and the answer was no. */
 export class EpochRefusedError extends Error {
   readonly refused: EpochRefusal
   constructor(refused: EpochRefusal) {
-    super(refused === 'removed' ? 'you were removed from this room' : 'this room has been closed')
+    super(
+      refused === 'removed'
+        ? 'you were removed from this room'
+        : refused === 'unknown'
+          ? 'nobody in this room has let you in yet'
+          : 'this room has been closed',
+    )
     this.name = 'EpochRefusedError'
     this.refused = refused
   }
@@ -729,7 +816,8 @@ export class EpochRefusedError extends Error {
 
 /** Ask the authority where the room is, and wait for the answer. Rejects
  *  with `EpochRefusedError` on a refusal, and with a plain error when
- *  nobody answers inside the timeout. */
+ *  nobody answers inside the timeout. `unknown` is not final: the ask goes
+ *  on, and only a timeout after it rejects, with `EpochRefusedError`. */
 export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude<EpochGrant, { refused: EpochRefusal }>> {
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
   const roomId = requireHex32(opts.roomId, 'room id')
@@ -750,6 +838,7 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
     let expiry: ReturnType<typeof setTimeout> | undefined
     let unsub = () => {}
     let stopMembers = () => {}
+    let unknown = false
     const finish = (settle: () => void): void => {
       if (settled) return
       settled = true
@@ -762,7 +851,10 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
     unsub = opts.transport.subscribe([{ kinds: [KINDS.EPOCH_GRANT], '#d': [roomId], '#p': [device] }], (event) => {
       const grant = decodeEpochGrant(event, { roomId, authority: opts.authority, deviceSk: opts.deviceSk, request: request.id, now: now() })
       if (!grant) return
-      if (grant.refused) finish(() => reject(new EpochRefusedError(grant.refused)))
+      if (grant.refused === 'unknown') {
+        if (!unknown) opts.onUnknown?.()
+        unknown = true
+      } else if (grant.refused) finish(() => reject(new EpochRefusedError(grant.refused)))
       else finish(() => resolve(grant))
     })
     if (settled) unsub()
@@ -774,7 +866,10 @@ export function requestRoomEpoch(opts: RequestRoomEpochOptions): Promise<Exclude
       if (!settled) opts.transport.publish(request).catch(() => {})
     }
     expiry = setTimeout(
-      () => finish(() => reject(new Error('the room has moved to a newer epoch and its keeper is not answering'))),
+      () =>
+        finish(() =>
+          reject(unknown ? new EpochRefusedError('unknown') : new Error('the room has moved to a newer epoch and its keeper is not answering')),
+        ),
       opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     )
     ;(expiry as unknown as { unref?: () => void }).unref?.()

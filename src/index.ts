@@ -127,6 +127,7 @@ export {
   deriveEpoch,
   encodeRekeyEvent,
   peekRekeyEvent,
+  readMemberList,
   decodeRekeyEvent,
   deriveEpochRequestKey,
   epochRequestAdmission,

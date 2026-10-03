@@ -178,6 +178,13 @@ A member answers a request only when all of these hold:
 - the requester's participant is not in this member's cumulative removed
   set, which it learnt from the authority's rekeys. Otherwise it calls
   `onRefused('removed')` and stays silent;
+- once anybody has been removed (the removed set is not empty), the room
+  knows the requester's participant (`known(participant)`): on the
+  authority's latest member list, in the current roster, or let in from
+  this device. Otherwise it calls `onUnknown` and `onRefused('unknown')`
+  once per request and stays silent; the requester's next ask is looked at
+  afresh, so letting them in is making `known` say yes. See "The
+  known-members gate" below;
 - this device is in step (`current()` is defined) and ahead of `have`;
 - it holds every secret and every authority rekey from `have + 1` to its
   own epoch (`secretAt`, `rekeyAt`), and the chain is no more than 32 long;
@@ -193,6 +200,42 @@ A member answers a request only when all of these hold:
 
 The requester re-checks everything, so a desk bug cannot weaken anything.
 At worst it costs bandwidth.
+
+## The known-members gate (#207)
+
+The admission proof is made under `roomKey₀`, which a removed member still
+holds. Refusing by participant alone is therefore undone by a fresh
+participant key and a credential for it: to a desk, that is a newcomer
+with the link. An honest member who was offline through a rekey, and a
+removed member back under a new key, hold exactly the same keys, so no
+key-based rule tells them apart. What does is whether the room has seen
+the participant before.
+
+So once a room has removed anybody, the authority's desk (`hostRoomEpoch`)
+and every member desk grant only to a participant the room knows
+(`known`). Anybody else is sent to approval: the authority answers
+`refused: 'unknown'`, which is not final (`requestRoomEpoch` keeps asking
+and calls `onUnknown`), and a member desk stays silent. A member letting
+them in makes `known` say yes, and the requester's next ask is granted.
+A room that has never removed anybody behaves exactly as before, and a
+desk given no `known` lets nobody through after a removal.
+
+Where a desk learns who is known is the application's business, with two
+sources here: `encodeRekeyEvent({ members })` writes the authority's
+member list into the rekey body (`RekeyNotice.members`,
+`RekeyEvidence.members`, and the newest one in a chain as
+`MemberEpochGrant.members`), and the authority's own grant can carry it
+(`hostRoomEpoch({ members })`, `EpochGrant.members`). The list is every
+participant the authority knows to be in the room, not only those present
+as it rekeys; the encoder drops removed participants from it. It is
+inside the body, sealed under the epoch being left, so a removed member
+reads the list in the one rekey that removed them, as it reads that
+rekey's removed set. They saw the same people in that epoch's roster.
+
+What this does not do: in a room whose link is still live, a removed
+person can come back through the invitation as anybody holding the link
+can, and then knocks like any stranger. Removal plus a replaced link, or
+removal in a room that asks before letting people in, now keeps them out.
 
 ## Anti-amplification
 

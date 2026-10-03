@@ -15,6 +15,7 @@ import {
   deriveEpoch,
   epochRequestAdmission,
   peekRekeyEvent,
+  readMemberList,
   type EpochKeys,
   type EpochRefusal,
   type RoomEpoch,
@@ -113,6 +114,7 @@ interface RekeyBodyView {
   removed?: unknown
   closed?: unknown
   commit?: unknown
+  members?: unknown
 }
 
 /** What a rekey body says, read with the key of the epoch it leaves. */
@@ -122,6 +124,8 @@ export interface RekeyEvidence {
   closed: boolean
   /** The epoch commitment, when the authority wrote one. */
   commit?: string
+  /** The authority's member list, when it wrote one. */
+  members?: string[]
 }
 
 /**
@@ -144,6 +148,8 @@ export function readRekeyEvidence(event: Event, opts: { roomId: string; authorit
       closed: body.closed === true,
     }
     if (typeof body.commit === 'string' && HEX64.test(body.commit)) evidence.commit = normaliseHex(body.commit)
+    const members = readMemberList(body.members)
+    if (members) evidence.members = members
     return evidence
   } catch {
     return null
@@ -364,6 +370,8 @@ export interface MemberEpochGrant {
    *  grant one epoch ahead. Kept, they let the requester read what was said
    *  in the epochs it skipped, and hand them on from its own member desk. */
   passed: RoomEpoch[]
+  /** The newest member list in the chain, when any rekey in it had one. */
+  members?: string[]
 }
 
 /**
@@ -397,12 +405,14 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
     let previous: EpochKeys = opts.current
     let secret: Uint8Array | undefined
     const passed: RoomEpoch[] = []
+    let members: string[] | undefined
     for (let i = 0; i < length; i += 1) {
       const evidence = readRekeyEvidence(body.rekeys[i] as Event, { roomId, authority: opts.authority, previous })
       if (!evidence) return null
       if (evidence.closed) return null
       if (evidence.removed.includes(participant)) return null
       for (const p of evidence.removed) removed.add(p)
+      if (evidence.members) members = evidence.members
       const raw = body.secrets[i]
       if (typeof raw !== 'string') return null
       secret = base64urlnopad.decode(raw)
@@ -417,7 +427,7 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
       previous = deriveEpoch({ epoch: evidence.epoch, secret })
       if (i < length - 1) passed.push({ epoch: evidence.epoch, secret })
     }
-    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort(), passed }
+    return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort(), passed, ...(members ? { members } : {}) }
   } catch {
     return null
   }
@@ -449,6 +459,17 @@ export interface HostMemberEpochDeskOptions {
   removed: () => ReadonlySet<string>
   /** True once the room has been closed. */
   closed?: () => boolean
+  /**
+   * Whether the room knows this participant: on the authority's latest
+   * member list, in the room's current roster, or let in from this device.
+   * Consulted only once somebody has been removed; then nobody else is
+   * answered (#207). Without it, after a removal, nobody is known.
+   */
+  known?: (participant: string) => boolean
+  /** Somebody the room does not know asked, after a removal. Called once
+   *  per request; nothing is published. Letting them in is making `known`
+   *  say yes, and their next ask is answered. */
+  onUnknown?: (request: MemberEpochRequest) => void
   policy?: RoomPolicy
   now?: () => number
   /** Upper bound of the random wait before answering, so several members do
@@ -472,8 +493,10 @@ export interface HostMemberEpochDeskOptions {
  * Answer member epoch requests for as long as the handle is open: what any
  * member at the current epoch runs beside its session. It answers only an
  * admitted, credentialled device that is not removed, in a room that is not
- * closed, and only when it can hand over the whole chain from the
- * requester's epoch to its own with the authority's rekeys to prove it.
+ * closed, from a participant the room knows once anybody has been removed
+ * (see `hostRoomEpoch` for why), and only when it can hand over the whole
+ * chain from the requester's epoch to its own with the authority's rekeys
+ * to prove it.
  *
  * Anti-amplification: each answer waits a random `[0, jitterMs)`, and is
  * dropped if another member's grant to the same device appears meanwhile.
@@ -496,6 +519,9 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
   const grantSeen = new Set<string>()
   /** Requesting devices this desk has already stood down for once. */
   const stoodDown = new Set<string>()
+  /** Requests from a participant the room does not know: reported once,
+   *  and looked at again when the requester asks again. */
+  const unknown = new Set<string>()
   /** Ids of the grants this desk published: each is signed by a one-time
    *  key, so its own grants are told apart by id, not by signer. */
   const mine = new Set<string>()
@@ -536,6 +562,12 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     return { epochs, rekeys }
   }
 
+  const admissible = (request: MemberEpochRequest): boolean => {
+    const removed = opts.removed()
+    if ([...removed].some((p) => hexEquals(p, request.participant))) return false
+    return removed.size === 0 || opts.known?.(request.participant) === true
+  }
+
   const answer = (request: MemberEpochRequest): void => {
     if (closed) return
     if (grantSeen.has(request.device) && !stoodDown.has(request.device)) {
@@ -546,7 +578,7 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     stoodDown.delete(request.device)
     // Asked again, now that the wait is over: the room may have moved.
     if (opts.closed?.()) return
-    if ([...opts.removed()].some((p) => hexEquals(p, request.participant))) return
+    if (!admissible(request)) return
     const current = opts.current()
     if (!current || request.have >= current.epoch) return
     const chain = chainFor(request.have, current)
@@ -584,16 +616,29 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     if (closed || hexEquals(event.pubkey, self)) return
     const request = decodeMemberEpochRequest(event, { roomId, authority, roomKey: opts.roomKey, now: now(), policy: opts.policy })
     if (!request || answered.has(request.request)) return
-    answered.add(request.request)
-    bound(answered)
     if (opts.closed?.()) {
+      answered.add(request.request)
+      bound(answered)
       opts.onRefused?.(request, 'closed')
       return
     }
     if ([...opts.removed()].some((p) => hexEquals(p, request.participant))) {
+      answered.add(request.request)
+      bound(answered)
       opts.onRefused?.(request, 'removed')
       return
     }
+    if (!admissible(request)) {
+      if (unknown.has(request.request)) return
+      unknown.add(request.request)
+      bound(unknown)
+      opts.onUnknown?.(request)
+      opts.onRefused?.(request, 'unknown')
+      return
+    }
+    unknown.delete(request.request)
+    answered.add(request.request)
+    bound(answered)
     const current = opts.current()
     if (!current || request.have >= current.epoch) return
     grantSeen.delete(request.device)
