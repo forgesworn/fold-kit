@@ -5,6 +5,18 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- `MemberEpochGrant.passed`: the epochs a member grant carried between the
+  requester's and the one it hands over, oldest first, each proven by the
+  next rekey in the chain as before. `requestRoomEpoch`'s grant carries it
+  as an optional `passed` when a member answered. Wire unchanged; a
+  consumer that ignores it behaves exactly as with 0.5.0. KithMoot uses it
+  to read what was said in the epochs a returning device skipped, rather
+  than reporting them lost.
+
 ## 0.5.0
 
 ### Added
