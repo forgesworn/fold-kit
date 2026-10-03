@@ -674,7 +674,8 @@ export interface HostRoomEpochOptions {
    *  desk knows them too. Asked on every grant. */
   members?: () => readonly string[]
   /** Somebody the room does not know asked, after a removal: what an app
-   *  turns into "let them in?". Called once per request. Letting them in
+   *  turns into "let them in?". Called once per participant until they are
+   *  known, however often they ask. Letting them in
    *  is making `known` say yes; the requester's next ask is then granted. */
   onUnknown?: (request: EpochRequest) => void
   policy?: RoomPolicy
@@ -713,6 +714,9 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   /** Requests answered `unknown`, which the requester sends again while it
    *  waits: answered again only once they are known. */
   const waiting = new Set<string>()
+  /** Participants already reported through `onUnknown`, so a requester
+   *  that starts a fresh request is not reported twice. */
+  const reported = new Set<string>()
   const bound = (set: Set<string>): void => {
     if (set.size > 256) set.delete(set.values().next().value!)
   }
@@ -762,7 +766,12 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
         return
       }
       opts.transport.publish(grant).catch(() => {})
-      if (refused === 'unknown') opts.onUnknown?.(request)
+      if (refused === 'unknown' && !reported.has(request.participant)) {
+        reported.add(request.participant)
+        bound(reported)
+        opts.onUnknown?.(request)
+      }
+      if (!refused) reported.delete(request.participant)
       if (refused) opts.onRefused?.(request, refused)
       else opts.onGranted?.(request)
     },

@@ -467,7 +467,7 @@ export interface HostMemberEpochDeskOptions {
    */
   known?: (participant: string) => boolean
   /** Somebody the room does not know asked, after a removal. Called once
-   *  per request; nothing is published. Letting them in is making `known`
+   *  per participant until they are known; nothing is published. Letting them in is making `known`
    *  say yes, and their next ask is answered. */
   onUnknown?: (request: MemberEpochRequest) => void
   policy?: RoomPolicy
@@ -519,9 +519,10 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
   const grantSeen = new Set<string>()
   /** Requesting devices this desk has already stood down for once. */
   const stoodDown = new Set<string>()
-  /** Requests from a participant the room does not know: reported once,
-   *  and looked at again when the requester asks again. */
-  const unknown = new Set<string>()
+  /** Participants the room does not know, already reported. A requester
+   *  asks afresh every `retryMs` while it waits, so this is by participant,
+   *  not by request: one "let them in?" each, not one a retry. */
+  const reported = new Set<string>()
   /** Ids of the grants this desk published: each is signed by a one-time
    *  key, so its own grants are told apart by id, not by signer. */
   const mine = new Set<string>()
@@ -629,14 +630,14 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
       return
     }
     if (!admissible(request)) {
-      if (unknown.has(request.request)) return
-      unknown.add(request.request)
-      bound(unknown)
+      if (reported.has(request.participant)) return
+      reported.add(request.participant)
+      bound(reported)
       opts.onUnknown?.(request)
       opts.onRefused?.(request, 'unknown')
       return
     }
-    unknown.delete(request.request)
+    reported.delete(request.participant)
     answered.add(request.request)
     bound(answered)
     const current = opts.current()

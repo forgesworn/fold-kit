@@ -435,7 +435,8 @@ describe('the member desk and the known-members gate (#207)', () => {
       onRefused: (_r, why) => refused.push(why),
     })
     await expect(ask(relay, fresh)).rejects.toThrow(/no current member/)
-    expect(new Set(unknown)).toEqual(new Set([fresh.pubkey]))
+    // Asked afresh every 20 ms for 300 ms, and reported once.
+    expect(unknown).toEqual([fresh.pubkey])
     expect(refused.every((why) => why === 'unknown')).toBe(true)
     expect(relay.published.filter((e) => e.kind === MEMBER_EPOCH_KINDS.GRANT)).toHaveLength(0)
     handle.close()
