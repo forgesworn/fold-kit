@@ -9,6 +9,7 @@ import { evaluateAccess } from './access.js'
 import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
 import { epochCommitment } from './epoch-commit.js'
+import { openSealed, sealTo } from './seal.js'
 import { KINDS } from './kinds.js'
 import {
   MAX_EPOCH,
@@ -17,6 +18,7 @@ import {
   epochRequestAdmission,
   peekRekeyEvent,
   readMemberList,
+  sealCredential,
   type EpochKeys,
   type EpochRefusal,
   type RoomEpoch,
@@ -231,6 +233,16 @@ export interface MemberEpochRequest {
 /** Null for anything malformed, stale, from a device that cannot prove
  *  which participant it speaks for, or that cannot prove admission. */
 export function decodeMemberEpochRequest(event: Event, opts: DecodeMemberEpochRequestOptions): MemberEpochRequest | null {
+  const read = readMemberEpochRequest(event, opts)
+  return read && read.request
+}
+
+/** `decodeMemberEpochRequest`, keeping the credential the request was made
+ *  under: what the desk seals its answer by. */
+function readMemberEpochRequest(
+  event: Event,
+  opts: DecodeMemberEpochRequestOptions,
+): { request: MemberEpochRequest; credential: DeviceCredential } | null {
   try {
     if (event.kind !== MEMBER_EPOCH_KINDS.REQUEST) return null
     if (!verifyEventUncached(event)) return null
@@ -255,7 +267,10 @@ export function decodeMemberEpochRequest(event: Event, opts: DecodeMemberEpochRe
       const proof = body.proof && typeof body.proof === 'object' ? body.proof : undefined
       if (!evaluateAccess(opts.policy, verdict.participant, proof, opts.now, roomId).admitted) return null
     }
-    return { device: verdict.device, participant: verdict.participant, request: event.id, have: body.have as number }
+    return {
+      request: { device: verdict.device, participant: verdict.participant, request: event.id, have: body.have as number },
+      credential: body.credential,
+    }
   } catch {
     return null
   }
@@ -285,6 +300,9 @@ export interface EncodeMemberEpochGrantOptions {
   epochs: RoomEpoch[]
   /** The authority's rekey event for each of `epochs`, in the same order. */
   rekeys: Event[]
+  /** The newest credential the member holds for the device: the grant is
+   *  sealed to its seal key when it names one (see `seal.ts`). */
+  credential?: DeviceCredential
   now: number
   expiresAt?: number
 }
@@ -332,7 +350,7 @@ export function encodeMemberEpochGrant(opts: EncodeMemberEpochGrantOptions): Eve
         ['d', roomId],
         ['p', device],
       ], opts.expiresAt),
-      content: nip44.v2.encrypt(JSON.stringify(body), nip44.v2.utils.getConversationKey(signerSk, device)),
+      content: sealTo(JSON.stringify(body), signerSk, device, opts.credential),
     },
     signerSk,
   )
@@ -343,6 +361,9 @@ export interface DecodeMemberEpochGrantOptions {
   authority: string
   /** The asking device's key. */
   deviceSk: Uint8Array
+  /** The seal keys of this device's credentials still live, tried before
+   *  the device key (see `seal.ts`). */
+  sealSks?: readonly Uint8Array[]
   /** The ids of this device's own outstanding member requests. */
   requests: ReadonlySet<string>
   /** Where this device is: the chain starts from this epoch's key. */
@@ -390,9 +411,7 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
     const device = getPublicKey(opts.deviceSk)
     const addressed = event.tags.find((t) => t[0] === 'p')?.[1]
     if (addressed === undefined || !hexEquals(addressed, device)) return null
-    const body = JSON.parse(
-      nip44.v2.decrypt(event.content, nip44.v2.utils.getConversationKey(opts.deviceSk, event.pubkey)),
-    ) as Partial<MemberEpochGrantBody>
+    const body = JSON.parse(openSealed(event.content, event.pubkey, opts.deviceSk, opts.sealSks)) as Partial<MemberEpochGrantBody>
     if (body.v !== 1 || typeof body.request !== 'string' || !HEX64.test(body.request)) return null
     if (![...opts.requests].some((r) => hexEquals(r, body.request as string))) return null
     if (!Array.isArray(body.secrets) || !Array.isArray(body.rekeys)) return null
@@ -467,6 +486,10 @@ export interface HostMemberEpochDeskOptions {
    * answered (#207). Without it, after a removal, nobody is known.
    */
   known?: (participant: string) => boolean
+  /** The newest credential this device has seen for another device, from
+   *  the roster: see `HostRoomEpochOptions.credentialFor`. Keep it
+   *  monotone. */
+  credentialFor?: (device: string) => DeviceCredential | undefined
   /** Somebody the room does not know asked, after a removal. Called once
    *  per participant, and again every `reportUnknownEvery` seconds while
    *  they keep asking; nothing is published. Letting them in is making `known`
@@ -574,7 +597,7 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     return removed.size === 0 || opts.known?.(request.participant) === true
   }
 
-  const answer = (request: MemberEpochRequest): void => {
+  const answer = (request: MemberEpochRequest, presented: DeviceCredential): void => {
     if (closed) return
     if (grantSeen.has(request.device) && !stoodDown.has(request.device)) {
       stoodDown.add(request.device)
@@ -597,6 +620,7 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
         request: request.request,
         epochs: chain.epochs,
         rekeys: chain.rekeys,
+        credential: sealCredential(request, presented, opts.credentialFor, roomId, now()),
         now: now(),
         expiresAt: opts.expiresAt,
       })
@@ -620,8 +644,9 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
 
   const unsubRequests = opts.transport.subscribe([{ kinds: [MEMBER_EPOCH_KINDS.REQUEST], '#d': [roomId] }], (event) => {
     if (closed || hexEquals(event.pubkey, self)) return
-    const request = decodeMemberEpochRequest(event, { roomId, authority, roomKey: opts.roomKey, now: now(), policy: opts.policy })
-    if (!request || answered.has(request.request)) return
+    const read = readMemberEpochRequest(event, { roomId, authority, roomKey: opts.roomKey, now: now(), policy: opts.policy })
+    if (!read || answered.has(read.request.request)) return
+    const { request, credential } = read
     if (opts.closed?.()) {
       answered.add(request.request)
       bound(answered)
@@ -651,12 +676,12 @@ export function hostMemberEpochDesk(opts: HostMemberEpochDeskOptions): { close()
     grantSeen.delete(request.device)
     const delay = jitterMs === 0 ? 0 : Math.floor(random() * jitterMs)
     if (delay === 0) {
-      answer(request)
+      answer(request, credential)
       return
     }
     const timer = setTimeout(() => {
       timers.delete(timer)
-      answer(request)
+      answer(request, credential)
     }, delay)
     ;(timer as unknown as { unref?: () => void }).unref?.()
     timers.add(timer)
@@ -703,6 +728,9 @@ export interface MemberEpochRequestOptions {
   now?: () => number
   /** How often a fresh request goes out. Default 4000 ms. */
   retryMs?: number
+  /** The seal keys of this device's credentials still live. Asked on every
+   *  answer, because a credential may renew while the ask is out. */
+  sealSks?: () => readonly Uint8Array[]
   expiresAt?: number
 }
 
@@ -782,6 +810,7 @@ export function memberEpochSource(opts: MemberEpochRequestOptions): MemberEpochS
           roomId,
           authority,
           deviceSk: opts.deviceSk,
+          sealSks: opts.sealSks?.(),
           requests,
           current: current(),
           participant,

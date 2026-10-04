@@ -160,6 +160,14 @@ the rest).
   authority answers `refused: 'unknown'`, which `requestRoomEpoch` waits
   through). `encodeRekeyEvent({ members })` and `hostRoomEpoch({ members })`
   carry the authority's member list (`readMemberList` reads one)
+- Seal keys (`docs/seal-key.md`): a credential may name a seal key
+  (`createDeviceCredential({ seal })`, `generateSealKey`), and rekeys and
+  both grants are sealed to the newest one the sender holds for a device
+  instead of its device key, so a copied device heals once its credential
+  lapses and the room rekeys. Recipients as `{ device, credential }`;
+  `sealSks` on the readers; `credentialFor` on both desks;
+  `credentialSeal`, `sealTarget`, `sealTo`, `openSealed`, `newerCredential`,
+  `sealCredential`. Vectors: `vectors/seal-vectors.json`
 - `canonicalAdmins`, `signAdmins`, `verifyAdmins` - the authority's signed
   admin list
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,

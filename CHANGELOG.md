@@ -5,6 +5,35 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.7.0
+
+### Added
+
+- Seal keys (`docs/seal-key.md`): healing after a device key is copied.
+  `createDeviceCredential({ seal })` appends `["seal", <x-only pubkey>]` to
+  the credential, under the participant's signature. `encodeRekeyEvent`
+  takes recipients as `{ device, credential }` as well as bare devices
+  (`RekeyRecipient`), `encodeEpochGrant` and `encodeMemberEpochGrant` take
+  `credential`, and each copy is sealed to that credential's seal key when it
+  names one. `decodeRekeyEvent`, `decodeEpochGrant` and
+  `decodeMemberEpochGrant` take `sealSks`, and `requestRoomEpoch` and
+  `memberEpochSource` take a `sealSks()` getter; each tries the seal keys,
+  then the device key. `hostRoomEpoch` and `hostMemberEpochDesk` take
+  `credentialFor(device)` and seal each answer to the newer of that and the
+  credential the request carries (`sealCredential`). New in `seal.ts`:
+  `SEAL_TAG`, `isSealPubkey`, `generateSealKey`, `credentialSeal`,
+  `sealTarget`, `sealTo`, `openSealed`, `newerCredential`.
+- Vectors: `vectors/seal-vectors.json` (`npm run generate-seal`).
+
+### Changed
+
+- `decodeRekeyEvent`: a copy for this device that none of its keys opens is
+  read as no copy (the notice without `secret`), rather than the whole rekey
+  reading as null. A session asked the authority either way; it now also
+  learns who was removed.
+
+With no seal key anywhere, every event is byte-identical to 0.6.0's.
+
 ## 0.6.0
 
 ### Changed
