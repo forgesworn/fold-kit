@@ -361,7 +361,7 @@ export interface DecodeMemberEpochGrantOptions {
   authority: string
   /** The asking device's key. */
   deviceSk: Uint8Array
-  /** The seal keys of this device's credentials still live, tried before
+  /** The seal key secrets this device holds, newest first, tried before
    *  the device key (see `seal.ts`). */
   sealSks?: readonly Uint8Array[]
   /** The ids of this device's own outstanding member requests. */
@@ -728,8 +728,8 @@ export interface MemberEpochRequestOptions {
   now?: () => number
   /** How often a fresh request goes out. Default 4000 ms. */
   retryMs?: number
-  /** The seal keys of this device's credentials still live. Asked on every
-   *  answer, because a credential may renew while the ask is out. */
+  /** The seal key secrets this device holds. Asked on every answer,
+   *  because a credential may renew while the ask is out. */
   sealSks?: () => readonly Uint8Array[]
   expiresAt?: number
 }

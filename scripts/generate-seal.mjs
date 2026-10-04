@@ -237,7 +237,7 @@ const vectors = [
   {
     name: 'credential-seal-key',
     kind: 'positive',
-    note: 'A kind-20460 room credential carrying the device\'s seal key: tags d, device, expiration (then scope and label when present), then ["seal", x-only pubkey, lower-case hex] last, all under the participant\'s signature. A seal key must lift to a point on secp256k1. Rekeys and epoch grants for this device are NIP-44-sealed to it instead of the device key. The device mints a fresh one at every renewal and keeps its secret only while the credential lives.',
+    note: 'A kind-20460 room credential carrying the device\'s seal key: tags d, device, expiration (then scope and label when present), then ["seal", x-only pubkey, lower-case hex] last, all under the participant\'s signature. A seal key must lift to a point on secp256k1. Rekeys and epoch grants for this device are NIP-44-sealed to it instead of the device key. The device mints a fresh one at every renewal and keeps the secrets as it keeps its device key: healing needs only that each new one is fresh.',
     input: { roomId, participantSkHex: hex(PARTICIPANT_SK), device: DEVICE, sealSkHex: hex(RENEWED_SEAL_SK), createdAt: NOW, expiresAt: NOW + 43_200, credential: renewed },
     output: { seal: seal(renewed), sealTarget: sealTarget(DEVICE, renewed) },
   },

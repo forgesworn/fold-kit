@@ -17,9 +17,14 @@ import type { DeviceCredential } from './types.js'
  * the participant signs. A device mints a fresh seal key at every renewal,
  * and its participant's signer, not the device, binds it. Rekeys and grants
  * are sealed to the seal key of the newest credential the sender holds for
- * the device. A thief who copied the device once holds the seal keys of the
- * credentials live at that moment, and none minted after: once the copied
- * credential has lapsed and the room has rekeyed, they are out.
+ * the device. A thief who copied the device once holds the seal keys minted
+ * up to then, and none minted after: once the copied credential has lapsed
+ * and the room has rekeyed, they are out.
+ *
+ * A device keeps its seal secrets as it keeps its device key, to open what
+ * was sealed to them when it reads the room again. Healing needs only that
+ * each new one is fresh; retiring old ones is a question of forward
+ * secrecy, not of healing.
  *
  * A credential with no `seal` tag is sealed to as before, to the device
  * key, so a client that knows nothing of this keeps working, unhealed. See
@@ -75,11 +80,10 @@ export function credentialSeal(credential: DeviceCredential): string | undefined
  * the device key when it names none, or is not this device's.
  *
  * Expiry is deliberately not checked. A device that has gone quiet for
- * longer than its credential has erased that seal key, so a copy sealed to
- * it is lost, and the device asks for the epoch again when it is back.
- * Falling back to the device key instead would hand that copy to anybody
- * holding a stolen device key, which is the one person healing exists to
- * shut out.
+ * longer than its credential kept that seal key, and opens the copy when it
+ * is back. Falling back to the device key instead would hand that copy to
+ * anybody holding a stolen device key, which is the one person healing
+ * exists to shut out.
  */
 export function sealTarget(device: string, credential?: DeviceCredential): string {
   const to = normaliseHex(device)

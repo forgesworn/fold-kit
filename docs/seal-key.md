@@ -21,10 +21,9 @@ extension, a bunker, Heartwood) and not on the device, so it is the one thing
 a device thief does not get.
 
 - **Wire.** A credential may end with `["seal", <x-only pubkey>]`. The device
-  mints a fresh seal key at each renewal and keeps its secret only while that
-  credential lives. `createDeviceCredential({ seal })` appends the tag last,
-  and refuses a value that is not a point on the curve. A credential with no
-  seal tag is byte-identical to one from 0.6.0.
+  mints a fresh seal key at each renewal. `createDeviceCredential({ seal })`
+  appends the tag last, and refuses a value that is not a point on the curve.
+  A credential with no seal tag is byte-identical to one from 0.6.0.
 - **Sending.** A rekey copy and both grants are sealed to the seal key of the
   newest credential the sender holds for the device (`sealTarget`), falling
   back to the device key when that credential names none. The `keys` map stays
@@ -32,11 +31,18 @@ a device thief does not get.
   unusable (`credentialSeal` returns null), and the sender seals to the device
   key rather than failing the whole rekey: only the participant can have
   signed it.
+- **Keeping the secrets.** A device keeps its seal secrets as it keeps its
+  device key. A device that reads a room again from the start (as a browser
+  does, following the rekeys from epoch 0) opens each old copy with the seal
+  key it was sealed to, so dropping them would leave it asking a desk for
+  every epoch. Keeping them costs healing nothing: a thief who copies the
+  device holds the seal keys minted up to then, which is what the newest of
+  them already gave away, and none minted after. Retiring them belongs to
+  forward secrecy (the plan's phase 2), alongside epoch secrets.
 - **Never back to the device key.** `sealTarget` does not check expiry. A
-  device quiet for longer than its credential has erased that seal key, so a
-  copy sealed to it is lost and the device asks again. Falling back to the
-  device key would hand that copy to the thief.
-- **Reading.** Every reader tries each live seal key, then the device key
+  device quiet for longer than its credential still holds that seal key.
+  Falling back to the device key would hand the copy to the thief.
+- **Reading.** Every reader tries each seal key it holds, then the device key
   (`openSealed`). A rekey copy none of them opens reads as no copy: the rekey
   is still read (who was removed, whether the room closed), without a secret,
   and the device asks for the epoch.
@@ -54,8 +60,8 @@ newer one, the desk would seal to the copied seal key again.
 
 ## What healing covers
 
-A thief who copied a device once holds the seal keys of the credentials live
-then, and none minted after. They read until the next rekey and until the
+A thief who copied a device once holds the seal keys minted up to then, and
+none minted after. They read until the next rekey and until the
 copied credential lapses (up to twelve hours in KithMoot). After both, rekeys
 are sealed where they cannot reach, and the desks answer the device's new
 seal key.

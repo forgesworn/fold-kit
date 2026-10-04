@@ -325,7 +325,7 @@ export interface DecodeRekeyOptions extends PeekRekeyOptions {
   current: EpochKeys
   /** This device's key, to open its own copy. */
   deviceSk: Uint8Array
-  /** The seal keys of this device's credentials still live, tried before
+  /** The seal key secrets this device holds, newest first, tried before
    *  the device key (see `seal.ts`). */
   sealSks?: readonly Uint8Array[]
 }
@@ -634,7 +634,7 @@ export interface DecodeEpochGrantOptions {
   roomId: string
   authority: string
   deviceSk: Uint8Array
-  /** The seal keys of this device's credentials still live: see
+  /** The seal key secrets this device holds: see
    *  `DecodeRekeyOptions.sealSks`. */
   sealSks?: readonly Uint8Array[]
   request: string
@@ -889,8 +889,8 @@ export interface RequestRoomEpochOptions {
   /** The authority said the room does not know this participant yet. Not
    *  final: the ask goes on, and a member letting them in settles it. */
   onUnknown?: () => void
-  /** The seal keys of this device's credentials still live. Asked on every
-   *  answer, because a credential may renew while the ask is out. */
+  /** The seal key secrets this device holds. Asked on every answer,
+   *  because a credential may renew while the ask is out. */
   sealSks?: () => readonly Uint8Array[]
 }
 
