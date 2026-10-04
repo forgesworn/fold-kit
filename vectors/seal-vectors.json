@@ -1,0 +1,629 @@
+{
+  "protocolVersion": "kithmoot/v1",
+  "generatedBy": "scripts/generate-seal.mjs (forgesworn/fold-kit)",
+  "nostrToolsVersion": "2.25.0",
+  "groups": {
+    "seal": [
+      {
+        "name": "credential-seal-key",
+        "kind": "positive",
+        "note": "A kind-20460 room credential carrying the device's seal key: tags d, device, expiration (then scope and label when present), then [\"seal\", x-only pubkey, lower-case hex] last, all under the participant's signature. A seal key must lift to a point on secp256k1. Rekeys and epoch grants for this device are NIP-44-sealed to it instead of the device key. The device mints a fresh one at every renewal and keeps the secrets as it keeps its device key: healing needs only that each new one is fresh.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "participantSkHex": "22c581207a40882e0db95e6de3f6a8fbe433b15acb5b0b13343d2e0af0d5cd72",
+          "device": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+          "sealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "createdAt": 1800000000,
+          "expiresAt": 1800043200,
+          "credential": {
+            "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ]
+            ],
+            "content": "",
+            "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+          }
+        },
+        "output": {
+          "seal": "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf",
+          "sealTarget": "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+        }
+      },
+      {
+        "name": "credential-without-seal",
+        "kind": "positive",
+        "note": "The same credential minted without a seal key: no seal tag, and its tags are exactly the renewed credential's without the last, which is every credential minted before seal keys existed. Everything is sealed to the device key, as before.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "participantSkHex": "22c581207a40882e0db95e6de3f6a8fbe433b15acb5b0b13343d2e0af0d5cd72",
+          "device": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+          "createdAt": 1800000000,
+          "expiresAt": 1800043200,
+          "credential": {
+            "id": "be0fb956bc2252965531e1adf35b326dbd8b6ebc9eaa46689aa044a8fbfa334e",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ]
+            ],
+            "content": "",
+            "sig": "db1ba5457530f50f55b9c4d30526d7857ae00555164e2925dac0e25862f7cc5d4737b43a9c7feaf5f6d6773e6910d39990ecfb6c7fd9f6cf66855bb0d601f1a3"
+          }
+        },
+        "output": {
+          "seal": "none",
+          "sealTarget": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+        }
+      },
+      {
+        "name": "credential-seal-doubled",
+        "kind": "negative",
+        "note": "Two seal tags. Only the participant could have signed this, so it is a broken minter, not an attack: the seal is \"unusable\", and a sender seals to the device key rather than failing the whole rekey.",
+        "input": {
+          "credential": {
+            "kind": 20460,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ],
+              [
+                "seal",
+                "deadd23059aeb8703a70572f527c3ca0306bc5ccd85dd0bd3306672d83edd485"
+              ]
+            ],
+            "content": "",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "id": "1d594985da5cac3527726bd68a9207e3e07644bfbddaa8b1e027a00e8efcedae",
+            "sig": "4cd57051b2bce672d39af9e7d5b46efe35ff224ff1ef87167f97c4d5c18740721842722da645956ee13a93558793d04a095c7666d2856079e450fd07c822a7f6"
+          }
+        },
+        "output": {
+          "seal": "unusable",
+          "sealTarget": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+        }
+      },
+      {
+        "name": "credential-seal-off-curve",
+        "kind": "negative",
+        "note": "A seal tag of 32-byte hex that is not the x coordinate of any point (x = 5): \"unusable\", sealed to the device key.",
+        "input": {
+          "credential": {
+            "kind": 20460,
+            "created_at": 1800000000,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "0000000000000000000000000000000000000000000000000000000000000005"
+              ]
+            ],
+            "content": "",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "id": "063f7d9e69c2cb388ada951e0263c4d8049f4659470e4c4824c4bffa27d70db8",
+            "sig": "b02a1d655731697490836a82fb65ae5ea265b8feb7f90adc3b0e190c1b8f388b5838b3338c11846ff2cd28f3684092f30f646c2a692311733db05c081efb7163"
+          }
+        },
+        "output": {
+          "seal": "unusable",
+          "sealTarget": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+        }
+      },
+      {
+        "name": "newer-credential",
+        "kind": "positive",
+        "note": "Which of two credentials for one device is newer: the later expiration, then the later created_at; a tie keeps the first. Expiration leads because some remote signers restamp created_at. A desk seals to the newer of the credential a request carries and the newest it has seen in the roster.",
+        "input": {
+          "a": {
+            "id": "02dbe45e5bca6e3f713414b63e1e16f10d5e64f3c908489d824128e64ab6f867",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1799978400,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800021600"
+              ],
+              [
+                "seal",
+                "deadd23059aeb8703a70572f527c3ca0306bc5ccd85dd0bd3306672d83edd485"
+              ]
+            ],
+            "content": "",
+            "sig": "e0b4fdfb5fccdd77e81bac20e7a4a7c202cefca93485b3c166bc7f4d026bc7f61ec2e84b5511135e2180339e5cf2db440bb23697ab4e9ead1c7c0d100f119491"
+          },
+          "b": {
+            "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ]
+            ],
+            "content": "",
+            "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+          }
+        },
+        "output": {
+          "newer": "b"
+        }
+      },
+      {
+        "name": "rekey-seal",
+        "kind": "positive",
+        "note": "A kind-1462 rekey from epoch 0 to 1 for two devices: DEVICE, given with its renewed credential, sealed to that credential's seal key; BARE_DEVICE, given bare, sealed to its device key. The keys map is keyed by device either way. `randomHex`: one seal nonce per recipient in order, the body nonce, the signature aux-rand. A reader tries each live seal key, then its device key; a copy none of them opens reads as no copy (the rekey is still read, without a secret), and the device asks for the epoch. `thief` holds the device key and the copied credential's seal key only.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "authoritySkHex": "bb058b43370d37b7ed3f09e3a36a6ffcc88a8dad56c5ee204b1715240a1466e0",
+          "previousKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "next": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "recipients": [
+            {
+              "device": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+              "credential": {
+                "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+                "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+                "created_at": 1800000000,
+                "kind": 20460,
+                "tags": [
+                  [
+                    "d",
+                    "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                  ],
+                  [
+                    "device",
+                    "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+                  ],
+                  [
+                    "expiration",
+                    "1800043200"
+                  ],
+                  [
+                    "seal",
+                    "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+                  ]
+                ],
+                "content": "",
+                "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+              }
+            },
+            "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e"
+          ],
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "bareDeviceSkHex": "32796464cb7434a5d397f03cce5055df28f9be8d15ce4bf14760d764bbd2e156",
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "copiedSealSkHex": "22b29538be86feaf0dbe57fcd046cc95ca39082e813d450d8d9d653a2434a374",
+          "createdAt": 1800000000,
+          "event": {
+            "id": "d1cbb89c4f1fa5dcd8eab8dc437f11cf0a8609d9e7232bab1ceae2aaf471f068",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "Aut5i7/JjhSKo0ibBgiw1xIx7uxRbd9qq2OiwmMW8T8X6CeXgo9dISqIysSaaNDjxk6fTmG+V6awvivUofoN9q1aNjFf0xW2Zs54Kx2NcHv6IyxHV1KfY3FZvZRe6QOtGhwqPtn52AOM60nriWZRwLWg1MsQkdI1at+jwUZ4UQvolHUPOwe13PA41uFgkfRWgBVQ2iVqcpaVktXnUs3nPtMIId+twF/akGwtR10+mafqKY8mW5OyM5HFqylFR3Htkj1+sGV+x6zRIvv0m8l1fFk2dtOU9jaWzbH23x1HIBe4Osa7GG+yEeR8VMdletK+JaIMOypEusPjac+DEvklCPdOP6yD300KxvNp3jxemWK55YtJO99uX05pXd2pW5RVLZE4r8/TlbeSenLI3UnD/p8a824Fvw13HY7setAsAYpMhb0oW3/aTaXOtcUOHzTYoquk9YC6+Qa15W0DEh+NoUOtSRO++uN3ze0zSE1BytONjDrUc3WBQuVylk4cx/yzlQB3brTq3mQFGDttIfJpA7z8sC+8984cxetEWczTbvKbx6/6QEvg6skimg8CiWjiEefhsXyBYjQbterphHD5oPO3BB2C1tu67kFd1x+XRkMYSftqGEof/MxgFGYY280t+ocSlSMCP6MLe3egi8DyhKidVIsExsG3KAbXwFmfq5c4MrkGV5BfHdydKMJnZ9ttMYAH3fogWdyU3E3vFtu8U4xPm4Mx5Bfv75H7lPCSN/OoqPQi9vYlZ5xjnF+3EAU8yc/4wbuxs4UdkXMH3XaxSwSuQLw9Km/RiJWlps1SJAaTJ0/hugEarFwPicPC/x1zLG0nnQQmq/Hkrxj56VRPo/vVFiwledqP3ZF82IakeAcpuR5a3waZTUeSK5NXeAnUaHIoRg65VSoNuL8WW90Lr2OTlBGknyod8xZI0JCgB1sK4wg=",
+            "sig": "344ac5b687babfc421b483a5772cb2c79dcfd8ef6b7285286da2dd049f43dc0c8208c7bc8438d7c6b068bab1126fe7e9fb041a0c79d1e30353074b9706af4fb2"
+          },
+          "randomHex": [
+            "5169a492c9e980b324c2d0212e5a28026585c8313c608d7d47bce270bf7fad0a",
+            "6eaa5e51e5686f76d5c2bb3d4a8a098c7541e801cbd37a71a168a54b393c2ad4",
+            "eb798bbfc98e148aa3489b0608b0d71231eeec516ddf6aab63a2c26316f13f17",
+            "9e772e52aa5310ea736f6895b32d86d31b6c3882e8506b6c5f26cbb885ae3ab0"
+          ]
+        },
+        "output": {
+          "sealedTo": {
+            "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b": "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf",
+            "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e": "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e"
+          },
+          "renewedDevice": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "thief": {
+            "epoch": 1
+          },
+          "bareDevice": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          }
+        }
+      },
+      {
+        "name": "rekey-without-seal-keys",
+        "kind": "positive",
+        "note": "The same rekey with DEVICE given a credential that names no seal key: byte-identical to the event encoded with recipients [DEVICE, BARE_DEVICE] as bare strings and the same draws, which is every rekey before seal keys.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "authoritySkHex": "bb058b43370d37b7ed3f09e3a36a6ffcc88a8dad56c5ee204b1715240a1466e0",
+          "previousKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "next": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "recipients": [
+            {
+              "device": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+              "credential": {
+                "id": "be0fb956bc2252965531e1adf35b326dbd8b6ebc9eaa46689aa044a8fbfa334e",
+                "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+                "created_at": 1800000000,
+                "kind": 20460,
+                "tags": [
+                  [
+                    "d",
+                    "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                  ],
+                  [
+                    "device",
+                    "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+                  ],
+                  [
+                    "expiration",
+                    "1800043200"
+                  ]
+                ],
+                "content": "",
+                "sig": "db1ba5457530f50f55b9c4d30526d7857ae00555164e2925dac0e25862f7cc5d4737b43a9c7feaf5f6d6773e6910d39990ecfb6c7fd9f6cf66855bb0d601f1a3"
+              }
+            },
+            "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e"
+          ],
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "createdAt": 1800000000,
+          "event": {
+            "id": "6669ba4e396499b97305d3b1f0fc0eca61f925b133743f2611646aa0434b6fa8",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "epoch",
+                "1"
+              ]
+            ],
+            "content": "AuGvcb2ZnqUyDpO5Mwisy0tQPNMakcrPHo3N5AoPXK2M8ZQbQX1BkNazhMIiuL7uZCjPyyuQITyPpIBferiw1iwd4/Ox8nWEbHupVfE5TFzqt9tGxeL84+2UUjbHldeNVeHvf2l0Ck54lWLf+1mft9mftg3QznWGUwnEG2D1fpjsaijkvjCd26DBZTsx6JifpWKk+nNMIwMYVhurBYOZeLMXRowvnbiFqWWJkhsuhsxdYja9NE81+YIv/itxBA8TIkEYGsg7DDE3lyJBgkb4oSnN9QcHkEuBiwwH3EZeYRNnT/zfhUYUnveV5XgyAJwKyKEo2ExXneCAKXMVxI1cIKiBrBxPi7tfZkt0sgK1K4g7LauC5k2pT9qAanV2yjisEt3yOTSeh2I3+xELs3oZQip9zlXuZQzSNXyUF6BiVWXjeIZeUX3cnDkk8XdHyU7NKsonsOZ/47SBoaqF8LXdcwVuLRsQffqjNVfXJwRbrSuK9GXPC1WowrNvxeliUGyEdqOdXzZMuYtemwtmHMH048i+rzSVNdCJuWMY814drPf2auyF+QgxmQIBxVKB5rbnVEfv+escNV50d2Z/JltemIlS5U9agzwa1Yn6Y579BWzYnObth+HDs2EKTVPK7odB7+vuUPgJ6OIwEBCiAdIApdxE9ReByYhaEnhyzF2cuo+QWBBmNRgmVBhFIY+wJ8RNTWqsLpdozepEjn2S9SaPaTqFZ5jBgrbORiWTLdsHW9aFHh/72lmXjsdn9CmwxkBaXJa6GdTd7fZMgJILMtkXm2ycFRUAMDa/7HRK1axH53sToWrr3B4Qe95VQ7dA3n/q1Da3TeFULwPPwY75E4rXpLYnN0hV/RS2QTLoB2pjQnjY4K03gwerqGFn64wztWRmmIb4kfM9TU3ulTEW5E+G2ttZ6iwb1Vh/ZbbR4X/Rc/y2Bm8=",
+            "sig": "6ce3d217383d6089dab16868cc2011bdfcee548082f380511a8692d0a76bb5acc495a0de5ed61c0999625c4074e6eb2a474c7e1ddf79eccf9e18b077f6ba453f"
+          },
+          "randomHex": [
+            "840864b561e0a51edc82ca4f5cae7d1d1c72d9e4c4faf1637060776ce8318ffc",
+            "ef748865f87d741f06361467eaa1763d1817af1d66e70f7039cd16238d857bec",
+            "e1af71bd999ea5320e93b93308accb4b503cd31a91cacf1e8dcde40a0f5cad8c",
+            "7e151cea186f4f1d24594681f3a224e6d9c1e664694301153f93e7ba9194f382"
+          ]
+        },
+        "output": {
+          "device": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          }
+        }
+      },
+      {
+        "name": "epoch-grant-seal",
+        "kind": "positive",
+        "note": "The thief replays the copied, still-live credential in a kind-20460 epoch request (`request`). The authority has seen the renewed one in the roster, so its kind-20469 grant is sealed to the renewed seal key: `sealCredential` picks the newer of the presented and the known credential, when the known one verifies for the same room, device and participant. `grant.randomHex`: body nonce, aux-rand. The renewed device opens it; the thief does not (null).",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "authoritySkHex": "bb058b43370d37b7ed3f09e3a36a6ffcc88a8dad56c5ee204b1715240a1466e0",
+          "roomKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "now": 1800000000,
+          "presented": {
+            "id": "02dbe45e5bca6e3f713414b63e1e16f10d5e64f3c908489d824128e64ab6f867",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1799978400,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800021600"
+              ],
+              [
+                "seal",
+                "deadd23059aeb8703a70572f527c3ca0306bc5ccd85dd0bd3306672d83edd485"
+              ]
+            ],
+            "content": "",
+            "sig": "e0b4fdfb5fccdd77e81bac20e7a4a7c202cefca93485b3c166bc7f4d026bc7f61ec2e84b5511135e2180339e5cf2db440bb23697ab4e9ead1c7c0d100f119491"
+          },
+          "known": {
+            "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ]
+            ],
+            "content": "",
+            "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+          },
+          "epoch": {
+            "epoch": 2,
+            "secretHex": "1173b8e8457a46fdb6ae949e37aa41ce259534d4bb4f15a5fdb74aefc83344f5"
+          },
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "copiedSealSkHex": "22b29538be86feaf0dbe57fcd046cc95ca39082e813d450d8d9d653a2434a374",
+          "request": {
+            "event": {
+              "id": "ef8f52180b25300214a75780fc12a89cb1d4ee1a88a78b2f8afb92605769e87a",
+              "pubkey": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+              "created_at": 1800000000,
+              "kind": 20468,
+              "tags": [
+                [
+                  "d",
+                  "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                ],
+                [
+                  "p",
+                  "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533"
+                ]
+              ],
+              "content": "AmqBnnhjY6RoDnjoSjd69NgnEnS1YkBtqqcT/1CGlZBRTiWWXCKHvJ82a59P2zzaZUfdrtSpSCU6Ep/Na0sDEtIYNq6B583KQ/yRnQ4WkmC9Wr28GOGT2zORgvgqRrQVjuZwgl5dT2TG1FA3cA6/nBokIn28UNwi2a4VGWQGdMFbEHfPvzn8NHYwz6F+44x9UlO1UWOso6vIE56liGh0IerhGrPAPCCSKcee28ntAoyV+WBucf1ZjpEyp+CM560CElCh3lX7oMO+KOs2ZDo8HJtLVHlpzEKZuEv1srcx4kU9upSQ5Pwf0OJWUkKBjWw1klxI9kibjNPPLn0PgKpvj1uDs+lbP0n1n6celPtZzkBSHdVc6G+ChaDDn5o/rCNACkW81YBvXVNoz5Fcqw2xrhDX5a7sypyoXi8fjSak96vQJ61y6W3vYvf+Im+OHIUlAicKUSTvz2SqANVBXADrmm9ss+HYuvHzGmSPCeaCrNRhIOAyiLCyIPs9K/XCxTKuP2RIxXHvUkEhCXojLWLc74qszMY6JWzNpMwgKKXAbisomxVUnwx5W5jdSFlRLcdCxgJi8q2oFfgh7O77J6Hnc6BdH/OoczXrMh2a9nmJLjE541wl8hGOOw5fbA4exgYtZKObQ7GqHr6OBxpc5jRr4LN7Qn4bNYnypr8yBFzptcVTDLQDUfaBoizDw0ZMa+6JM/QN5RMT16hBst2qO2Soy+fzZnfTKnQ8Acu5FKTRNGnFUa29IBluoy7FmoybQ89lKW9jnfp0yggXZ3Sis492uQkFllQfBqYSlpPjB/Q4HAFYgubXp+gxKP8RAQAoW3abc0Ss8+17W0fYWplFuWAoT2XxdGz91VzIQDx/SrZDoLzfBLXx27cZ/ec0mv9y7M7RkPp/d4GNlPVaviOxHJN5Izf1TKVw4BOih+xg7AZhFIsv6XxFuCgEgkOhRt20Y/SiZKeTfWoShCQKgrTyl0bhvO3M/+Y4cZYijpWHy6FP0BClxFtKz9wlPZ7zbOP7gR7gF9r5NMM/rJ/sqijz1U6Dkb5yAxixZ2H9NvkSXla1FCRL4b/+Gs5n1RxN93CLETPp9uxwnxw3jkM/9jkGHEbQ64kyqQ==",
+              "sig": "efb5102cc92789c375f302222b499f4905c5526e1959f5f1f72ee65568912bbd84e2392f9f85fe9935345bb6388db5c98789a06da6c4a95faa95130bdc3ddcd3"
+            },
+            "randomHex": [
+              "6a819e786363a4680e78e84a377af4d8271274b562406daaa713ff5086959051",
+              "5a88fdc7257dd1c837bf49584a3a7877b6f54f2be96e5fabf3b1dc53be2b7318"
+            ]
+          },
+          "grant": {
+            "event": {
+              "id": "75264b09b4a0cf4092dd6d794e73645eaba5e77580ffbf7570080c32e32327dd",
+              "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+              "created_at": 1800000000,
+              "kind": 20469,
+              "tags": [
+                [
+                  "d",
+                  "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                ],
+                [
+                  "p",
+                  "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+                ]
+              ],
+              "content": "AmzY2zI1GaQaoAS9Hu/F8kP2JW6ogkwF8IkcCih0xBbrna0T5hQ6t75w+X8famQflFR64xlNmlVwUvJ+vWNDbUxZ2VutXiZ0VTfKQWhReAJVl0bs6b/iuvrEe4clcsTR65U2HH0y0rUUc+FW8xrMn/C5hHQmJWGkbDClPH42cV+o86ZQeuIYC3rqNHYmFgLj8TPj2pUFLtgequ6Ek7kyJh5dK0NfHpZOKOXqfefjJFMjR19D1QzTbaT3SUkZmVzor23A6EwhsGNIXH+zz6cde1LPlcN6QMjUv+h/eqBCJyJZaEr3+vAD+RpF2PILHwpWwzqTnmv/wnHEn4PoXZrtFMUfXg==",
+              "sig": "6f193a7933b897d0fabf2cc576b9368af9f93ce3bbb3e5113e15b69ef788c4ec871a406d7aa6d54f8f37ce437f8ad40aa71b22aeaa630406e8d6477d556dae9e"
+            },
+            "randomHex": [
+              "6cd8db323519a41aa004bd1eefc5f243f6256ea8824c05f0891c0a2874c416eb",
+              "f91ee2fb06746ff52faabad585ddbcdbcbc0304104c141506e1f5d8c689526d8"
+            ]
+          }
+        },
+        "output": {
+          "sealedTo": "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf",
+          "renewedDevice": {
+            "epoch": 2,
+            "secretHex": "1173b8e8457a46fdb6ae949e37aa41ce259534d4bb4f15a5fdb74aefc83344f5"
+          },
+          "thief": null
+        }
+      },
+      {
+        "name": "member-grant-seal",
+        "kind": "positive",
+        "note": "A member's kind-20472 grant of epoch 1 (proven by the authority's committed rekey, `rekey`) to DEVICE, sealed from its one-time key to the renewed credential's seal key. `grant.randomHex`: the 48-byte seed for the one-time key (`signerSkHex`), body nonce, aux-rand. The renewed device opens it; the thief does not (null).",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "participant": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+          "request": "fb6e652bcbebeda776dd7a4dcb7bd5d02c54d0297e2cced20de94ea3c3d6c87f",
+          "now": 1800000000,
+          "currentKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "epoch": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "credential": {
+            "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ]
+            ],
+            "content": "",
+            "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+          },
+          "rekey": {
+            "event": {
+              "id": "d321306b52033dc20aa6d734425cd0e9cc7ca152ad4b03af113f93a63d638068",
+              "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+              "created_at": 1799999990,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                ],
+                [
+                  "epoch",
+                  "1"
+                ]
+              ],
+              "content": "AstiA5rP6wsM6mYXFFTM17QwqoYG/1cv0j4duCsLGUPge30JDYoDHP4d/0KIeEi5eoziLq0u+G2bxAIoiQ7xFGkAlK+SRYWsFbsiwVMGb+Hv1BC4w94sehtWzyZLhTikIDUg+sV70eaVkFtuiE4aLuMQseS2gtTxupn0m4WSdqcta3U9gWZ8m4rX3m6soWsnW6OB7Iyq3DyvTD7aoyK859vpPC6iM8r3xjiUwgzVF7P6WO9xSHlWuBuePdBANeLltlKO",
+              "sig": "cf60795e23bda9eb961afeeaf4f61d0b7dfaf82be8ceff6bfcd42eb86c25c80dfea821e1b86cef155fcf01f2a6fae7f12404898279ecbe5a01c478b3748fa555"
+            },
+            "randomHex": [
+              "cb62039acfeb0b0cea66171454ccd7b430aa8606ff572fd23e1db82b0b1943e0",
+              "a75d572520877dd53b9ff70197d6387f3bf631352061c6835e4b1088bffa1110"
+            ]
+          },
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "copiedSealSkHex": "22b29538be86feaf0dbe57fcd046cc95ca39082e813d450d8d9d653a2434a374",
+          "grant": {
+            "event": {
+              "id": "5e749ceaaf7ad028f4c1edeafc8f6e9d12fd57af15695dbf42aa1a464622f0f8",
+              "pubkey": "b3c0ffb305f9f9e0c55363533363ed58cdc81e17d2e037ba31d49a935143b5ab",
+              "created_at": 1800000000,
+              "kind": 20472,
+              "tags": [
+                [
+                  "d",
+                  "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                ],
+                [
+                  "p",
+                  "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+                ]
+              ],
+              "content": "At1q+dAde7Z1gJU0pp5A4gVwSDHtuEHt82Imut1nvyogjy0rDyZt6cILRdpBX1vj8uc9EIDOSTigT2TTOhSHVticYCNvmyLJ6ls9b49L2sgvzOD/wAOA0kgWZ7Cfe3poNHF/Km/1J8Nx6gpsKMjTTPopz/UZsZMrlCB+g/0fuuZucdYwkG1TBbH+838PVom9HIy/P718ZsijokbA1j8OsV2osDucqCqhRhYnicQwUZAJSYfcWH765pWE7aHC8OSisgMRr47+KN2rhD9YCpH+5kb1FB4is2JotJ4G7Iq+YN6i9txOlppCveuo5d17Z4JdxrO6wl7sFP8b3XootdCeTnP2pm7yZplvscapIHwtQh9UNG5Uk/KPT5CODZzXQzhWgf0phGL0/+xiA1Ssjo8famkdYVLc/WHMG+AIn3zpLbiU8oT1To4HJqvQzIpn1aagUC3EO/E9gBGEPhxj1Jb+Mxjf1KMdekCaf8BBsNkD0Q4GnRIHbB+XOPlESyG0EgLeETHUvRTfIK5JlsTTZxpb4W/+xrARmz2sww7xo80Ym1sKjZbjxuhCzj5zlbtdrdR4ffdwtLaAqc2+2pLp2ew6+zqosIWulZl0EJDTqGJuZolv/Iz/luMbnXfdwARqVSdHYv2SU2yOsN+YRM31ZDjbnkcjsJ6Cdqirrpx74QCpv3gjmlWULJfjI6NDsLKx3HlMFnAKtZef8X/Jb5D+xQn5H3TDKvUxHYjYBIoOeYfeXWft8ecRKlhOaNaq1uL5Vv9UCbHthBDyYjL8XApLr2pltrp/YWfd7cmrFoUpzcgHLV4+R14ZrOcizrqM60hfr7kwVtt+gdSZzwP7kxg6BjHD4N2clEQY/1eWwCp+K8WbIicSkbbD0UBe/zDFZjPt/wli+PyP+mW+svmTH6FaJww+lQj9n2+Fiys3IOHw5unZZOoITVVhlcP9vFqSvJjdk5APylrNwAUna9pDWmQw2jWeCB5r0/U50bA0qI5976yLUMJlyMoQgNDfnDFohBlMqer2NykmaTgFuNTXlQ8Om44UHvIBEvpcW+TVugJiuYWkx5CsL6TT4sY2pnWLBBUjeWxMfNW8J6jNhnZSQFhATeKt07o3ehQtP4mO3tcHPxEYj1M24eeTHGxSK+Ov/86iJ2lbvp88vbYpBoKBL4i2+YOYvYcky3Oz/6zF3Yq5Xq5Cy0SAxd6Cn1smXR5uEHBaBn0dTu+byHXPFDyAw0XuN0webAgJKArsGIialsdvCAUe0I5Cd5MJhSfUIMkA+UzSV8Ja6dHo",
+              "sig": "9267447ff34e3a8e82512da3dbc9d758943d8f6e6dcff67aca5efbeba4cdf57ebf67109ba88b8e6bd04861a3272bfbbaf87170ae294a0a81023aefb04d13f878"
+            },
+            "randomHex": [
+              "3c1aec041fb37298e73c450dd6c7d2659141b6672e168ef717b2a3f9dfe4ca561c1aac56e0b06a8ae2308ed0cdfc4eb3",
+              "dd6af9d01d7bb675809534a69e40e205704831edb841edf36226badd67bf2a20",
+              "646046221852600a173a642bfa49a04673adedd988b2284a0adfafdc1d72041e"
+            ],
+            "signerSkHex": "dda2f0cab77c7b732af2d3e92c250927e1e8469dd1ba772f2fc6f97dee4e1074"
+          }
+        },
+        "output": {
+          "sealedTo": "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf",
+          "renewedDevice": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "thief": null
+        }
+      }
+    ]
+  }
+}

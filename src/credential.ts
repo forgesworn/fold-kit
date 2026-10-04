@@ -3,6 +3,7 @@ import { verifyEventUncached } from './verify.js'
 import { hexEquals, normaliseHex } from './hex.js'
 import type { ParticipantIdentity, UnsignedEvent } from './identity.js'
 import type { DeviceCredential } from './types.js'
+import { isSealPubkey, SEAL_TAG } from './seal.js'
 
 export interface CreateCredentialOptions {
   /**
@@ -29,6 +30,11 @@ export interface CreateCredentialOptions {
   expiresAt: number
   /** Injectable clock, in unix seconds. Defaults to the real one. */
   now?: () => number
+  /** The device's seal key for this credential: an x-only public key,
+   *  minted fresh for each credential, to which rekeys and epoch grants are
+   *  then sealed instead of the device key. See `seal.ts`. Omitted, the
+   *  credential is byte-identical to one minted before seal keys. */
+  seal?: string
 }
 
 /** The longest a person-scoped credential may run. A phone that leaves the house is better at seven days. */
@@ -72,6 +78,7 @@ export async function createDeviceCredential(opts: CreateCredentialOptions): Pro
   if (person && opts.roomId !== undefined) throw new Error('a person credential names no room')
   if (!person && opts.roomId === undefined) throw new Error('a room credential needs a room')
   if (person && opts.expiresAt - now > PERSON_CREDENTIAL_MAX_SECONDS) throw new Error('a person credential may not run more than 30 days')
+  if (opts.seal !== undefined && !isSealPubkey(opts.seal)) throw new Error('a seal key must be an x-only public key on the curve')
   const unsigned: UnsignedEvent = {
     kind: KINDS.CREDENTIAL,
     created_at: now,
@@ -81,6 +88,7 @@ export async function createDeviceCredential(opts: CreateCredentialOptions): Pro
       ['expiration', String(opts.expiresAt)],
       ...(person ? [['scope', 'person']] : []),
       ...(opts.label !== undefined ? [['label', opts.label]] : []),
+      ...(opts.seal !== undefined ? [[SEAL_TAG, opts.seal.toLowerCase()]] : []),
     ],
     content: '',
   }

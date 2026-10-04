@@ -19,6 +19,18 @@ export {
 } from './credential.js'
 export type { CreateCredentialOptions, VerifyResult } from './credential.js'
 
+export {
+  SEAL_TAG,
+  isSealPubkey,
+  generateSealKey,
+  credentialSeal,
+  sealTarget,
+  sealTo,
+  openSealed,
+  newerCredential,
+} from './seal.js'
+export type { SealKey } from './seal.js'
+
 export { deriveScoped, SCOPED_LABEL_PATTERN } from './scoped.js'
 export type { ScopedKeys } from './scoped.js'
 
@@ -137,6 +149,7 @@ export {
   encodeEpochGrant,
   decodeEpochGrant,
   hostRoomEpoch,
+  sealCredential,
   EpochRefusedError,
   requestRoomEpoch,
   canonicalAdmins,
@@ -153,6 +166,7 @@ export type {
   RoomEpoch,
   EpochKeys,
   EncodeRekeyOptions,
+  RekeyRecipient,
   RekeyNotice,
   PeekRekeyOptions,
   DecodeRekeyOptions,

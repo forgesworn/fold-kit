@@ -349,6 +349,20 @@ event is byte-identical to 0.4.0's and every existing vector still verifies.
 `ROOM_RELAY_CHANGES` and `CONFERENCE_CHANGES`, so the whole-file comparison
 against the pinned commit still holds.
 
+## Seal keys: declared additions to `credential.ts` and `epoch.ts`
+
+0.7.0. A device credential may name the device's seal key, and rekeys and
+epoch grants are sealed to it instead of the device key (see
+`docs/seal-key.md`). The new code lives in `src/seal.ts`, which moved from
+nowhere. `credential.ts` gains the optional `seal` on
+`createDeviceCredential`; `epoch.ts` gains seal-keyed recipients, `sealSks`
+on the decoders and `requestRoomEpoch`, `credential` on `encodeEpochGrant`,
+`credentialFor` on `hostRoomEpoch`, and `sealCredential`. With no seal key
+anywhere, every event is byte-identical to 0.6.0's. `scripts/diff-source.mjs`
+declares each hunk in `SEAL_CHANGES`, as 0.7.0 text against 0.6.0 text,
+applied before every other change set (and, for `credential.ts`, before the
+#205 blocks are stripped).
+
 ## Public repository naming
 
 This repository is public. It does not name the private downstream app that
