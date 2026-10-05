@@ -1,0 +1,882 @@
+{
+  "protocolVersion": "kithmoot/v1",
+  "generatedBy": "scripts/generate-schedule.mjs (forgesworn/fold-kit)",
+  "nostrToolsVersion": "2.25.0",
+  "groups": {
+    "schedule": [
+      {
+        "name": "scheduled-rekey",
+        "kind": "positive",
+        "note": "A kind-1462 rekey from epoch 1 to 2 that removes nobody, carries the member list and the epoch commitment, and is marked `\"scheduled\": true` inside its encrypted body (after `closed`'s place, before `commit`), so a relay cannot tell it from a removal. Readers report `scheduled` only when `removed` is empty and the room is not closed. Read with epoch 1's key (`readRekeyEvidence`), it checks out like any other rekey, so a member grant's chain runs through it unbroken. `randomHex`: the seal nonce for DEVICE, the body nonce, the aux-rand. `unflagged` is the same rekey with the same draws and no marker, which is every rekey before 0.8.0: its body is `bodyJson` without `\"scheduled\":true,`.",
+        "input": {
+          "roomId": "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52",
+          "authority": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+          "authoritySkHex": "43a7682b0c78094f32677405567f9d51db81dcba3eeb4e0edda6f5854d1558e6",
+          "previous": {
+            "epoch": 1,
+            "secretHex": "21b54ffcc32ff771b1dd0e199463589de9492c3e842779bd52b1db65e1e47a56"
+          },
+          "next": {
+            "epoch": 2,
+            "secretHex": "cd4a87278b56425cd0ccd74a988849fb3a85ce4acc233ee9e9fee20826ad0da3"
+          },
+          "recipients": [
+            "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+          ],
+          "members": [
+            "392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c"
+          ],
+          "deviceSkHex": "4433d9c3be8b51f50ac1824561dbaf67527254572c7fb411045c35b5ab948fa8",
+          "createdAt": 1800000000,
+          "event": {
+            "id": "4fbc3cb54bc2ef75d8e704047daed995bee3edaac9da08101f09936dcb9343b3",
+            "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+              ],
+              [
+                "epoch",
+                "2"
+              ]
+            ],
+            "content": "AtXf+hPwbdOgIVkBUIzZp2gYAfVUZiehNk+ZbYcNcz036uOH2kXCEO85miNrat+0HJ3p2S4mYKBspwWOznnUHrlUFv0eR2cwJlHmefL5wAuovpOAoTKU58T5k4uCv12kjALxBJGYZPt+kmuHXXGu0DfQ7widbN9CekThh1a5PdmOw2Ufv9RO8XLZIZNn0XMdYqbcCpT4UXIU4mU4LJ72h+/t4Gcax/zdKl3Eg6Jirgyy+Gf8d9X8x3FVX4Bj/07IADjVyIHTtgLYQByRLs0kYiuzkkWeBdEu3GIUhD6GOSYYpwn7xgRaL5sPNu6ZoBtYqPoe8rQCjAyEkDbO+YtVe33LUVpPiATpvV42Kxo6vsGyAG2TLq0mbMhNpjCxp6rB8amn7AwSMGt7dEYYNPwWR6/uOZ13qTq5DhCOlddhjYn+NtvyF2hm9YDO4w41qAZLviadA3ydP5m/rHQlNaISzEkAwOA/tjdX9YOfmhdT1ITnwL8usrxNzeR6szCi6hADiER5H26nyX4B/oxj23b/JmfkJkdgw6IWs1v7kue7xAibYBVpXkT/S+UXbHV3XvV1DnVKsi0i8546bx4DoAh0JsKHGtxN5k+gJb6QvDYRGp2j9DbyiJXDjFWPvRcPcZCUynLyOlUxVfNxMAaFRdZQGUIMO3E9zuWcSiUO2SzVB4HMudeJZAiUZE5Kt8xFV6rmqZWQrrmHw/i2AQmf9Maw4zyNTdJeJ7TTrrXI167X8mxe5cKt+zQYt10r1EWFrKdKX/d8",
+            "sig": "131bb41f90fd0b5d345885d251dcefd00d7fb44d0e2e29136f5f38a82d05f970a8deac346962d0171ad2774390186013b4e67262fd8f3a216b3fec285fbaa603"
+          },
+          "randomHex": [
+            "429af353173c7a7c6cf2be367e934d2819b169583685ed4d0f7baf6e7ed108ee",
+            "d5dffa13f06dd3a0215901508cd9a7681801f5546627a1364f996d870d733d37",
+            "76f60af9d0f361a163b1f199c140a82b12c7b34184b00eef9d4bc253e878d645"
+          ],
+          "unflagged": {
+            "event": {
+              "id": "46f0ac37ac417ae4b9e6fcd2ece69842814a67bb9a1772fc794d361a01386d4e",
+              "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+              "created_at": 1800000000,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "AtXf+hPwbdOgIVkBUIzZp2gYAfVUZiehNk+ZbYcNcz036pKH2kXCEO85miNrat+0HJ3p2S4mYKBspwWOznnUHrlUBvEbT2oxaA6gbPzp1hz1oobWqjrL6oi+zJuDvFyh3AKnBcDKMq1/yT7WWnat1zLUslmfbYhEehHhg1C7O9rdxGobvoNJpXXcItJ/wSlPOPXaQYbsCEsD4z05aIrjib3jsGRYhe7VQxyVjKA18AKz/Wb3J4Oow3RTWYdtrUyYDDjRmo6E4gTVRkzGKMAlZiznxUPPAoIu3Hl4zC6OaTxctFK11AFZL81YLdWD50Netexa+/0U21/UkDSTr4hWen3NA1gfjVHp5V0xJRo5vMKyVWnALPx0OMMS8za7p6rOoan3sl5WOCwPJ2tNaf8/LMeTe8Mtz1OoYj/TiuIK257VMf/bYWVuyv/RtA8TzmAH1ASgGkOpJ7a+vhR5U4dlkSN268AunxlrwYGA+hFk9Irt9Kgni5dB2tZtgRGl4xIGh2E4HkXs7QkQ6L1K7VHUKSz5VzQG6bU55mKhvefN8wi2DnlpfAv1NNIBbgVtcLQcG39WqE906aktUgMOtzwPCtyBEMMx/g30BrKMm2IkNsaDp1f9763awECei0VCQffcqAeQFS/kfpKYhegmFgmS82Vj0ZHmOZkAHR5oAPBmGg05Yq4=",
+              "sig": "f57e6beffc92333352c29e414f08c080140c4a8ca6ee207cc08a56d2ee28b96ba2a159e91ada4189353221886be049191409b4a45395055b063ed7f659f3ad04"
+            },
+            "randomHex": [
+              "429af353173c7a7c6cf2be367e934d2819b169583685ed4d0f7baf6e7ed108ee",
+              "d5dffa13f06dd3a0215901508cd9a7681801f5546627a1364f996d870d733d37",
+              "76f60af9d0f361a163b1f199c140a82b12c7b34184b00eef9d4bc253e878d645"
+            ]
+          }
+        },
+        "output": {
+          "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"scheduled\":true,\"commit\":\"74ddb8075de2d8ee267ea28f6d63dec04514bd6e74ea5d0c427771c9a6cb52a3\",\"members\":[\"392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c\"],\"keys\":{\"d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86\":\"AkKa81MXPHp8bPK+Nn6TTSgZsWlYNoXtTQ97r25+0QjufzwwuF1eQWEhAFzJdOTKCwYQcfwKbuQssOCCyTExVjdrDG4PX8k4RoelNqAk9Y6G6r/Dak5Jl8FAFW56eyxPswiEPBy/TLK/T3cOGNjdRd9U1RFTSLq7lKRM0gHbub3I3kU=\"}}",
+          "unflaggedBodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"commit\":\"74ddb8075de2d8ee267ea28f6d63dec04514bd6e74ea5d0c427771c9a6cb52a3\",\"members\":[\"392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c\"],\"keys\":{\"d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86\":\"AkKa81MXPHp8bPK+Nn6TTSgZsWlYNoXtTQ97r25+0QjufzwwuF1eQWEhAFzJdOTKCwYQcfwKbuQssOCCyTExVjdrDG4PX8k4RoelNqAk9Y6G6r/Dak5Jl8FAFW56eyxPswiEPBy/TLK/T3cOGNjdRd9U1RFTSLq7lKRM0gHbub3I3kU=\"}}",
+          "notice": {
+            "epoch": 2,
+            "removed": [],
+            "closed": false,
+            "scheduled": true,
+            "members": [
+              "392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c"
+            ],
+            "secretHex": "cd4a87278b56425cd0ccd74a988849fb3a85ce4acc233ee9e9fee20826ad0da3",
+            "at": 1800000000
+          },
+          "evidence": {
+            "epoch": 2,
+            "removed": [],
+            "closed": false,
+            "scheduled": true,
+            "commit": "74ddb8075de2d8ee267ea28f6d63dec04514bd6e74ea5d0c427771c9a6cb52a3",
+            "members": [
+              "392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c"
+            ]
+          },
+          "commit": "74ddb8075de2d8ee267ea28f6d63dec04514bd6e74ea5d0c427771c9a6cb52a3",
+          "unflaggedNotice": {
+            "epoch": 2,
+            "removed": [],
+            "closed": false,
+            "members": [
+              "392f87c7c2f01022cb601f9b2b96fe474ee8b365b606a2c91d2c5c71a50a122c"
+            ],
+            "secretHex": "cd4a87278b56425cd0ccd74a988849fb3a85ce4acc233ee9e9fee20826ad0da3",
+            "at": 1800000000
+          }
+        }
+      },
+      {
+        "name": "scheduled-rekey-contradictory",
+        "kind": "negative",
+        "note": "Two rekeys from epoch 1 to 2, signed by the authority, whose bodies carry the marker beside something that is never quiet: a removal (`withRemoval`) and a close (`withClose`). The encoder refuses both combinations, so these are built by hand (`bodyJson`, then `randomHex`: the body nonce, the aux-rand). A reader still reads each rekey, and reports it as not scheduled, so the removal or the close is announced.",
+        "input": {
+          "roomId": "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52",
+          "authority": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+          "previous": {
+            "epoch": 1,
+            "secretHex": "21b54ffcc32ff771b1dd0e199463589de9492c3e842779bd52b1db65e1e47a56"
+          },
+          "deviceSkHex": "4433d9c3be8b51f50ac1824561dbaf67527254572c7fb411045c35b5ab948fa8",
+          "withRemoval": {
+            "event": {
+              "id": "4daaec9cb7e68479f7b37b07e07c57698bca048afe630a8ba24045793200e9b1",
+              "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+              "created_at": 1800000000,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "AsVPUA68ywhhaxTNG1HMjLvaqS76Qmh0wlrVCUuPJl86LxmpyDQf/mNCj31bq6H7/f8R6ZclrteoYLWyj3m4FxnL3XWtk1uO3R5FcUIAKV3Gv/8/bRrrGwJ/zb4zkqHhitlV9M4B8qTlcsElfwt7D6amiu+oc/utyy2638gl9C8qsf/imDGZvalal7O91DzuK/nAahPPObJY0WqcqPVzJw5EsRd91yp7jq2T7cU1ZJ5lLY0F96+P84FgO9NnFSEPrwG9",
+              "sig": "e08d5515ae37e6d8b38430de2d0709160322ea49ff4e800120c7d0608960934944c88a716d31cd3b2ad074edb3d3611639a3b765d1be6870d4a3230e69dc21e2"
+            },
+            "randomHex": [
+              "c54f500ebccb08616b14cd1b51cc8cbbdaa92efa426874c25ad5094b8f265f3a",
+              "9930666fd63ce4ee5d294bc4f613dbc7cce25f17056d6ef950b32584bd16b07a"
+            ],
+            "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[\"5cd88f820767df171b4d0eccfc6250df8fd4fa5c8938715860e00eca593f1223\"],\"scheduled\":true,\"keys\":{}}"
+          },
+          "withClose": {
+            "event": {
+              "id": "0f06b03603857cb3ae0f89d91571ed81e6ede31db5358385b01473f033971fc3",
+              "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+              "created_at": 1800000000,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "AreTpJDfoYvCfO3Z9aPQZpcRPRixRyE5Eo+fwRVof76arlqDr22Oc/RALUgRJ/yg+/3yWv0ziNy3GmGfDP53Bw5iNFwLZ7JnnorQhT8v0P43X8r/8l1o9Suk9j1gaYXpHnNOSN5NfCMCq8fexOwsOYBYkWXJUNyGd4ZvH2E0CN3Xt68bCOgkm4shCKJ9ygPRM+NXpxfwmHzrDEtOU/Vq7pwjiA==",
+              "sig": "fefd999209141133471a0473855105997892743b6e223357853f2d6624f6b100dc5cf931f154dcb00c27dde10dae7501b965d5ce0d9b956ca9412bf4c7303777"
+            },
+            "randomHex": [
+              "b793a490dfa18bc27cedd9f5a3d06697113d18b1472139128f9fc115687fbe9a",
+              "fd5ecf803cdaf7c49563203cc820d03eba7175bdb7869ee89fde483b33f2a8de"
+            ],
+            "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"closed\":true,\"scheduled\":true,\"keys\":{}}"
+          }
+        },
+        "output": {
+          "encoder": {
+            "withRemoval": "refused",
+            "withClose": "refused"
+          },
+          "withRemoval": {
+            "notice": {
+              "epoch": 2,
+              "removed": [
+                "5cd88f820767df171b4d0eccfc6250df8fd4fa5c8938715860e00eca593f1223"
+              ],
+              "closed": false,
+              "at": 1800000000
+            },
+            "evidence": {
+              "epoch": 2,
+              "removed": [
+                "5cd88f820767df171b4d0eccfc6250df8fd4fa5c8938715860e00eca593f1223"
+              ],
+              "closed": false
+            }
+          },
+          "withClose": {
+            "notice": {
+              "epoch": 2,
+              "removed": [],
+              "closed": true,
+              "at": 1800000000
+            },
+            "evidence": {
+              "epoch": 2,
+              "removed": [],
+              "closed": true
+            }
+          }
+        }
+      },
+      {
+        "name": "epoch-grant-window",
+        "kind": "positive",
+        "note": "A kind-20469 grant of epoch 18 that carries the window: `passed`, epochs 2 to 17 oldest first, each `{ epoch, secret (base64url), left (unix seconds) }`. 16 is the cap: the encoder refuses a 17th (`seventeen`). Epoch 0 is never carried (its secret is the room secret), nor anything at or above the granted epoch. A reader takes `passed` only in that exact form (strictly increasing, each in [1, epoch), at most 16, 32-byte secrets, a non-negative integer `left`); anything else drops the field and keeps the grant (`malformed`: seventeen entries, two out of order, one for epoch 0, each built by hand). `randomHex`: the body nonce, the aux-rand.",
+        "input": {
+          "roomId": "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52",
+          "authority": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+          "authoritySkHex": "43a7682b0c78094f32677405567f9d51db81dcba3eeb4e0edda6f5854d1558e6",
+          "deviceSkHex": "4433d9c3be8b51f50ac1824561dbaf67527254572c7fb411045c35b5ab948fa8",
+          "request": "e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b",
+          "now": 1800000000,
+          "epoch": {
+            "epoch": 18,
+            "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d"
+          },
+          "passed": [
+            {
+              "epoch": 2,
+              "secretHex": "cd4a87278b56425cd0ccd74a988849fb3a85ce4acc233ee9e9fee20826ad0da3",
+              "leftAt": 1799942400
+            },
+            {
+              "epoch": 3,
+              "secretHex": "93c551bebb1b225482a714bf7ac4da026cdf54d37b7c40bf98a8901e33c663a3",
+              "leftAt": 1799946000
+            },
+            {
+              "epoch": 4,
+              "secretHex": "cacc687188f0b4cd158a398dfe9defb74ad6a74e8548bc1249160c9a88a2db84",
+              "leftAt": 1799949600
+            },
+            {
+              "epoch": 5,
+              "secretHex": "46302417f41d76ef215272835050110eb0ca0fb87d438789d124ef19d0a8031f",
+              "leftAt": 1799953200
+            },
+            {
+              "epoch": 6,
+              "secretHex": "6c3efbee482402e4fddeaa9073237209f9ab72f9434ed1cc9e22b92d90164ae6",
+              "leftAt": 1799956800
+            },
+            {
+              "epoch": 7,
+              "secretHex": "ef34fb8a676cb73367c6ef32cc95813be2991a5a6bf952192a4e84bbfd233d66",
+              "leftAt": 1799960400
+            },
+            {
+              "epoch": 8,
+              "secretHex": "b8b0dfd6c28f396b1cb2af1afeed8718156618ad2516cd908a71be0ea190865c",
+              "leftAt": 1799964000
+            },
+            {
+              "epoch": 9,
+              "secretHex": "ac9ebc22bdce83ac0a3a7e826690f16fbc1adf0d1f7a5e67e1f65e648bf791e9",
+              "leftAt": 1799967600
+            },
+            {
+              "epoch": 10,
+              "secretHex": "a29f0db21141217e14cd4d392c6563beccef49069a36cc539b333f21bcd4e103",
+              "leftAt": 1799971200
+            },
+            {
+              "epoch": 11,
+              "secretHex": "15b227326c260ae7a8ef570a92dbefe2aef71149449ab7bcc298b8caf2badfd6",
+              "leftAt": 1799974800
+            },
+            {
+              "epoch": 12,
+              "secretHex": "e39b739cd27127af6e392559ea940a3d0570acaf0c66af666eb7f84831ac88de",
+              "leftAt": 1799978400
+            },
+            {
+              "epoch": 13,
+              "secretHex": "207c8483577801c26f1e0d7afc5f5e446db2a75479a9c733f99b10021152c49a",
+              "leftAt": 1799982000
+            },
+            {
+              "epoch": 14,
+              "secretHex": "2d5c1712cbeeb79a747e64cfd0be0f4c4d95764de9c352933071a49602193a3f",
+              "leftAt": 1799985600
+            },
+            {
+              "epoch": 15,
+              "secretHex": "624d375a0041a84cd618c2d4aade95bbd4002bcca16bbba274e5ea36fdc12b6d",
+              "leftAt": 1799989200
+            },
+            {
+              "epoch": 16,
+              "secretHex": "7f2de538c8717915abc154c0ba0d1a0276aed112eae3309b58d621dadba44b57",
+              "leftAt": 1799992800
+            },
+            {
+              "epoch": 17,
+              "secretHex": "07518b94d276fc6a5ca10c19d5ec72c4566dcf4b008a00c0697c42727639c164",
+              "leftAt": 1799996400
+            }
+          ],
+          "event": {
+            "id": "498a7686533fa1ff2d75d559479dce05553ac2d5ef90541b03d76150e324ab76",
+            "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+            "created_at": 1800000000,
+            "kind": 20469,
+            "tags": [
+              [
+                "d",
+                "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+              ],
+              [
+                "p",
+                "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+              ]
+            ],
+            "content": "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",
+            "sig": "e2b1f04f1e787ca45aa7cbe8129e339c1d0bdedf2b37e22c5f393864568a5d631c59adb83295a756842b2452dc701ae8cbf61263be3e5f6f8f5c1dd9f5f958a2"
+          },
+          "randomHex": [
+            "f005e38223722bdaef5789674c7fcd5476da6fe127fcce393d4af4072f916f6b",
+            "01f003babdb1513148d0cf18b3cd0c1ab52b642e5e8d46900ed6f6f4b2489296"
+          ],
+          "malformed": {
+            "overCap": {
+              "event": {
+                "id": "9aa97626734d47be458f7ded28a58de497c8668d20a4b284fb5f0346bbcb429d",
+                "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+                "created_at": 1800000000,
+                "kind": 20469,
+                "tags": [
+                  [
+                    "d",
+                    "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                  ],
+                  [
+                    "p",
+                    "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+                  ]
+                ],
+                "content": "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",
+                "sig": "640238ac1194364052d38f4aa66e7fead55b0280029e19b809d83a35df438b2705ee61eed4d106f143816e7e35a7db919f37b1ae0fd2f3f48f10fab8e965a08b"
+              },
+              "randomHex": [
+                "7a9cd3792b62d45bde4fd00f065dc39ab0c59240a179a3d2b6910109ccedba1c",
+                "24a4a2f4f72f758327e8d079c9608899a313f02234d7cdcc20427f8f6d930f59"
+              ],
+              "bodyJson": "{\"v\":1,\"request\":\"e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b\",\"epoch\":18,\"secret\":\"c4FptFPI8t8wcSzdUGK3fK5zpVk9n2WaPjf59_dZbQ0\",\"removed\":[],\"passed\":[{\"epoch\":1,\"secret\":\"IbVP_MMv93Gx3Q4ZlGNYnelJLD6EJ3m9UrHbZeHkelY\",\"left\":1799938800},{\"epoch\":2,\"secret\":\"zUqHJ4tWQlzQzNdKmIhJ-zqFzkrMIz7p6f7iCCatDaM\",\"left\":1799942400},{\"epoch\":3,\"secret\":\"k8VRvrsbIlSCpxS_esTaAmzfVNN7fEC_mKiQHjPGY6M\",\"left\":1799946000},{\"epoch\":4,\"secret\":\"ysxocYjwtM0VijmN_p3vt0rWp06FSLwSSRYMmoii24Q\",\"left\":1799949600},{\"epoch\":5,\"secret\":\"RjAkF_Qddu8hUnKDUFARDrDKD7h9Q4eJ0STvGdCoAx8\",\"left\":1799953200},{\"epoch\":6,\"secret\":\"bD777kgkAuT93qqQcyNyCfmrcvlDTtHMniK5LZAWSuY\",\"left\":1799956800},{\"epoch\":7,\"secret\":\"7zT7imdstzNnxu8yzJWBO-KZGlpr-VIZKk6Eu_0jPWY\",\"left\":1799960400},{\"epoch\":8,\"secret\":\"uLDf1sKPOWscsq8a_u2HGBVmGK0lFs2QinG-DqGQhlw\",\"left\":1799964000},{\"epoch\":9,\"secret\":\"rJ68Ir3Og6wKOn6CZpDxb7wa3w0fel5n4fZeZIv3kek\",\"left\":1799967600},{\"epoch\":10,\"secret\":\"op8NshFBIX4UzU05LGVjvszvSQaaNsxTmzM_IbzU4QM\",\"left\":1799971200},{\"epoch\":11,\"secret\":\"FbInMmwmCueo71cKktvv4q73EUlEmre8wpi4yvK639Y\",\"left\":1799974800},{\"epoch\":12,\"secret\":\"45tznNJxJ69uOSVZ6pQKPQVwrK8MZq9mbrf4SDGsiN4\",\"left\":1799978400},{\"epoch\":13,\"secret\":\"IHyEg1d4AcJvHg16_F9eRG2yp1R5qccz-ZsQAhFSxJo\",\"left\":1799982000},{\"epoch\":14,\"secret\":\"LVwXEsvut5p0fmTP0L4PTE2Vdk3pw1KTMHGklgIZOj8\",\"left\":1799985600},{\"epoch\":15,\"secret\":\"Yk03WgBBqEzWGMLUqt6Vu9QAK8yha7uidOXqNv3BK20\",\"left\":1799989200},{\"epoch\":16,\"secret\":\"fy3lOMhxeRWrwVTAug0aAnau0RLq4zCbWNYh2tukS1c\",\"left\":1799992800},{\"epoch\":17,\"secret\":\"B1GLlNJ2_GpcoQwZ1exyxFZtz0sAigDAaXxCcnY5wWQ\",\"left\":1799996400}]}"
+            },
+            "unsorted": {
+              "event": {
+                "id": "af018a60d66249d105ae498c5094d8a39062fda870c2bc0d013c49f7d1228cc2",
+                "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+                "created_at": 1800000000,
+                "kind": 20469,
+                "tags": [
+                  [
+                    "d",
+                    "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                  ],
+                  [
+                    "p",
+                    "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+                  ]
+                ],
+                "content": "AhkkJY3g6O6ISe0tmQTGQBaZKSxVrwCbEqWfdVGYPvFXdURJpq6JyyOHr/150qH6AIdSHmTR36SZjpuV0fxjmd7huY3qgl0aKnVUkwAnBI23gaKcKmcQJT6boK4aDKMWp6A2AvgQXG0zoveeLpPeQC+AQiIKqb74PnUVNdXSu6/aZMKDRX7wrhO2ly0IXA4rQ4YHWxlM4x5oNbXKGYCTrgi3EbLwf8J0XAEfRsIqooJGiRQqhPJt1kzFRvH+teDRvgwPLnO4YHKUsIfAJdsQLf0FtVyFrmf6mXHugoPpOY8kclkzVSwvGGhX9QHh9uO1xDTknWfDeioF4FJCCU23FwlAZhdiyLgqTbEYVpq3MZQ/L0dTdjVVgZeVpw5ZhY5AC2vifqDYWbdHN7oXQcfljXcdfEjtNxNYmtUw4AyHumYCNHlBeytkuqADJdE1/hPSBOlmSfcSeVPe1+FE/Ik1XZTFZUCUmsCYQjciHUBQjgame48WnKQaFjsASN3bvq/TScnOT0vS3C1WQ4KOnWsKY1OzjtDaKJWI/KkTxVnqc6cxMWB3KaEweBiyeSc7qN4vi6YBPfpwc88xP2gmfRem1BOtWQ==",
+                "sig": "ae60324c143c2509b75b79e8fc432b62ced7e514140b99eb13bfa5ae73bc4f4e053aefb1530a5031e8fbaa6212fa114f6c56aa37a76ef69fd0800ecada111967"
+              },
+              "randomHex": [
+                "1924258de0e8ee8849ed2d9904c6401699292c55af009b12a59f7551983ef157",
+                "1591fcb2b31c6a352c25d30c44acea0e13748a56c49867a0661f71bb4f093c97"
+              ],
+              "bodyJson": "{\"v\":1,\"request\":\"e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b\",\"epoch\":18,\"secret\":\"c4FptFPI8t8wcSzdUGK3fK5zpVk9n2WaPjf59_dZbQ0\",\"removed\":[],\"passed\":[{\"epoch\":3,\"secret\":\"k8VRvrsbIlSCpxS_esTaAmzfVNN7fEC_mKiQHjPGY6M\",\"left\":1799946000},{\"epoch\":2,\"secret\":\"zUqHJ4tWQlzQzNdKmIhJ-zqFzkrMIz7p6f7iCCatDaM\",\"left\":1799942400}]}"
+            },
+            "epochZero": {
+              "event": {
+                "id": "254d8ee9f5ddf5b49ab6b1780e37e6f0d9ed368a373bd9996ac814a578b4664f",
+                "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+                "created_at": 1800000000,
+                "kind": 20469,
+                "tags": [
+                  [
+                    "d",
+                    "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+                  ],
+                  [
+                    "p",
+                    "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+                  ]
+                ],
+                "content": "Ak6wrCwhlsQjCYwhjNsImpI/x102x7IFMrsSf6d5duJVC/Cpb33VXwb/l7IqIXRvA/eFzd6e164RvpAyaZ60Fk0zpOpupY/tQbMZ5225u0pScV8NImH8BfCTYV0uVKkDhcfADjsZEqFwXyrh9aHZ7sRV8q2otIm0eW5j9TPoO45Ozt40cW51cg0SW7k8SWKEU5T5CjEqJN2OFBAkdtkjr3j7/NqigQROhPbg89Etwi1+IN3bVllGaB+brgf7CNudVgfrAcP3irAIzrto4mC2tolv1e+togsf1K+lqQ/lgQrqO0zTTtc249T/JOyLG25t1cxrzrXcO5V29QPoYK0lnxIKcHKCxw9lr+lSsb2y/r+ApUpqxTtdmTugjVlnaXRKvycdgEVgKfbLCeVe3Z9GjMZEgY/e10SLKZgbP4PZJE0zcTzE2UIE4mzgwlzQYhKccUL1vOuwHov0hwQOGqbk12rD4gqsLYYXA34DDVu2UiOfet/sFUqzEAX+zQK+su+RdvNflRWo0s/iDOpAaV2g0aH7dJ9GEpJh5kp6QRWNnR6LbOiIKrwe5sY2978QglYJS7Yfxa2gYr8cogx3emDPkNfpNQ==",
+                "sig": "b144cfda349d77521f5956ac043b420009575aa20d7a06b7d79b2548fefe0ac312b59cd15877ce69fa013c74f7700922dc1b3ba7ab1b523b9a858c966b506e7e"
+              },
+              "randomHex": [
+                "4eb0ac2c2196c423098c218cdb089a923fc75d36c7b20532bb127fa77976e255",
+                "066041631090c45a408c06c39cd3e1ba85a924f834f60ecc07a81f73bfe03998"
+              ],
+              "bodyJson": "{\"v\":1,\"request\":\"e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b\",\"epoch\":18,\"secret\":\"c4FptFPI8t8wcSzdUGK3fK5zpVk9n2WaPjf59_dZbQ0\",\"removed\":[],\"passed\":[{\"epoch\":0,\"secret\":\"q6GdJW0uElr8dkH1eX1s6lyx5_3vEEXho6rmYf8uswI\",\"left\":1799928000},{\"epoch\":2,\"secret\":\"zUqHJ4tWQlzQzNdKmIhJ-zqFzkrMIz7p6f7iCCatDaM\",\"left\":1799942400}]}"
+            }
+          }
+        },
+        "output": {
+          "bodyJson": "{\"v\":1,\"request\":\"e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b\",\"epoch\":18,\"secret\":\"c4FptFPI8t8wcSzdUGK3fK5zpVk9n2WaPjf59_dZbQ0\",\"removed\":[],\"passed\":[{\"epoch\":2,\"secret\":\"zUqHJ4tWQlzQzNdKmIhJ-zqFzkrMIz7p6f7iCCatDaM\",\"left\":1799942400},{\"epoch\":3,\"secret\":\"k8VRvrsbIlSCpxS_esTaAmzfVNN7fEC_mKiQHjPGY6M\",\"left\":1799946000},{\"epoch\":4,\"secret\":\"ysxocYjwtM0VijmN_p3vt0rWp06FSLwSSRYMmoii24Q\",\"left\":1799949600},{\"epoch\":5,\"secret\":\"RjAkF_Qddu8hUnKDUFARDrDKD7h9Q4eJ0STvGdCoAx8\",\"left\":1799953200},{\"epoch\":6,\"secret\":\"bD777kgkAuT93qqQcyNyCfmrcvlDTtHMniK5LZAWSuY\",\"left\":1799956800},{\"epoch\":7,\"secret\":\"7zT7imdstzNnxu8yzJWBO-KZGlpr-VIZKk6Eu_0jPWY\",\"left\":1799960400},{\"epoch\":8,\"secret\":\"uLDf1sKPOWscsq8a_u2HGBVmGK0lFs2QinG-DqGQhlw\",\"left\":1799964000},{\"epoch\":9,\"secret\":\"rJ68Ir3Og6wKOn6CZpDxb7wa3w0fel5n4fZeZIv3kek\",\"left\":1799967600},{\"epoch\":10,\"secret\":\"op8NshFBIX4UzU05LGVjvszvSQaaNsxTmzM_IbzU4QM\",\"left\":1799971200},{\"epoch\":11,\"secret\":\"FbInMmwmCueo71cKktvv4q73EUlEmre8wpi4yvK639Y\",\"left\":1799974800},{\"epoch\":12,\"secret\":\"45tznNJxJ69uOSVZ6pQKPQVwrK8MZq9mbrf4SDGsiN4\",\"left\":1799978400},{\"epoch\":13,\"secret\":\"IHyEg1d4AcJvHg16_F9eRG2yp1R5qccz-ZsQAhFSxJo\",\"left\":1799982000},{\"epoch\":14,\"secret\":\"LVwXEsvut5p0fmTP0L4PTE2Vdk3pw1KTMHGklgIZOj8\",\"left\":1799985600},{\"epoch\":15,\"secret\":\"Yk03WgBBqEzWGMLUqt6Vu9QAK8yha7uidOXqNv3BK20\",\"left\":1799989200},{\"epoch\":16,\"secret\":\"fy3lOMhxeRWrwVTAug0aAnau0RLq4zCbWNYh2tukS1c\",\"left\":1799992800},{\"epoch\":17,\"secret\":\"B1GLlNJ2_GpcoQwZ1exyxFZtz0sAigDAaXxCcnY5wWQ\",\"left\":1799996400}]}",
+          "grant": {
+            "epoch": 18,
+            "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d",
+            "removed": [],
+            "passed": [
+              {
+                "epoch": 2,
+                "secretHex": "cd4a87278b56425cd0ccd74a988849fb3a85ce4acc233ee9e9fee20826ad0da3",
+                "leftAt": 1799942400
+              },
+              {
+                "epoch": 3,
+                "secretHex": "93c551bebb1b225482a714bf7ac4da026cdf54d37b7c40bf98a8901e33c663a3",
+                "leftAt": 1799946000
+              },
+              {
+                "epoch": 4,
+                "secretHex": "cacc687188f0b4cd158a398dfe9defb74ad6a74e8548bc1249160c9a88a2db84",
+                "leftAt": 1799949600
+              },
+              {
+                "epoch": 5,
+                "secretHex": "46302417f41d76ef215272835050110eb0ca0fb87d438789d124ef19d0a8031f",
+                "leftAt": 1799953200
+              },
+              {
+                "epoch": 6,
+                "secretHex": "6c3efbee482402e4fddeaa9073237209f9ab72f9434ed1cc9e22b92d90164ae6",
+                "leftAt": 1799956800
+              },
+              {
+                "epoch": 7,
+                "secretHex": "ef34fb8a676cb73367c6ef32cc95813be2991a5a6bf952192a4e84bbfd233d66",
+                "leftAt": 1799960400
+              },
+              {
+                "epoch": 8,
+                "secretHex": "b8b0dfd6c28f396b1cb2af1afeed8718156618ad2516cd908a71be0ea190865c",
+                "leftAt": 1799964000
+              },
+              {
+                "epoch": 9,
+                "secretHex": "ac9ebc22bdce83ac0a3a7e826690f16fbc1adf0d1f7a5e67e1f65e648bf791e9",
+                "leftAt": 1799967600
+              },
+              {
+                "epoch": 10,
+                "secretHex": "a29f0db21141217e14cd4d392c6563beccef49069a36cc539b333f21bcd4e103",
+                "leftAt": 1799971200
+              },
+              {
+                "epoch": 11,
+                "secretHex": "15b227326c260ae7a8ef570a92dbefe2aef71149449ab7bcc298b8caf2badfd6",
+                "leftAt": 1799974800
+              },
+              {
+                "epoch": 12,
+                "secretHex": "e39b739cd27127af6e392559ea940a3d0570acaf0c66af666eb7f84831ac88de",
+                "leftAt": 1799978400
+              },
+              {
+                "epoch": 13,
+                "secretHex": "207c8483577801c26f1e0d7afc5f5e446db2a75479a9c733f99b10021152c49a",
+                "leftAt": 1799982000
+              },
+              {
+                "epoch": 14,
+                "secretHex": "2d5c1712cbeeb79a747e64cfd0be0f4c4d95764de9c352933071a49602193a3f",
+                "leftAt": 1799985600
+              },
+              {
+                "epoch": 15,
+                "secretHex": "624d375a0041a84cd618c2d4aade95bbd4002bcca16bbba274e5ea36fdc12b6d",
+                "leftAt": 1799989200
+              },
+              {
+                "epoch": 16,
+                "secretHex": "7f2de538c8717915abc154c0ba0d1a0276aed112eae3309b58d621dadba44b57",
+                "leftAt": 1799992800
+              },
+              {
+                "epoch": 17,
+                "secretHex": "07518b94d276fc6a5ca10c19d5ec72c4566dcf4b008a00c0697c42727639c164",
+                "leftAt": 1799996400
+              }
+            ]
+          },
+          "seventeen": "refused",
+          "malformed": {
+            "overCap": {
+              "epoch": 18,
+              "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d",
+              "removed": []
+            },
+            "unsorted": {
+              "epoch": 18,
+              "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d",
+              "removed": []
+            },
+            "epochZero": {
+              "epoch": 18,
+              "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d",
+              "removed": []
+            }
+          }
+        }
+      },
+      {
+        "name": "epoch-grant-window-old-reader",
+        "kind": "positive",
+        "note": "The `epoch-grant-window` grant read as 0.7.0 (and KithMoot Android 0.6.57) reads it: its body is read by named fields, so `passed` is ignored and the reader gets the current epoch, as from any grant before 0.8.0. A device on an old release is no worse off; it reads the window only once it updates.",
+        "input": {
+          "roomId": "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52",
+          "authority": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+          "deviceSkHex": "4433d9c3be8b51f50ac1824561dbaf67527254572c7fb411045c35b5ab948fa8",
+          "request": "e052130d19fe3bddc509e47e2b3a8e4c3cae455dfa0fe1f8f6eab00031c34d8b",
+          "now": 1800000000,
+          "event": {
+            "id": "498a7686533fa1ff2d75d559479dce05553ac2d5ef90541b03d76150e324ab76",
+            "pubkey": "92d212eebd43ba6ea84c3402386e854843201b45e71487c0511d1557db546b3d",
+            "created_at": 1800000000,
+            "kind": 20469,
+            "tags": [
+              [
+                "d",
+                "199b24d3401cb3ac651e8bded11742ab4286f647fd37f126a84383e6aa84cb52"
+              ],
+              [
+                "p",
+                "d22d49f6e3cdef3243abd6d05f2cb7dc7a39ac8d37e26fdf2e58f4e2d3852f86"
+              ]
+            ],
+            "content": "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",
+            "sig": "e2b1f04f1e787ca45aa7cbe8129e339c1d0bdedf2b37e22c5f393864568a5d631c59adb83295a756842b2452dc701ae8cbf61263be3e5f6f8f5c1dd9f5f958a2"
+          }
+        },
+        "output": {
+          "oldReader": {
+            "epoch": 18,
+            "secretHex": "738169b453c8f2df30712cdd5062b77cae73a5593d9f659a3e37f9f7f7596d0d",
+            "removed": []
+          }
+        }
+      },
+      {
+        "name": "history-window",
+        "kind": "positive",
+        "note": "`epochsInWindow(left, now)`: the left epochs still read, those left within HISTORY_WINDOW_SECONDS (2592000, 30 days; one left exactly that long ago is kept), newest first by epoch, the first given of a doubled epoch, at most MAX_HISTORY_EPOCHS (16). Each case lists `{ epoch, leftAt }` in and out.",
+        "input": {
+          "windowSeconds": 2592000,
+          "maxEpochs": 16,
+          "cases": [
+            {
+              "name": "edge",
+              "now": 1800000000,
+              "left": [
+                {
+                  "epoch": 1,
+                  "leftAt": 1797407999
+                },
+                {
+                  "epoch": 2,
+                  "leftAt": 1797408000
+                },
+                {
+                  "epoch": 3,
+                  "leftAt": 1799913600
+                }
+              ]
+            },
+            {
+              "name": "cap",
+              "now": 1800000000,
+              "left": [
+                {
+                  "epoch": 1,
+                  "leftAt": 1799928000
+                },
+                {
+                  "epoch": 2,
+                  "leftAt": 1799931600
+                },
+                {
+                  "epoch": 3,
+                  "leftAt": 1799935200
+                },
+                {
+                  "epoch": 4,
+                  "leftAt": 1799938800
+                },
+                {
+                  "epoch": 5,
+                  "leftAt": 1799942400
+                },
+                {
+                  "epoch": 6,
+                  "leftAt": 1799946000
+                },
+                {
+                  "epoch": 7,
+                  "leftAt": 1799949600
+                },
+                {
+                  "epoch": 8,
+                  "leftAt": 1799953200
+                },
+                {
+                  "epoch": 9,
+                  "leftAt": 1799956800
+                },
+                {
+                  "epoch": 10,
+                  "leftAt": 1799960400
+                },
+                {
+                  "epoch": 11,
+                  "leftAt": 1799964000
+                },
+                {
+                  "epoch": 12,
+                  "leftAt": 1799967600
+                },
+                {
+                  "epoch": 13,
+                  "leftAt": 1799971200
+                },
+                {
+                  "epoch": 14,
+                  "leftAt": 1799974800
+                },
+                {
+                  "epoch": 15,
+                  "leftAt": 1799978400
+                },
+                {
+                  "epoch": 16,
+                  "leftAt": 1799982000
+                },
+                {
+                  "epoch": 17,
+                  "leftAt": 1799985600
+                },
+                {
+                  "epoch": 18,
+                  "leftAt": 1799989200
+                },
+                {
+                  "epoch": 19,
+                  "leftAt": 1799992800
+                },
+                {
+                  "epoch": 20,
+                  "leftAt": 1799996400
+                }
+              ]
+            },
+            {
+              "name": "weekly",
+              "now": 1800000000,
+              "left": [
+                {
+                  "epoch": 1,
+                  "leftAt": 1793952000
+                },
+                {
+                  "epoch": 2,
+                  "leftAt": 1794556800
+                },
+                {
+                  "epoch": 3,
+                  "leftAt": 1795161600
+                },
+                {
+                  "epoch": 4,
+                  "leftAt": 1795766400
+                },
+                {
+                  "epoch": 5,
+                  "leftAt": 1796371200
+                },
+                {
+                  "epoch": 6,
+                  "leftAt": 1796976000
+                },
+                {
+                  "epoch": 7,
+                  "leftAt": 1797580800
+                },
+                {
+                  "epoch": 8,
+                  "leftAt": 1798185600
+                },
+                {
+                  "epoch": 9,
+                  "leftAt": 1798790400
+                },
+                {
+                  "epoch": 10,
+                  "leftAt": 1799395200
+                }
+              ]
+            },
+            {
+              "name": "unsorted-and-doubled",
+              "now": 1800000000,
+              "left": [
+                {
+                  "epoch": 2,
+                  "leftAt": 1799999900
+                },
+                {
+                  "epoch": 5,
+                  "leftAt": 1799999950
+                },
+                {
+                  "epoch": 3,
+                  "leftAt": 1797321600
+                },
+                {
+                  "epoch": 5,
+                  "leftAt": 1799999990
+                },
+                {
+                  "epoch": 4,
+                  "leftAt": 1799999940
+                }
+              ]
+            },
+            {
+              "name": "empty",
+              "now": 1800000000,
+              "left": []
+            }
+          ]
+        },
+        "output": {
+          "cases": [
+            {
+              "name": "edge",
+              "kept": [
+                {
+                  "epoch": 3,
+                  "leftAt": 1799913600
+                },
+                {
+                  "epoch": 2,
+                  "leftAt": 1797408000
+                }
+              ]
+            },
+            {
+              "name": "cap",
+              "kept": [
+                {
+                  "epoch": 20,
+                  "leftAt": 1799996400
+                },
+                {
+                  "epoch": 19,
+                  "leftAt": 1799992800
+                },
+                {
+                  "epoch": 18,
+                  "leftAt": 1799989200
+                },
+                {
+                  "epoch": 17,
+                  "leftAt": 1799985600
+                },
+                {
+                  "epoch": 16,
+                  "leftAt": 1799982000
+                },
+                {
+                  "epoch": 15,
+                  "leftAt": 1799978400
+                },
+                {
+                  "epoch": 14,
+                  "leftAt": 1799974800
+                },
+                {
+                  "epoch": 13,
+                  "leftAt": 1799971200
+                },
+                {
+                  "epoch": 12,
+                  "leftAt": 1799967600
+                },
+                {
+                  "epoch": 11,
+                  "leftAt": 1799964000
+                },
+                {
+                  "epoch": 10,
+                  "leftAt": 1799960400
+                },
+                {
+                  "epoch": 9,
+                  "leftAt": 1799956800
+                },
+                {
+                  "epoch": 8,
+                  "leftAt": 1799953200
+                },
+                {
+                  "epoch": 7,
+                  "leftAt": 1799949600
+                },
+                {
+                  "epoch": 6,
+                  "leftAt": 1799946000
+                },
+                {
+                  "epoch": 5,
+                  "leftAt": 1799942400
+                }
+              ]
+            },
+            {
+              "name": "weekly",
+              "kept": [
+                {
+                  "epoch": 10,
+                  "leftAt": 1799395200
+                },
+                {
+                  "epoch": 9,
+                  "leftAt": 1798790400
+                },
+                {
+                  "epoch": 8,
+                  "leftAt": 1798185600
+                },
+                {
+                  "epoch": 7,
+                  "leftAt": 1797580800
+                }
+              ]
+            },
+            {
+              "name": "unsorted-and-doubled",
+              "kept": [
+                {
+                  "epoch": 5,
+                  "leftAt": 1799999950
+                },
+                {
+                  "epoch": 4,
+                  "leftAt": 1799999940
+                },
+                {
+                  "epoch": 2,
+                  "leftAt": 1799999900
+                }
+              ]
+            },
+            {
+              "name": "empty",
+              "kept": []
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
