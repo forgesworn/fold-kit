@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/fold-kit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,6 +22,7 @@
     "vectors/circle-vectors.json",
     "vectors/member-epoch-vectors.json",
     "vectors/seal-vectors.json",
+    "vectors/schedule-vectors.json",
     "LICENSE",
     "README.md",
     "llms.txt"
@@ -35,6 +36,7 @@
     "generate-fold": "node scripts/generate-fold.mjs",
     "generate-member-epoch": "node scripts/generate-member-epoch.mjs",
     "generate-seal": "node scripts/generate-seal.mjs",
+    "generate-schedule": "node scripts/generate-schedule.mjs",
     "bundle-check": "node scripts/bundle-check.mjs",
     "tarball-smoke": "node scripts/tarball-smoke.mjs",
     "vectors": "vitest run vectors/",

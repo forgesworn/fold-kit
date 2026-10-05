@@ -5,6 +5,43 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.8.0
+
+### Added
+
+- Scheduled rekeys (`docs/scheduled-rekey.md`): `encodeRekeyEvent({
+  scheduled: true })` writes `"scheduled": true` inside the encrypted rekey
+  body, so a client can move to the new epoch without announcing it. The
+  encoder throws when it is combined with a removal or a close.
+  `RekeyNotice.scheduled` (`decodeRekeyEvent`) and `RekeyEvidence.scheduled`
+  (`readRekeyEvidence`) report it only when nobody was removed and the room
+  stays open.
+- The history window: `HISTORY_WINDOW_SECONDS` (30 days),
+  `MAX_HISTORY_EPOCHS` (16) and `epochsInWindow(left, now)`, the left epochs
+  a member goes on reading: those left within the window, newest first, at
+  most 16.
+- The authority's grant carries the window. `encodeEpochGrant({ passed })`
+  writes the left epochs (`LeftEpoch`: `{ epoch, secret, leftAt }`) as
+  `passed: [{ epoch, secret, left }]`, oldest first, and throws on more than
+  16, epoch 0, an epoch not below the one granted, a doubled epoch, a bad
+  secret or a bad time. `hostRoomEpoch({ past })` asks for them on every
+  grant, keeps the window's and leaves out anything the encoder would refuse.
+  `decodeEpochGrant` returns them as `EpochGrant.passed`, and drops a
+  malformed list while keeping the grant.
+- Vectors: `vectors/schedule-vectors.json` (`npm run generate-schedule`).
+
+### Changed
+
+- `EpochGrant.passed` and `MemberEpochGrant.passed` are now
+  `Array<RoomEpoch & { leftAt?: number }>`, and `decodeMemberEpochGrant`
+  sets `leftAt` from the `created_at` of the authority's rekey out of each
+  passed epoch.
+
+A rekey without the marker, and a grant without `passed`, is byte-identical
+to 0.7.0's. A 0.7.0 reader ignores both fields: it announces a scheduled
+rekey as any other, and reads the current epoch from a grant that carries
+the window.
+
 ## 0.7.0
 
 ### Added

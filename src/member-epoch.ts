@@ -116,6 +116,7 @@ interface RekeyBodyView {
   epoch?: unknown
   removed?: unknown
   closed?: unknown
+  scheduled?: unknown
   commit?: unknown
   members?: unknown
 }
@@ -125,6 +126,8 @@ export interface RekeyEvidence {
   epoch: number
   removed: string[]
   closed: boolean
+  /** A scheduled turn of the key: see `RekeyNotice.scheduled`. */
+  scheduled?: true
   /** The epoch commitment, when the authority wrote one. */
   commit?: string
   /** The authority's member list, when it wrote one. */
@@ -150,6 +153,7 @@ export function readRekeyEvidence(event: Event, opts: { roomId: string; authorit
       removed: [...new Set((body.removed as string[]).map(normaliseHex))].sort(),
       closed: body.closed === true,
     }
+    if (body.scheduled === true && evidence.removed.length === 0 && !evidence.closed) evidence.scheduled = true
     if (typeof body.commit === 'string' && HEX64.test(body.commit)) evidence.commit = normaliseHex(body.commit)
     const members = readMemberList(body.members)
     if (members) evidence.members = members
@@ -390,8 +394,9 @@ export interface MemberEpochGrant {
   /** The epochs between the requester's and `epoch`, oldest first, each
    *  proven by the next rekey in the chain decrypting under it. Empty for a
    *  grant one epoch ahead. Kept, they let the requester read what was said
-   *  in the epochs it skipped, and hand them on from its own member desk. */
-  passed: RoomEpoch[]
+   *  in the epochs it skipped, and hand them on from its own member desk.
+   *  `leftAt` is the `created_at` of the authority's rekey out of each. */
+  passed: Array<RoomEpoch & { leftAt?: number }>
   /** The newest member list in the chain, when any rekey in it had one. */
   members?: string[]
 }
@@ -424,7 +429,7 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
     const removed = new Set([...(opts.removed ?? [])].map(normaliseHex))
     let previous: EpochKeys = opts.current
     let secret: Uint8Array | undefined
-    const passed: RoomEpoch[] = []
+    const passed: Array<RoomEpoch & { leftAt?: number }> = []
     let members: string[] | undefined
     for (let i = 0; i < length; i += 1) {
       const evidence = readRekeyEvidence(body.rekeys[i] as Event, { roomId, authority: opts.authority, previous })
@@ -445,7 +450,9 @@ export function decodeMemberEpochGrant(event: Event, opts: DecodeMemberEpochGran
         if (!constantTimeEquals(evidence.commit, epochCommitment(roomId, evidence.epoch, secret))) return null
       }
       previous = deriveEpoch({ epoch: evidence.epoch, secret })
-      if (i < length - 1) passed.push({ epoch: evidence.epoch, secret })
+      // The next rekey, signed and checked on the next turn, is when the
+      // room left this epoch.
+      if (i < length - 1) passed.push({ epoch: evidence.epoch, secret, leftAt: (body.rekeys[i + 1] as Event).created_at })
     }
     return { epoch: { epoch: top, secret: secret! }, removed: [...removed].sort(), passed, ...(members ? { members } : {}) }
   } catch {

@@ -57,7 +57,7 @@ interface Chain {
 }
 
 /** Rekey the room from epoch 0 `steps` times. `commit` and `removed` per step. */
-function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: boolean }[]): Chain {
+function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: boolean; scheduled?: boolean }[]): Chain {
   const epochs: RoomEpoch[] = [E0]
   const rekeys: Event[] = []
   steps.forEach((step, i) => {
@@ -72,6 +72,7 @@ function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: bool
         recipients: [getPublicKey(memberDeviceSk)],
         removed: step.removed ?? [],
         closed: step.closed,
+        scheduled: step.scheduled,
         commit: step.commit,
         now: NOW - 100 + i,
       }),
@@ -170,9 +171,24 @@ describe('member epoch grants: what the requester accepts', () => {
     // From epoch 1, the same room needs only the last step.
     const fromOne = decode(grantFrom(chain, 1), { current: keysOf(chain.epochs[1]!) })
     expect(fromOne!.epoch).toEqual(chain.epochs[2])
-    // The epoch it skipped comes with it, proven by the rekey after it.
-    expect(grant!.passed).toEqual([chain.epochs[1]])
+    // The epoch it skipped comes with it, proven by the rekey after it, and
+    // left when that rekey was signed.
+    expect(grant!.passed).toEqual([{ ...chain.epochs[1], leftAt: chain.rekeys[1]!.created_at }])
+    expect(grant!.passed[0]!.leftAt).toBe(NOW - 99)
     expect(fromOne!.passed).toEqual([])
+  })
+
+  it('a chain runs through a scheduled rekey unbroken, and each passed epoch says when it was left', () => {
+    const chain = buildChain([{ commit: true }, { commit: true, scheduled: true }, { commit: true }])
+    const evidence = readRekeyEvidence(chain.rekeys[1]!, { roomId, authority, previous: keysOf(chain.epochs[1]!) })
+    expect(evidence).toMatchObject({ epoch: 2, removed: [], closed: false, scheduled: true })
+    expect(readRekeyEvidence(chain.rekeys[0]!, { roomId, authority, previous: keysOf(E0) })?.scheduled).toBeUndefined()
+    const grant = decode(grantFrom(chain, 0))
+    expect(grant!.epoch).toEqual(chain.epochs[3])
+    expect(grant!.passed).toEqual([
+      { ...chain.epochs[1], leftAt: chain.rekeys[1]!.created_at },
+      { ...chain.epochs[2], leftAt: chain.rekeys[2]!.created_at },
+    ])
   })
 
   it('rejects a forged or mismatched secret, at the top of the chain or in the middle', () => {
@@ -537,7 +553,7 @@ describe('requestRoomEpoch with members', () => {
       transport: new SimTransport(relay), roomId, authority, deviceSk: requesterDeviceSk, roomKey, credential, now, timeoutMs: 1_000, members,
     })
     expect(grant.epoch).toEqual(chain.epochs[2])
-    expect(grant.passed).toEqual([chain.epochs[1]])
+    expect(grant.passed).toEqual([{ ...chain.epochs[1], leftAt: chain.rekeys[1]!.created_at }])
     memberDesk.close()
   })
 

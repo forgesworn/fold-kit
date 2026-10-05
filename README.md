@@ -168,6 +168,14 @@ the rest).
   `sealSks` on the readers; `credentialFor` on both desks;
   `credentialSeal`, `sealTarget`, `sealTo`, `openSealed`, `newerCredential`,
   `sealCredential`. Vectors: `vectors/seal-vectors.json`
+- Scheduled rekeys and the history window (`docs/scheduled-rekey.md`):
+  `encodeRekeyEvent({ scheduled: true })` marks a turn of the key that
+  removes nobody, read back as `RekeyNotice.scheduled` and
+  `RekeyEvidence.scheduled`; `HISTORY_WINDOW_SECONDS`, `MAX_HISTORY_EPOCHS`
+  and `epochsInWindow` are the rule for which left epochs a member reads;
+  `encodeEpochGrant({ passed })` and `hostRoomEpoch({ past })` hand those
+  epochs (`LeftEpoch`) to every device the authority grants, read back as
+  `EpochGrant.passed`. Vectors: `vectors/schedule-vectors.json`
 - `canonicalAdmins`, `signAdmins`, `verifyAdmins` - the authority's signed
   admin list
 - `canonicalChannels`, `signChannels`, `verifyChannels`, `CHANNEL_NAME`,
