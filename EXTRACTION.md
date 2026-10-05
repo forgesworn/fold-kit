@@ -360,8 +360,21 @@ on the decoders and `requestRoomEpoch`, `credential` on `encodeEpochGrant`,
 `credentialFor` on `hostRoomEpoch`, and `sealCredential`. With no seal key
 anywhere, every event is byte-identical to 0.6.0's. `scripts/diff-source.mjs`
 declares each hunk in `SEAL_CHANGES`, as 0.7.0 text against 0.6.0 text,
-applied before every other change set (and, for `credential.ts`, before the
-#205 blocks are stripped).
+applied before every other change set but `SCHEDULE_CHANGES` (and, for
+`credential.ts`, before the #205 blocks are stripped).
+
+## Scheduled rekeys: declared additions to `epoch.ts`
+
+0.8.0. A rekey may be marked `scheduled`, the history window is a shared
+rule (`HISTORY_WINDOW_SECONDS`, `MAX_HISTORY_EPOCHS`, `epochsInWindow`), and
+the authority's grant carries the window's left epochs (`passed`, and `past`
+on `hostRoomEpoch`). See `docs/scheduled-rekey.md`. A rekey without the
+marker, and a grant without `passed`, is byte-identical to 0.7.0's.
+`scripts/diff-source.mjs` declares each hunk in `SCHEDULE_CHANGES`, as 0.8.0
+text against 0.7.0 text, applied before every other change set. The matching
+reader changes in `member-epoch.ts` (`RekeyEvidence.scheduled`, and `leftAt`
+on a member grant's passed epochs) need no declaration: that module is new
+code and not compared against the pinned source.
 
 ## Public repository naming
 
