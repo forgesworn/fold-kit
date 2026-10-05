@@ -64,7 +64,7 @@ const expectedMain = ${JSON.stringify([
       'isInvitationRelays', 'requireInvitationRelays', 'MAX_INVITATION_RELAYS',
       'MAX_ROOM_LINK_FRAGMENT_LENGTH', 'parseRoomLink', 'encodeRoomLink',
       'EPOCH_ID_INFO', 'EPOCH_KEY_INFO', 'MAX_EPOCH', 'EPOCH_REQUEST_KEY_INFO', 'generateEpochSecret', 'deriveEpoch',
-      'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'deriveEpochRequestKey', 'epochRequestAdmission',
+      'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'HISTORY_WINDOW_SECONDS', 'MAX_HISTORY_EPOCHS', 'epochsInWindow', 'deriveEpochRequestKey', 'epochRequestAdmission',
       'encodeEpochRequest', 'decodeEpochRequest', 'encodeEpochGrant', 'decodeEpochGrant', 'hostRoomEpoch',
       'EpochRefusedError', 'requestRoomEpoch', 'canonicalAdmins', 'CHANNEL_NAME', 'RESERVED_CHANNELS',
       'canonicalChannels', 'signChannels', 'verifyChannels', 'signAdmins', 'verifyAdmins', 'EPOCH_LABELS',

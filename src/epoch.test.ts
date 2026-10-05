@@ -6,8 +6,11 @@ import { createDeviceCredential } from './credential.js'
 import { localIdentity } from './identity.js'
 import { deriveRoom } from './room.js'
 import { KINDS } from './kinds.js'
+import { base64urlnopad } from '@scure/base'
 import {
   EpochRefusedError,
+  HISTORY_WINDOW_SECONDS,
+  MAX_HISTORY_EPOCHS,
   decodeEpochGrant,
   decodeEpochRequest,
   decodeRekeyEvent,
@@ -15,6 +18,7 @@ import {
   encodeEpochGrant,
   encodeEpochRequest,
   epochRequestAdmission,
+  epochsInWindow,
   encodeRekeyEvent,
   generateEpochSecret,
   hostRoomEpoch,
@@ -26,6 +30,7 @@ import {
   verifyChannels,
   canonicalChannels,
   RESERVED_CHANNELS,
+  type LeftEpoch,
 } from './epoch.js'
 
 const NOW = 1_800_000_000
@@ -532,5 +537,258 @@ describe('a conference room\'s epoch events', () => {
     desk.close()
     expect(relay.published.map((e) => e.kind).sort()).toEqual([KINDS.EPOCH_REQUEST, KINDS.EPOCH_GRANT].sort())
     for (const event of relay.published) expect(event.tags).toContainEqual(expiration)
+  })
+})
+
+describe('scheduled rekeys', () => {
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const current = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
+  const keptSk = generateSecretKey()
+  const kept = getPublicKey(keptSk)
+  const member = getPublicKey(generateSecretKey())
+  const gone = getPublicKey(generateSecretKey())
+  const next = { epoch: 1, secret: generateEpochSecret() }
+  const base = { roomId, authoritySk, current, next, recipients: [kept], removed: [] as string[], commit: true, members: [member], now: NOW }
+  const bodyOf = (event: { content: string }) => JSON.parse(nip44.v2.decrypt(event.content, current.key)) as Record<string, unknown>
+
+  /** A rekey signed by the authority whose body says whatever it is told:
+   *  what a broken or older authority could publish. */
+  function signedBody(body: Record<string, unknown>) {
+    return finalizeEvent(
+      { kind: KINDS.ROOM_REKEY, created_at: NOW, tags: [['d', roomId], ['epoch', '1']], content: nip44.v2.encrypt(JSON.stringify(body), current.key) },
+      authoritySk,
+    )
+  }
+
+  it('carries the marker inside the body, and the reader reports it with the secret', () => {
+    const event = encodeRekeyEvent({ ...base, scheduled: true })
+    // Inside the encrypted body, so a relay cannot tell it from a removal.
+    expect(event.tags).toEqual([['d', roomId], ['epoch', '1']])
+    expect(bodyOf(event).scheduled).toBe(true)
+    const notice = decodeRekeyEvent(event, { roomId, authority, current, deviceSk: keptSk })
+    expect(notice).toEqual({ epoch: 1, removed: [], closed: false, scheduled: true, members: [member], secret: next.secret, at: NOW })
+  })
+
+  it('without the flag, or with it false, the body is exactly what it was', () => {
+    const plain = bodyOf(encodeRekeyEvent(base))
+    const unflagged = bodyOf(encodeRekeyEvent({ ...base, scheduled: false }))
+    expect('scheduled' in plain).toBe(false)
+    // The keys map seals afresh each time; everything else is the same text.
+    const strip = (b: Record<string, unknown>) => JSON.stringify({ ...b, keys: Object.keys(b.keys as object) })
+    expect(strip(unflagged)).toBe(strip(plain))
+    expect(decodeRekeyEvent(encodeRekeyEvent(base), { roomId, authority, current, deviceSk: keptSk })?.scheduled).toBeUndefined()
+  })
+
+  it('refuses to mark a rekey that removes somebody or closes the room', () => {
+    expect(() => encodeRekeyEvent({ ...base, scheduled: true, removed: [gone] })).toThrow(/scheduled/)
+    expect(() => encodeRekeyEvent({ ...base, scheduled: true, removed: [gone.toUpperCase(), gone] })).toThrow(/scheduled/)
+    expect(() => encodeRekeyEvent({ ...base, scheduled: true, closed: true })).toThrow(/scheduled/)
+  })
+
+  it('a body that contradicts itself is read as not scheduled, so the removal or the close is still announced', () => {
+    const keys = {}
+    const withRemoval = decodeRekeyEvent(signedBody({ v: 1, epoch: 1, removed: [gone], scheduled: true, keys }), { roomId, authority, current, deviceSk: keptSk })
+    expect(withRemoval).toMatchObject({ epoch: 1, removed: [gone], closed: false })
+    expect(withRemoval?.scheduled).toBeUndefined()
+    const closing = decodeRekeyEvent(signedBody({ v: 1, epoch: 1, removed: [], closed: true, scheduled: true, keys }), { roomId, authority, current, deviceSk: keptSk })
+    expect(closing).toMatchObject({ epoch: 1, closed: true })
+    expect(closing?.scheduled).toBeUndefined()
+    // Only `true` marks it.
+    const odd = decodeRekeyEvent(signedBody({ v: 1, epoch: 1, removed: [], scheduled: 'yes', keys }), { roomId, authority, current, deviceSk: keptSk })
+    expect(odd).not.toBeNull()
+    expect(odd?.scheduled).toBeUndefined()
+  })
+})
+
+describe('the history window', () => {
+  const day = 86_400
+
+  it('keeps an epoch left exactly 30 days ago, and not one a second older', () => {
+    expect(HISTORY_WINDOW_SECONDS).toBe(30 * day)
+    const left = [
+      { epoch: 1, leftAt: NOW - HISTORY_WINDOW_SECONDS - 1 },
+      { epoch: 2, leftAt: NOW - HISTORY_WINDOW_SECONDS },
+      { epoch: 3, leftAt: NOW - day },
+    ]
+    expect(epochsInWindow(left, NOW).map((e) => e.epoch)).toEqual([3, 2])
+  })
+
+  it('keeps the newest 16 however many fall inside the window', () => {
+    expect(MAX_HISTORY_EPOCHS).toBe(16)
+    const left = Array.from({ length: 20 }, (_, i) => ({ epoch: i + 1, leftAt: NOW - (20 - i) * 3600 }))
+    const kept = epochsInWindow(left, NOW)
+    expect(kept).toHaveLength(16)
+    expect(kept[0]!.epoch).toBe(20)
+    expect(kept.at(-1)!.epoch).toBe(5)
+  })
+
+  it('sorts newest first, keeps the first of a doubled epoch, and hands back what it was given', () => {
+    const secret = generateEpochSecret()
+    const first = { epoch: 4, secret, leftAt: NOW - 10 }
+    const kept = epochsInWindow([{ epoch: 2, secret, leftAt: NOW - 30 }, first, { epoch: 4, secret, leftAt: NOW - 5 }, { epoch: 3, secret, leftAt: NOW - 20 }], NOW)
+    expect(kept.map((e) => e.epoch)).toEqual([4, 3, 2])
+    expect(kept[0]).toBe(first)
+  })
+
+  it('drops an entry with no usable number or time, and never throws', () => {
+    const left = [
+      { epoch: 1.5, leftAt: NOW },
+      { epoch: -1, leftAt: NOW },
+      { epoch: 2, leftAt: Number.NaN },
+      null as unknown as { epoch: number; leftAt: number },
+      { epoch: 3, leftAt: NOW },
+    ]
+    expect(epochsInWindow(left, NOW).map((e) => e.epoch)).toEqual([3])
+    expect(epochsInWindow([], NOW)).toEqual([])
+  })
+})
+
+describe('an authority grant carries the window', () => {
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const deviceSk = generateSecretKey()
+  const device = getPublicKey(deviceSk)
+  const identity = localIdentity(generateSecretKey())
+  const request = 'ef'.repeat(32)
+  const granted = { epoch: 18, secret: generateEpochSecret() }
+  const left = (epoch: number, leftAt = NOW - (18 - epoch) * 3600): LeftEpoch => ({ epoch, secret: generateEpochSecret(), leftAt })
+  const sixteen = Array.from({ length: 16 }, (_, i) => left(i + 2))
+  const grant = (passed?: readonly LeftEpoch[]) => encodeEpochGrant({ roomId, authoritySk, device, request, now: NOW, epoch: granted, removed: [], passed })
+  const read = (event: ReturnType<typeof grant>) => decodeEpochGrant(event, { roomId, authority, deviceSk, request, now: NOW })
+  const bodyOf = (event: { content: string }) =>
+    JSON.parse(nip44.v2.decrypt(event.content, nip44.v2.utils.getConversationKey(deviceSk, authority))) as Record<string, unknown>
+  /** A grant the authority signed with whatever `passed` it is told. */
+  const handBuilt = (passed: unknown) =>
+    finalizeEvent(
+      {
+        kind: KINDS.EPOCH_GRANT,
+        created_at: NOW,
+        tags: [['d', roomId], ['p', device]],
+        content: nip44.v2.encrypt(
+          JSON.stringify({ v: 1, request, epoch: 18, secret: base64urlnopad.encode(granted.secret), removed: [], passed }),
+          nip44.v2.utils.getConversationKey(authoritySk, device),
+        ),
+      },
+      authoritySk,
+    )
+
+  it('round-trips up to 16 left epochs, oldest first, with when each was left', () => {
+    const shuffled = [...sixteen].reverse()
+    const decoded = read(grant(shuffled))
+    expect(decoded).toEqual({ epoch: granted, removed: [], passed: sixteen })
+    const wire = bodyOf(grant(shuffled)).passed as Array<Record<string, unknown>>
+    expect(wire.map((e) => e.epoch)).toEqual(sixteen.map((e) => e.epoch))
+    expect(Object.keys(wire[0]!)).toEqual(['epoch', 'secret', 'left'])
+  })
+
+  it('with nothing to carry, the body is as before', () => {
+    expect('passed' in bodyOf(grant())).toBe(false)
+    expect('passed' in bodyOf(grant([]))).toBe(false)
+    expect(read(grant([]))).toEqual({ epoch: granted, removed: [] })
+    const refusal = encodeEpochGrant({ roomId, authoritySk, device, request, now: NOW, refused: 'removed', passed: sixteen })
+    expect(bodyOf(refusal)).toEqual({ v: 1, request, refused: 'removed' })
+  })
+
+  it('refuses 17, epoch 0, an epoch not before the one granted, a doubled epoch, a short secret and a bad time', () => {
+    expect(() => grant([...sixteen, left(1)])).toThrow(/at most 16/)
+    expect(() => grant([{ epoch: 0, secret: ROOM_SECRET, leftAt: NOW }])).toThrow(/after epoch 0/)
+    expect(() => grant([left(18)])).toThrow(/before the one granted/)
+    expect(() => grant([left(5), left(5)])).toThrow(/once/)
+    expect(() => grant([{ epoch: 5, secret: new Uint8Array(16), leftAt: NOW }])).toThrow(/32 bytes/)
+    expect(() => grant([{ ...left(5), leftAt: -1 }])).toThrow(/leftAt/)
+    expect(() => grant([{ ...left(5), leftAt: 1.5 }])).toThrow(/leftAt/)
+  })
+
+  it('a malformed list costs the history, not the grant', () => {
+    const wire = (e: LeftEpoch) => ({ epoch: e.epoch, secret: base64urlnopad.encode(e.secret), left: e.leftAt })
+    const good = sixteen.map(wire)
+    expect(read(handBuilt(good))).toEqual({ epoch: granted, removed: [], passed: sixteen })
+    for (const bad of [
+      [...good, wire(left(1))],
+      [good[1], good[0]],
+      [good[0], good[0]],
+      [{ ...good[0], epoch: 0 }],
+      [{ ...good[0], epoch: 18 }],
+      [{ ...good[0], secret: base64urlnopad.encode(new Uint8Array(31)) }],
+      [{ ...good[0], secret: '!!' }],
+      [{ ...good[0], left: -5 }],
+      [{ epoch: 2, secret: good[0]!.secret }],
+      [null],
+      'everything',
+    ]) {
+      expect(read(handBuilt(bad))).toEqual({ epoch: granted, removed: [] })
+    }
+  })
+
+  it('the desk hands its window to whoever it grants, and leaves out what it could not carry', async () => {
+    const relay = new SimRelay()
+    const old = left(3, NOW - HISTORY_WINDOW_SECONDS - 1)
+    const kept = [left(16), left(17)]
+    const desk = hostRoomEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authoritySk,
+      roomKey,
+      current: () => granted,
+      removed: () => new Set(),
+      past: () => [old, ...kept, { epoch: 0, secret: ROOM_SECRET, leftAt: NOW }, left(18), { epoch: 9, secret: new Uint8Array(3), leftAt: NOW }],
+      now,
+    })
+    const answer = await requestRoomEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authority,
+      deviceSk,
+      roomKey,
+      credential: await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now }),
+      now,
+      timeoutMs: 1_000,
+    })
+    desk.close()
+    expect(answer.epoch).toEqual(granted)
+    expect(answer.passed).toEqual(kept)
+  })
+
+  it('a desk whose past() throws, or runs long, still grants', async () => {
+    for (const [past, expected] of [
+      [() => { throw new Error('no history') }, undefined],
+      [() => Array.from({ length: 20 }, (_, i) => left(i + 1, NOW - 60)).filter((e) => e.epoch < 18), 16],
+    ] as const) {
+      const relay = new SimRelay()
+      const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), past, now })
+      const answer = await requestRoomEpoch({
+        transport: new SimTransport(relay),
+        roomId,
+        authority,
+        deviceSk,
+        roomKey,
+        credential: await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now }),
+        now,
+        timeoutMs: 1_000,
+      })
+      desk.close()
+      expect(answer.epoch).toEqual(granted)
+      expect(answer.passed?.length).toBe(expected)
+    }
+  })
+
+  it('a desk with no past() grants exactly as before', async () => {
+    const relay = new SimRelay()
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), now })
+    const answer = await requestRoomEpoch({
+      transport: new SimTransport(relay),
+      roomId,
+      authority,
+      deviceSk,
+      roomKey,
+      credential: await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now }),
+      now,
+      timeoutMs: 1_000,
+    })
+    desk.close()
+    expect(answer).toEqual({ epoch: granted, removed: [] })
+    const sent = relay.published.find((e) => e.kind === KINDS.EPOCH_GRANT)!
+    expect('passed' in bodyOf(sent)).toBe(false)
   })
 })

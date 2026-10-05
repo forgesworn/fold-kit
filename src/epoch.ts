@@ -168,6 +168,10 @@ interface RekeyBody {
   removed: string[]
   by?: string
   closed?: true
+  /** A turn of the key on the room's schedule: nobody was removed and the
+   *  room stays open, so a client need not announce it. Never written
+   *  beside a removal or a close, and not believed beside one. */
+  scheduled?: true
   /** `epochCommitment(roomId, epoch, secret)`: lets a member hand this epoch
    *  on and the requester check it. Absent from a rekey written without it. */
   commit?: string
@@ -204,6 +208,11 @@ export interface EncodeRekeyOptions {
   /** True when the room is being closed: nobody is kept, and the event
    *  says so rather than leaving everybody to wonder. */
   closed?: boolean
+  /** Mark this as a scheduled turn of the key rather than a removal, so
+   *  clients can let it pass quietly. Refused with a removal or a close: a
+   *  rekey that removes somebody is never quiet. Omitted, the event is
+   *  byte-identical to before. */
+  scheduled?: boolean
   /** Write the epoch commitment into the body, so any current member can
    *  bring a device that missed this rekey up to date (see
    *  `member-epoch.ts`). Omitted, the event is byte-identical to before. */
@@ -240,6 +249,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
   const epoch = requireEpochNumber(opts.next.epoch)
   if (epoch !== opts.current.epoch + 1) throw new Error('a rekey moves the room forward by exactly one epoch')
   const removed = [...new Set(opts.removed.map((p) => requireHex32(p, 'removed participant')))].sort()
+  if (opts.scheduled && (removed.length > 0 || opts.closed)) throw new Error('a scheduled rekey removes nobody and does not close the room')
   const keys: Record<string, string> = {}
   const sealed: SealedSecret = { v: 1, secret: base64urlnopad.encode(opts.next.secret) }
   const plaintext = JSON.stringify(sealed)
@@ -254,6 +264,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
     removed,
     ...(opts.by !== undefined ? { by: requireHex32(opts.by, 'admin') } : {}),
     ...(opts.closed ? { closed: true } : {}),
+    ...(opts.scheduled ? { scheduled: true } : {}),
     ...(opts.commit ? { commit: epochCommitment(roomId, epoch, opts.next.secret) } : {}),
     ...(opts.members !== undefined ? { members: memberListOf(opts.members, removed) } : {}),
     keys,
@@ -278,6 +289,10 @@ export interface RekeyNotice {
   removed: string[]
   by?: string
   closed: boolean
+  /** True for a scheduled turn of the key: nobody removed, the room still
+   *  open. What lets a client move on without saying so. Absent when the
+   *  body contradicts itself, so a removal is always announced. */
+  scheduled?: true
   /** The new secret, when a copy was sealed for this device. Absent for a
    *  device that was removed, or that was not in the room when the
    *  authority rekeyed. */
@@ -350,6 +365,7 @@ export function decodeRekeyEvent(event: Event, opts: DecodeRekeyOptions): RekeyN
       at: event.created_at,
     }
     if (typeof body.by === 'string' && HEX64.test(body.by)) notice.by = normaliseHex(body.by)
+    if (body.scheduled === true && notice.removed.length === 0 && !notice.closed) notice.scheduled = true
     const members = readMemberList(body.members)
     if (members) notice.members = members
     const device = getPublicKey(opts.deviceSk)
@@ -373,6 +389,51 @@ export function decodeRekeyEvent(event: Event, opts: DecodeRekeyOptions): RekeyN
   } catch {
     return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// The history window
+// ---------------------------------------------------------------------------
+
+/** How long a member goes on reading an epoch the room has left: 30 days,
+ *  as long as a chat log keeps a message. */
+export const HISTORY_WINDOW_SECONDS = 30 * 86_400
+/** The most left epochs a member goes on reading, and an authority's grant
+ *  hands over, however many fall inside the window. A weekly schedule puts
+ *  about five in it; removals are what push it higher. Not
+ *  `MAX_MEMBER_EPOCH_CHAIN`, which bounds how far behind a member desk will
+ *  bring somebody. */
+export const MAX_HISTORY_EPOCHS = 16
+
+/** An epoch the room has moved past, and when. */
+export interface LeftEpoch extends RoomEpoch {
+  /** When the room left it, in unix seconds: the `created_at` of the rekey
+   *  out of it. */
+  leftAt: number
+}
+
+/**
+ * The left epochs still read at `now`: those left within
+ * `HISTORY_WINDOW_SECONDS` (one left exactly that long ago is kept), newest
+ * first, one per epoch number (the first given), at most
+ * `MAX_HISTORY_EPOCHS`. Every client applies the same rule, so what an
+ * authority hands over is what a member goes on reading. Pure, and never
+ * throws: an entry with no usable number or time is dropped.
+ */
+export function epochsInWindow<T extends { epoch: number; leftAt: number }>(left: readonly T[], now: number): T[] {
+  const since = now - HISTORY_WINDOW_SECONDS
+  const usable = left.filter(
+    (e) => typeof e === 'object' && e !== null && Number.isSafeInteger(e.epoch) && e.epoch >= 0 && Number.isFinite(e.leftAt) && e.leftAt >= since,
+  )
+  const seen = new Set<number>()
+  const out: T[] = []
+  for (const e of usable.sort((a, b) => b.epoch - a.epoch)) {
+    if (seen.has(e.epoch)) continue
+    seen.add(e.epoch)
+    out.push(e)
+    if (out.length === MAX_HISTORY_EPOCHS) break
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -565,6 +626,15 @@ export const REPORT_UNKNOWN_EVERY_SECONDS = 60
  *  so it waits for a member to let them in (#207). */
 export type EpochRefusal = 'removed' | 'closed' | 'unknown'
 
+/** A left epoch as a grant carries it. */
+interface PassedEpochBody {
+  epoch: number
+  /** base64url, like the grant's own secret. */
+  secret: string
+  /** `LeftEpoch.leftAt`. */
+  left: number
+}
+
 interface EpochGrantBody {
   v: 1
   request: string
@@ -572,6 +642,8 @@ interface EpochGrantBody {
   secret?: string
   removed?: string[]
   members?: string[]
+  /** The window's left epochs, oldest first. Absent when there are none. */
+  passed?: PassedEpochBody[]
   refused?: EpochRefusal
 }
 
@@ -587,6 +659,15 @@ export interface EncodeEpochGrantOptions {
   /** The participants the authority knows, so the requester's own member
    *  desk knows them too. Omitted, the body is as before. */
   members?: string[]
+  /**
+   * The epochs the room has left that are still read (`epochsInWindow`),
+   * so a newcomer, or a device back after missing several rekeys, reads
+   * the last month and not only the current epoch. Each is after epoch 0,
+   * whose secret is the room secret and is never handed over, and before
+   * `epoch`; at most `MAX_HISTORY_EPOCHS`, each once. Omitted or empty,
+   * the body is as before.
+   */
+  passed?: readonly LeftEpoch[]
   refused?: EpochRefusal
   /** The newest credential the authority holds for the device: the grant
    *  is sealed to its seal key when it names one (see `seal.ts`). */
@@ -594,6 +675,47 @@ export interface EncodeEpochGrantOptions {
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
   expiresAt?: number
+}
+
+function passedListOf(passed: readonly LeftEpoch[], granted: number): PassedEpochBody[] {
+  if (passed.length > MAX_HISTORY_EPOCHS) throw new Error(`a grant carries at most ${MAX_HISTORY_EPOCHS} passed epochs`)
+  const out = passed
+    .map((e) => {
+      const epoch = requireEpochNumber(e.epoch)
+      if (epoch < 1 || epoch >= granted) throw new Error('a passed epoch comes after epoch 0 and before the one granted')
+      require32(e.secret, 'epoch secret')
+      if (!Number.isSafeInteger(e.leftAt) || e.leftAt < 0) throw new Error('leftAt must be a non-negative integer')
+      return { epoch, secret: base64urlnopad.encode(e.secret), left: e.leftAt }
+    })
+    .sort((a, b) => a.epoch - b.epoch)
+  for (let i = 1; i < out.length; i += 1) {
+    if (out[i]!.epoch === out[i - 1]!.epoch) throw new Error('a passed epoch is listed once')
+  }
+  return out
+}
+
+/** A grant's passed epochs, or undefined unless every entry is in the form
+ *  `encodeEpochGrant` writes. One bad entry costs the history, not the
+ *  grant: the current epoch still stands. */
+function readPassedList(raw: unknown, granted: number): Array<RoomEpoch & { leftAt: number }> | undefined {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_HISTORY_EPOCHS) return undefined
+  const out: Array<RoomEpoch & { leftAt: number }> = []
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null) return undefined
+    const { epoch, secret, left } = entry as Partial<PassedEpochBody>
+    if (!Number.isSafeInteger(epoch) || (epoch as number) < 1 || (epoch as number) >= granted) return undefined
+    if (out.length > 0 && (epoch as number) <= out[out.length - 1]!.epoch) return undefined
+    if (typeof secret !== 'string' || !Number.isSafeInteger(left) || (left as number) < 0) return undefined
+    let bytes: Uint8Array
+    try {
+      bytes = base64urlnopad.decode(secret)
+    } catch {
+      return undefined
+    }
+    if (bytes.length !== 32) return undefined
+    out.push({ epoch: epoch as number, secret: bytes, leftAt: left as number })
+  }
+  return out
 }
 
 /** Answer one request: the current epoch sealed to the asking device, or a
@@ -615,6 +737,7 @@ export function encodeEpochGrant(opts: EncodeEpochGrantOptions): Event {
     }
     body.removed = [...new Set((opts.removed ?? []).map((p) => requireHex32(p, 'removed participant')))].sort()
     if (opts.members !== undefined) body.members = memberListOf(opts.members, body.removed)
+    if (opts.passed !== undefined && opts.passed.length > 0) body.passed = passedListOf(opts.passed, body.epoch)
   }
   return finalizeEvent(
     {
@@ -646,10 +769,13 @@ export type EpochGrant =
   | {
       epoch: RoomEpoch | { epoch: 0 }
       removed: string[]
-      /** Present on a member's answer through `requestRoomEpoch({ members })`:
-       *  the epochs it carried between the requester's and `epoch`. See
-       *  `MemberEpochGrant.passed`. The authority's own answer has none. */
-      passed?: RoomEpoch[]
+      /** Earlier epochs handed over with `epoch`, oldest first. A member's
+       *  answer through `requestRoomEpoch({ members })` carries the epochs
+       *  between the requester's and `epoch` (see `MemberEpochGrant.passed`);
+       *  the authority's carries the window's (`EncodeEpochGrantOptions.passed`),
+       *  when its desk was given them. `leftAt` is when the room left each,
+       *  when the answer said. */
+      passed?: Array<RoomEpoch & { leftAt?: number }>
       /** The participants the room knows, when the answer carried them. */
       members?: string[]
       refused?: undefined
@@ -682,7 +808,8 @@ export function decodeEpochGrant(event: Event, opts: DecodeEpochGrantOptions): E
     if (typeof body.secret !== 'string') return null
     const secret = base64urlnopad.decode(body.secret)
     if (secret.length !== 32) return null
-    return { epoch: { epoch: body.epoch as number, secret }, removed, ...listed }
+    const passed = readPassedList(body.passed, body.epoch as number)
+    return { epoch: { epoch: body.epoch as number, secret }, removed, ...listed, ...(passed ? { passed } : {}) }
   } catch {
     return null
   }
@@ -711,6 +838,14 @@ export interface HostRoomEpochOptions {
    *  desk knows them too. Asked on every grant. */
   members?: () => readonly string[]
   /**
+   * The epochs the room has left, with their secrets and when it left
+   * each: every grant carries those still in the window, so a newcomer
+   * reads the last month as a returning member does. Asked on every grant.
+   * Whatever a grant could not carry (epoch 0, an epoch not before the
+   * current one, a bad secret) is left out rather than costing the grant.
+   */
+  past?: () => readonly LeftEpoch[]
+  /**
    * The newest credential the authority has seen for a device, from the
    * roster. An answer is sealed to the newer of this and the one the
    * request carries, so a thief replaying a device's older, still-live
@@ -734,6 +869,33 @@ export interface HostRoomEpochOptions {
   onRefused?: (request: EpochRequest, why: EpochRefusal) => void
   /** A conference room's end: every grant carries it as an expiration. */
   expiresAt?: number
+}
+
+/** What a desk hands over of `past()`: the window's epochs below the one it
+ *  grants, leaving out anything `encodeEpochGrant` would refuse, so a bad
+ *  entry costs the history and never the grant. */
+function passedFor(past: (() => readonly LeftEpoch[]) | undefined, granted: number, now: number): LeftEpoch[] {
+  if (!past) return []
+  let given: readonly LeftEpoch[]
+  try {
+    given = past()
+  } catch {
+    return []
+  }
+  if (!Array.isArray(given)) return []
+  const carried = given.filter(
+    (e) =>
+      typeof e === 'object' &&
+      e !== null &&
+      Number.isSafeInteger(e.epoch) &&
+      e.epoch >= 1 &&
+      e.epoch < granted &&
+      e.secret instanceof Uint8Array &&
+      e.secret.length === 32 &&
+      Number.isSafeInteger(e.leftAt) &&
+      e.leftAt >= 0,
+  )
+  return epochsInWindow(carried, now)
 }
 
 /**
@@ -823,29 +985,33 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
       }
       let grant: Event
       try {
-        grant = refused
-          ? encodeEpochGrant({
-              roomId,
-              authoritySk: opts.authoritySk,
-              device: request.device,
-              request: request.request,
-              now: now(),
-              refused,
-              credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
-              expiresAt: opts.expiresAt,
-            })
-          : encodeEpochGrant({
-              roomId,
-              authoritySk: opts.authoritySk,
-              device: request.device,
-              request: request.request,
-              now: now(),
-              epoch: opts.current(),
-              removed: [...opts.removed()],
-              ...(opts.members ? { members: [...opts.members()] } : {}),
-              credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
-              expiresAt: opts.expiresAt,
-            })
+        if (refused) {
+          grant = encodeEpochGrant({
+            roomId,
+            authoritySk: opts.authoritySk,
+            device: request.device,
+            request: request.request,
+            now: now(),
+            refused,
+            credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
+            expiresAt: opts.expiresAt,
+          })
+        } else {
+          const epoch = opts.current()
+          grant = encodeEpochGrant({
+            roomId,
+            authoritySk: opts.authoritySk,
+            device: request.device,
+            request: request.request,
+            now: now(),
+            epoch,
+            removed: [...opts.removed()],
+            ...(opts.members ? { members: [...opts.members()] } : {}),
+            ...(opts.past ? { passed: passedFor(opts.past, epoch.epoch, now()) } : {}),
+            credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
+            expiresAt: opts.expiresAt,
+          })
+        }
       } catch {
         return
       }
