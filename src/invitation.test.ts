@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { bytesToHex } from '@noble/hashes/utils'
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure'
+import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure'
 import { SimRelay, SimTransport } from '../test/sim-relay.js'
+import { KINDS } from './kinds.js'
 import {
   createRoomInvitation,
   decodeInvitationGrant,
@@ -354,6 +355,38 @@ describe('invitation exchange', () => {
     expect(JSON.parse(plain.content)).toEqual({ v: 1 })
     expect(decodeInvitationRetirementNotice(plain, host.invitation)).toEqual({ ended: false })
     expect(decodeInvitationRetirementNotice(ended, createRoomInvitation().invitation)).toBeUndefined()
+  })
+
+  it('an ended room\'s tombstone may say it self-destructs; without the flag it is what 0.8.0 wrote', async () => {
+    const relay = new SimRelay()
+    const host = createRoomInvitation()
+    const waiting = requestRoomAdmission({ transport: new SimTransport(relay), invitation: host.invitation, now, timeoutMs: 1_000 })
+    const destructed = encodeInvitationRetirement({ invitation: host.invitation, inviterSk: host.inviterSk, now: NOW, ended: true, destruct: true })
+    await new SimTransport(relay).publish(destructed)
+    await expect(waiting).rejects.toThrow(ROOM_ENDED_MESSAGE)
+    expect(destructed.content).toBe('{"v":1,"ended":true,"destruct":true}')
+    expect(JSON.stringify(destructed.tags)).not.toContain('destruct')
+    expect(decodeInvitationRetirement(destructed, host.invitation)).toBe(true)
+    expect(decodeInvitationRetirementNotice(destructed, host.invitation)).toEqual({ ended: true, destruct: true })
+    for (const destruct of [undefined, false]) {
+      const ended = encodeInvitationRetirement({ invitation: host.invitation, inviterSk: host.inviterSk, now: NOW, ended: true, destruct })
+      expect(ended.content).toBe('{"v":1,"ended":true}')
+      expect(decodeInvitationRetirementNotice(ended, host.invitation)).toEqual({ ended: true })
+    }
+  })
+
+  it('refuses to write self-destruct on a link that is only retired, and does not believe one', () => {
+    const host = createRoomInvitation()
+    expect(() => encodeInvitationRetirement({ invitation: host.invitation, inviterSk: host.inviterSk, now: NOW, destruct: true }))
+      .toThrow(/only an ended room/)
+    // A tombstone is never refused for a malformed flag: a retired link must stay retired.
+    const sign = (body: unknown) => finalizeEvent({
+      kind: KINDS.INVITATION_RETIREMENT, created_at: NOW, tags: [['d', deriveInvitationId(host.invitation)]], content: JSON.stringify(body),
+    }, host.inviterSk)
+    expect(decodeInvitationRetirementNotice(sign({ v: 1, destruct: true }), host.invitation)).toEqual({ ended: false })
+    for (const destruct of ['true', 1, false, null]) {
+      expect(decodeInvitationRetirementNotice(sign({ v: 1, ended: true, destruct }), host.invitation)).toEqual({ ended: true })
+    }
   })
 })
 

@@ -467,6 +467,12 @@ export interface EncodeInvitationRetirementOptions {
   /** The room itself was ended, not just this link replaced. Additive: a
    * reader that predates it still sees an ordinary retirement. */
   ended?: boolean
+  /** The ended room self-destructs: every device deletes what it wrote and
+   * forgets the room. Only beside `ended`, else it throws. Unlike the
+   * invitation's own flag this content is not encrypted: it says no more
+   * than `ended` does about a link nobody outside the room can name.
+   * Omitted or false, the event is byte-identical to 0.8.0's. */
+  destruct?: boolean
   /** A conference room's end, in unix seconds: the tombstone carries the
    * same NIP-40 expiration as the invitation it retires, and lapses with it. */
   endsAt?: number
@@ -481,12 +487,13 @@ export function encodeInvitationRetirement(opts: EncodeInvitationRetirementOptio
   if (!hexEquals(getPublicKey(opts.inviterSk), opts.invitation.inviter)) {
     throw new Error('only the root inviter can retire an invitation')
   }
+  if (opts.destruct && !opts.ended) throw new Error('only an ended room can self-destruct')
   return finalizeEvent(
     {
       kind: KINDS.INVITATION_RETIREMENT,
       created_at: opts.now,
       tags: withExpiration([['d', deriveInvitationId(opts.invitation)]], opts.endsAt),
-      content: JSON.stringify(opts.ended ? { v: 1, ended: true } : { v: 1 }),
+      content: JSON.stringify(opts.ended ? (opts.destruct ? { v: 1, ended: true, destruct: true } : { v: 1, ended: true }) : { v: 1 }),
     },
     opts.inviterSk,
   )
@@ -498,16 +505,18 @@ export function decodeInvitationRetirement(event: Event, invitation: RoomInvitat
   return decodeInvitationRetirementNotice(event, invitation) !== undefined
 }
 
-/** A valid retirement, and whether it says the room was ended. Undefined
- * for anything that is not a valid retirement of this invitation. */
-export function decodeInvitationRetirementNotice(event: Event, invitation: RoomInvitation): { ended: boolean } | undefined {
+/** A valid retirement, whether it says the room was ended, and whether the
+ * ended room self-destructs (`destruct`, believed only beside `ended`).
+ * Undefined for anything that is not a valid retirement of this invitation. */
+export function decodeInvitationRetirementNotice(event: Event, invitation: RoomInvitation): { ended: boolean; destruct?: true } | undefined {
   try {
     if (event.kind !== KINDS.INVITATION_RETIREMENT) return undefined
     if (!verifyEventUncached(event)) return undefined
     if (!hexEquals(event.pubkey, invitation.inviter)) return undefined
     if (event.tags.find((tag) => tag[0] === 'd')?.[1] !== deriveInvitationId(invitation)) return undefined
-    const body = JSON.parse(event.content) as { v?: unknown; ended?: unknown }
-    return body.v === 1 ? { ended: body.ended === true } : undefined
+    const body = JSON.parse(event.content) as { v?: unknown; ended?: unknown; destruct?: unknown }
+    if (body.v !== 1) return undefined
+    return body.ended === true && body.destruct === true ? { ended: true, destruct: true } : { ended: body.ended === true }
   } catch {
     return undefined
   }

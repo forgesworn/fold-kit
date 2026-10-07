@@ -168,6 +168,9 @@ interface RekeyBody {
   removed: string[]
   by?: string
   closed?: true
+  /** The closed room self-destructs. Written only beside `closed`, and not
+   *  believed without it. */
+  destruct?: true
   /** A turn of the key on the room's schedule: nobody was removed and the
    *  room stays open, so a client need not announce it. Never written
    *  beside a removal or a close, and not believed beside one. */
@@ -208,6 +211,10 @@ export interface EncodeRekeyOptions {
   /** True when the room is being closed: nobody is kept, and the event
    *  says so rather than leaving everybody to wonder. */
   closed?: boolean
+  /** The room being closed self-destructs: every device deletes what it
+   *  wrote and forgets the room. Inside the encrypted body. Refused
+   *  without `closed`. Omitted, the event is byte-identical to before. */
+  destruct?: boolean
   /** Mark this as a scheduled turn of the key rather than a removal, so
    *  clients can let it pass quietly. Refused with a removal or a close: a
    *  rekey that removes somebody is never quiet. Omitted, the event is
@@ -250,6 +257,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
   if (epoch !== opts.current.epoch + 1) throw new Error('a rekey moves the room forward by exactly one epoch')
   const removed = [...new Set(opts.removed.map((p) => requireHex32(p, 'removed participant')))].sort()
   if (opts.scheduled && (removed.length > 0 || opts.closed)) throw new Error('a scheduled rekey removes nobody and does not close the room')
+  if (opts.destruct && !opts.closed) throw new Error('only a closing rekey can self-destruct the room')
   const keys: Record<string, string> = {}
   const sealed: SealedSecret = { v: 1, secret: base64urlnopad.encode(opts.next.secret) }
   const plaintext = JSON.stringify(sealed)
@@ -264,6 +272,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
     removed,
     ...(opts.by !== undefined ? { by: requireHex32(opts.by, 'admin') } : {}),
     ...(opts.closed ? { closed: true } : {}),
+    ...(opts.destruct ? { destruct: true } : {}),
     ...(opts.scheduled ? { scheduled: true } : {}),
     ...(opts.commit ? { commit: epochCommitment(roomId, epoch, opts.next.secret) } : {}),
     ...(opts.members !== undefined ? { members: memberListOf(opts.members, removed) } : {}),
@@ -289,6 +298,10 @@ export interface RekeyNotice {
   removed: string[]
   by?: string
   closed: boolean
+  /** True when the closed room self-destructs. Absent unless `closed`:
+   *  beside an open room the flag is not believed, and the rekey is read
+   *  as if it were not there. */
+  destruct?: true
   /** True for a scheduled turn of the key: nobody removed, the room still
    *  open. What lets a client move on without saying so. Absent when the
    *  body contradicts itself, so a removal is always announced. */
@@ -365,6 +378,7 @@ export function decodeRekeyEvent(event: Event, opts: DecodeRekeyOptions): RekeyN
       at: event.created_at,
     }
     if (typeof body.by === 'string' && HEX64.test(body.by)) notice.by = normaliseHex(body.by)
+    if (body.destruct === true && notice.closed) notice.destruct = true
     if (body.scheduled === true && notice.removed.length === 0 && !notice.closed) notice.scheduled = true
     const members = readMemberList(body.members)
     if (members) notice.members = members

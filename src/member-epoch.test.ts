@@ -57,7 +57,7 @@ interface Chain {
 }
 
 /** Rekey the room from epoch 0 `steps` times. `commit` and `removed` per step. */
-function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: boolean; scheduled?: boolean }[]): Chain {
+function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: boolean; destruct?: boolean; scheduled?: boolean }[]): Chain {
   const epochs: RoomEpoch[] = [E0]
   const rekeys: Event[] = []
   steps.forEach((step, i) => {
@@ -72,6 +72,7 @@ function buildChain(steps: { commit?: boolean; removed?: string[]; closed?: bool
         recipients: [getPublicKey(memberDeviceSk)],
         removed: step.removed ?? [],
         closed: step.closed,
+        destruct: step.destruct,
         scheduled: step.scheduled,
         commit: step.commit,
         now: NOW - 100 + i,
@@ -176,6 +177,15 @@ describe('member epoch grants: what the requester accepts', () => {
     expect(grant!.passed).toEqual([{ ...chain.epochs[1], leftAt: chain.rekeys[1]!.created_at }])
     expect(grant!.passed[0]!.leftAt).toBe(NOW - 99)
     expect(fromOne!.passed).toEqual([])
+  })
+
+  it('the evidence of a closure says whether the room self-destructs', () => {
+    const chain = buildChain([{ commit: true }, { closed: true, destruct: true }])
+    expect(readRekeyEvidence(chain.rekeys[1]!, { roomId, authority, previous: keysOf(chain.epochs[1]!) }))
+      .toEqual({ epoch: 2, removed: [], closed: true, destruct: true })
+    expect(readRekeyEvidence(chain.rekeys[0]!, { roomId, authority, previous: keysOf(E0) })?.destruct).toBeUndefined()
+    const plain = buildChain([{ closed: true }])
+    expect(readRekeyEvidence(plain.rekeys[0]!, { roomId, authority, previous: keysOf(E0) })).toEqual({ epoch: 1, removed: [], closed: true })
   })
 
   it('a chain runs through a scheduled rekey unbroken, and each passed epoch says when it was left', () => {
