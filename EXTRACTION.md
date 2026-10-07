@@ -371,10 +371,22 @@ the authority's grant carries the window's left epochs (`passed`, and `past`
 on `hostRoomEpoch`). See `docs/scheduled-rekey.md`. A rekey without the
 marker, and a grant without `passed`, is byte-identical to 0.7.0's.
 `scripts/diff-source.mjs` declares each hunk in `SCHEDULE_CHANGES`, as 0.8.0
-text against 0.7.0 text, applied before every other change set. The matching
+text against 0.7.0 text, applied before every other change set but `DESTRUCT_CHANGES`. The matching
 reader changes in `member-epoch.ts` (`RekeyEvidence.scheduled`, and `leftAt`
 on a member grant's passed epochs) need no declaration: that module is new
 code and not compared against the pinned source.
+
+## Self-destructing rooms: declared additions to three moved modules
+
+0.9.0. An optional `destruct: true` in the group invitation body
+(`persistent-invitation.ts`), in an ended room's retirement
+(`invitation.ts`) and in a closing rekey's body (`epoch.ts`), each surfaced
+on its reader, and kept by `requestPersistentRoomAdmission` if any signed
+copy carries it. See `docs/room-destruct.md`. With the flag absent every
+event is byte-identical to 0.8.0's. `scripts/diff-source.mjs` declares each
+hunk in `DESTRUCT_CHANGES`, as 0.9.0 text against 0.8.0 text, applied before
+every other change set. The matching reader change in `member-epoch.ts`
+(`RekeyEvidence.destruct`) needs no declaration.
 
 ## Public repository naming
 

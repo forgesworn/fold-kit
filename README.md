@@ -126,6 +126,16 @@ the rest).
   `requestPersistentRoomAdmission` keeps the relays of the newest signed
   copy that names any. `isInvitationRelays`, `requireInvitationRelays` and
   `MAX_INVITATION_RELAYS` are the rule
+- Self-destructing rooms (`docs/room-destruct.md`): pass `destruct: true`
+  and the encrypted body carries it after `ends` (no end needed: the room
+  then self-destructs when its authority closes it). The decoder returns
+  `destruct: true` and refuses the envelope on any other value;
+  `requestPersistentRoomAdmission` keeps it if any signed copy says it.
+  `encodeInvitationRetirement({ ended: true, destruct: true })` and
+  `encodeRekeyEvent({ closed: true, destruct: true })` carry it when the
+  room ends early, read back by `decodeInvitationRetirementNotice`,
+  `RekeyNotice.destruct` and `RekeyEvidence.destruct`. Vectors:
+  `vectors/destruct-vectors.json`
 - `withExpiration`, `isRoomEnds`, `requireRoomEnds`, `MAX_ROOM_ENDS_SECONDS` -
   the conference-room expiration rule: add the end as an `expiration` tag,
   keep an earlier one, lower a later one. `encodeInvitationRetirement` takes
