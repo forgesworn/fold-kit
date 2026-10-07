@@ -296,6 +296,108 @@ describe('persistent group invitations', () => {
     })
   })
 
+  describe('self-destructing rooms', () => {
+    /** Seal any body under the welcome key, as a writer the encoder would refuse. */
+    function sealed(host: ReturnType<typeof createRoomInvitation>, roomSecret: Uint8Array, extra: Record<string, unknown>, now = NOW) {
+      return finalizeEvent({
+        kind: KINDS.GROUP_INVITATION,
+        created_at: now,
+        tags: [['d', deriveInvitationId(host.invitation)]],
+        content: nip44.v2.encrypt(JSON.stringify({ v: 3, room: deriveRoom(roomSecret).roomId, secret: base64urlnopad.encode(roomSecret), ...extra }), welcome(host.invitation.bearer)),
+      }, host.inviterSk)
+    }
+    const RELAYS = ['wss://relay.example.com/']
+
+    it('round trips the flag inside the encrypted body, never as a tag', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const ends = NOW + 3_600
+      const event = encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: ends, destruct: true })
+      expect(event.tags).toEqual([['d', deriveInvitationId(host.invitation)], ['expiration', String(ends)]])
+      expect(JSON.stringify(event.tags)).not.toContain('destruct')
+      expect(decodePersistentInvitation(event, host.invitation)).toEqual({ secret: roomSecret, persistent: true, epoch: 0, endsAt: ends, destruct: true })
+      await expect(requestPersistentRoomAdmission({ transport: replay([event]), invitation: host.invitation }))
+        .resolves.toEqual({ secret: roomSecret, persistent: true, epoch: 0, endsAt: ends, destruct: true })
+    })
+
+    it('needs no end: the room self-destructs when its authority closes it', () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const event = encodePersistentInvitation({ ...host, roomSecret, now: NOW, destruct: true })
+      expect(event.tags).toEqual([['d', deriveInvitationId(host.invitation)]])
+      expect(decodePersistentInvitation(event, host.invitation)).toEqual({ secret: roomSecret, persistent: true, epoch: 0, destruct: true })
+    })
+
+    it('writes the body keys in the order v, room, secret, ends, destruct, relays', () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const keys = (event: Event) => Object.keys(JSON.parse(nip44.v2.decrypt(event.content, welcome(host.invitation.bearer))))
+      expect(keys(encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 60, destruct: true, relays: RELAYS })))
+        .toEqual(['v', 'room', 'secret', 'ends', 'destruct', 'relays'])
+      expect(keys(encodePersistentInvitation({ ...host, roomSecret, now: NOW, destruct: true }))).toEqual(['v', 'room', 'secret', 'destruct'])
+    })
+
+    it('omitted or false, the plaintext is byte for byte what 0.8.0 wrote', () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const room = deriveRoom(roomSecret).roomId
+      const secret = base64urlnopad.encode(roomSecret)
+      const plain = (event: Event) => nip44.v2.decrypt(event.content, welcome(host.invitation.bearer))
+      for (const destruct of [undefined, false]) {
+        const event = encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 60, relays: RELAYS, destruct })
+        expect(plain(event)).toBe(`{"v":3,"room":"${room}","secret":"${secret}","ends":${NOW + 60},"relays":${JSON.stringify(RELAYS)}}`)
+        expect(decodePersistentInvitation(event, host.invitation)).not.toHaveProperty('destruct')
+      }
+      expect(plain(encodePersistentInvitation({ ...host, roomSecret, now: NOW, destruct: true })))
+        .toBe(`{"v":3,"room":"${room}","secret":"${secret}","destruct":true}`)
+    })
+
+    it.each<[string, unknown]>([
+      ['false', false],
+      ['a string', 'true'],
+      ['a number', 1],
+      ['null', null],
+      ['an object', {}],
+    ])('refuses the whole envelope when the flag is %s', (_label, destruct) => {
+      const host = createRoomInvitation(true)
+      expect(decodePersistentInvitation(sealed(host, generateRoomSecret(), { destruct }), host.invitation)).toBeNull()
+    })
+
+    it('two signed copies that disagree on self-destruct admit with it, in any order', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const flagged = encodePersistentInvitation({ ...host, roomSecret, now: NOW, destruct: true })
+      const plain = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 10 })
+      const later = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 20, relays: RELAYS })
+      for (const order of [[flagged, plain], [plain, flagged], [flagged, plain, later], [later, plain, flagged]]) {
+        await expect(requestPersistentRoomAdmission({ transport: replay(order), invitation: host.invitation }))
+          .resolves.toHaveProperty('destruct', true)
+      }
+      await expect(requestPersistentRoomAdmission({ transport: replay([plain, later]), invitation: host.invitation }))
+        .resolves.not.toHaveProperty('destruct')
+    })
+
+    it('merges independently of the end and the relays', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const early = encodePersistentInvitation({ ...host, roomSecret, now: NOW, endsAt: NOW + 3_600, destruct: true })
+      const late = encodePersistentInvitation({ ...host, roomSecret, now: NOW + 10, endsAt: NOW + 7_200, relays: RELAYS })
+      for (const order of [[early, late], [late, early]]) {
+        await expect(requestPersistentRoomAdmission({ transport: replay(order), invitation: host.invitation }))
+          .resolves.toEqual({ secret: roomSecret, persistent: true, epoch: 0, endsAt: NOW + 3_600, relays: RELAYS, destruct: true })
+      }
+    })
+
+    it('an ended room\'s retirement may say it self-destructs; a joiner is still told the room ended', async () => {
+      const host = createRoomInvitation(true)
+      const roomSecret = generateRoomSecret()
+      const event = encodePersistentInvitation({ ...host, roomSecret, now: NOW, destruct: true })
+      const retired = encodeInvitationRetirement({ ...host, now: NOW + 60, ended: true, destruct: true })
+      expect(decodeInvitationRetirementNotice(retired, host.invitation)).toEqual({ ended: true, destruct: true })
+      await expect(requestPersistentRoomAdmission({ transport: replay([event, retired]), invitation: host.invitation })).rejects.toThrow(ROOM_ENDED_MESSAGE)
+    })
+  })
+
   // The upstream kithmoot suite also has a test here that joins via
   // `RoomAgent.join` (`app`-level agent runtime) to prove an agent can send
   // chat from stored admission alone. `RoomAgent` is not part of the kit's

@@ -5,6 +5,42 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.9.0
+
+### Added
+
+- Self-destructing rooms (`docs/room-destruct.md`):
+  `encodePersistentInvitation({ destruct: true })` writes `"destruct": true`
+  inside the encrypted group invitation body, after `ends`; `ends` is not
+  required. `decodePersistentInvitation` returns
+  `PersistentRoomAdmission.destruct` and refuses the envelope when the field
+  is present and not `true`. `requestPersistentRoomAdmission` keeps
+  `destruct` if any valid signed copy carries it, in either order, as it
+  keeps the earliest end.
+- `encodeInvitationRetirement({ ended: true, destruct: true })` writes
+  `{"v":1,"ended":true,"destruct":true}` and throws on `destruct` without
+  `ended`. `decodeInvitationRetirementNotice` now returns
+  `{ ended: boolean; destruct?: true }`, believing `destruct` only beside
+  `ended`. The retirement content is plain JSON, as `ended` always was.
+- `encodeRekeyEvent({ closed: true, destruct: true })` writes
+  `"destruct": true` inside the encrypted body, after `closed`, and throws
+  on `destruct` without `closed`. `RekeyNotice.destruct`
+  (`decodeRekeyEvent`) and `RekeyEvidence.destruct` (`readRekeyEvidence`)
+  report it only on a closing body; on an open rekey the flag is dropped
+  and the rekey still read.
+- Vectors: `vectors/destruct-vectors.json` (`npm run generate-destruct`).
+
+### Changed
+
+- `decodePersistentInvitation` refuses a group invitation whose body
+  carries `destruct` as anything but `true`. No released writer produces
+  one.
+
+Without the flag, or with it `false`, every event is byte-identical to
+0.8.0's. A 0.8.0 reader ignores the flag: it admits to a self-destructing
+room, reads its retirement as an ended room and its closure as a close, and
+ends the room the old way.
+
 ## 0.8.0
 
 ### Added

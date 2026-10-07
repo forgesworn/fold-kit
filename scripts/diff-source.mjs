@@ -156,13 +156,47 @@ for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints
 }
 
 /**
+ * Self-destructing rooms (0.9.0, see docs/room-destruct.md): an optional
+ * `destruct: true` in the group invitation body, beside `ends`, in an ended
+ * room's retirement, and in a closing rekey's body, each surfaced on its
+ * reader. With the flag absent every event is byte-identical to 0.8.0's.
+ * Declared as 0.9.0 text -> 0.8.0 text, generated hunk by hunk from the
+ * diff with one line of context, and applied before every other change set.
+ */
+const DESTRUCT_CHANGES = {
+  "src/invitation.ts": [
+    ["  ended?: boolean\n  /** The ended room self-destructs: every device deletes what it wrote and\n   * forgets the room. Only beside `ended`, else it throws. Unlike the\n   * invitation's own flag this content is not encrypted: it says no more\n   * than `ended` does about a link nobody outside the room can name.\n   * Omitted or false, the event is byte-identical to 0.8.0's. */\n  destruct?: boolean\n  /** A conference room's end, in unix seconds: the tombstone carries the", "  ended?: boolean\n  /** A conference room's end, in unix seconds: the tombstone carries the", 1],
+    ["  }\n  if (opts.destruct && !opts.ended) throw new Error('only an ended room can self-destruct')\n  return finalizeEvent(", "  }\n  return finalizeEvent(", 1],
+    ["      tags: withExpiration([['d', deriveInvitationId(opts.invitation)]], opts.endsAt),\n      content: JSON.stringify(opts.ended ? (opts.destruct ? { v: 1, ended: true, destruct: true } : { v: 1, ended: true }) : { v: 1 }),\n    },", "      tags: withExpiration([['d', deriveInvitationId(opts.invitation)]], opts.endsAt),\n      content: JSON.stringify(opts.ended ? { v: 1, ended: true } : { v: 1 }),\n    },", 1],
+    ["\n/** A valid retirement, whether it says the room was ended, and whether the\n * ended room self-destructs (`destruct`, believed only beside `ended`).\n * Undefined for anything that is not a valid retirement of this invitation. */\nexport function decodeInvitationRetirementNotice(event: Event, invitation: RoomInvitation): { ended: boolean; destruct?: true } | undefined {\n  try {", "\n/** A valid retirement, and whether it says the room was ended. Undefined\n * for anything that is not a valid retirement of this invitation. */\nexport function decodeInvitationRetirementNotice(event: Event, invitation: RoomInvitation): { ended: boolean } | undefined {\n  try {", 1],
+    ["    if (event.tags.find((tag) => tag[0] === 'd')?.[1] !== deriveInvitationId(invitation)) return undefined\n    const body = JSON.parse(event.content) as { v?: unknown; ended?: unknown; destruct?: unknown }\n    if (body.v !== 1) return undefined\n    return body.ended === true && body.destruct === true ? { ended: true, destruct: true } : { ended: body.ended === true }\n  } catch {", "    if (event.tags.find((tag) => tag[0] === 'd')?.[1] !== deriveInvitationId(invitation)) return undefined\n    const body = JSON.parse(event.content) as { v?: unknown; ended?: unknown }\n    return body.v === 1 ? { ended: body.ended === true } : undefined\n  } catch {", 1],
+  ],
+  "src/persistent-invitation.ts": [
+    ["  relays?: string[]\n  /** The room self-destructs: when it ends, every device deletes what it\n   *  wrote and forgets the room. Absent for a room that simply ends. */\n  destruct?: true\n}", "  relays?: string[]\n}", 1],
+    ["  relays?: readonly string[]\n  /** The room self-destructs when it ends, by its time or by its authority\n   *  closing it. Written inside the encrypted body only, never as a tag.\n   *  Omitted or false, the event is byte-identical to 0.8.0's. */\n  destruct?: boolean\n}): Event {", "  relays?: readonly string[]\n}): Event {", 1],
+    ["    content: nip44.v2.encrypt(JSON.stringify({\n      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(opts.destruct ? { destruct: true } : {}), ...(relays === undefined ? {} : { relays }),\n    }), welcomeKey(opts.invitation)),", "    content: nip44.v2.encrypt(JSON.stringify({\n      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(relays === undefined ? {} : { relays }),\n    }), welcomeKey(opts.invitation)),", 1],
+    ["    if (body.relays !== undefined && !isInvitationRelays(body.relays)) return null\n    // Self-destruct is `true` or absent; anything else is a malformed\n    // envelope, refused as a malformed end is.\n    if (body.destruct !== undefined && body.destruct !== true) return null\n    const admission: PersistentRoomAdmission = ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }\n    if (body.relays !== undefined) admission.relays = [...body.relays]\n    if (body.destruct === true) admission.destruct = true\n    return admission", "    if (body.relays !== undefined && !isInvitationRelays(body.relays)) return null\n    const admission: PersistentRoomAdmission = ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }\n    if (body.relays !== undefined) admission.relays = [...body.relays]\n    return admission", 1],
+    ["        if (admission?.endsAt !== undefined && (decoded.endsAt === undefined || decoded.endsAt > admission.endsAt)) decoded.endsAt = admission.endsAt\n        // Two signed copies that disagree on self-destruct: it sticks, for\n        // the same reason, so a stale copy can never keep a room's content.\n        if (admission?.destruct) decoded.destruct = true\n        // Two signed copies that disagree on the room's relays: the newest", "        if (admission?.endsAt !== undefined && (decoded.endsAt === undefined || decoded.endsAt > admission.endsAt)) decoded.endsAt = admission.endsAt\n        // Two signed copies that disagree on the room's relays: the newest", 1],
+  ],
+  "src/epoch.ts": [
+    ["  closed?: true\n  /** The closed room self-destructs. Written only beside `closed`, and not\n   *  believed without it. */\n  destruct?: true\n  /** A turn of the key on the room's schedule: nobody was removed and the", "  closed?: true\n  /** A turn of the key on the room's schedule: nobody was removed and the", 1],
+    ["  closed?: boolean\n  /** The room being closed self-destructs: every device deletes what it\n   *  wrote and forgets the room. Inside the encrypted body. Refused\n   *  without `closed`. Omitted, the event is byte-identical to before. */\n  destruct?: boolean\n  /** Mark this as a scheduled turn of the key rather than a removal, so", "  closed?: boolean\n  /** Mark this as a scheduled turn of the key rather than a removal, so", 1],
+    ["  if (opts.scheduled && (removed.length > 0 || opts.closed)) throw new Error('a scheduled rekey removes nobody and does not close the room')\n  if (opts.destruct && !opts.closed) throw new Error('only a closing rekey can self-destruct the room')\n  const keys: Record<string, string> = {}", "  if (opts.scheduled && (removed.length > 0 || opts.closed)) throw new Error('a scheduled rekey removes nobody and does not close the room')\n  const keys: Record<string, string> = {}", 1],
+    ["    ...(opts.closed ? { closed: true } : {}),\n    ...(opts.destruct ? { destruct: true } : {}),\n    ...(opts.scheduled ? { scheduled: true } : {}),", "    ...(opts.closed ? { closed: true } : {}),\n    ...(opts.scheduled ? { scheduled: true } : {}),", 1],
+    ["  closed: boolean\n  /** True when the closed room self-destructs. Absent unless `closed`:\n   *  beside an open room the flag is not believed, and the rekey is read\n   *  as if it were not there. */\n  destruct?: true\n  /** True for a scheduled turn of the key: nobody removed, the room still", "  closed: boolean\n  /** True for a scheduled turn of the key: nobody removed, the room still", 1],
+    ["    if (typeof body.by === 'string' && HEX64.test(body.by)) notice.by = normaliseHex(body.by)\n    if (body.destruct === true && notice.closed) notice.destruct = true\n    if (body.scheduled === true && notice.removed.length === 0 && !notice.closed) notice.scheduled = true", "    if (typeof body.by === 'string' && HEX64.test(body.by)) notice.by = normaliseHex(body.by)\n    if (body.scheduled === true && notice.removed.length === 0 && !notice.closed) notice.scheduled = true", 1],
+  ],
+}
+
+/**
  * Scheduled rekeys (0.8.0, see docs/scheduled-rekey.md): a `scheduled`
  * marker in the rekey body, the history window (`HISTORY_WINDOW_SECONDS`,
  * `MAX_HISTORY_EPOCHS`, `epochsInWindow`), and the window's left epochs in
  * the authority's grant (`passed`, `HostRoomEpochOptions.past`). A rekey
  * without the marker, and a grant without `passed`, is byte-identical to
  * 0.7.0's. Declared as 0.8.0 text -> 0.7.0 text, generated hunk by hunk from
- * the diff with one line of context, and applied before `SEAL_CHANGES`.
+ * the diff with one line of context, and applied after `DESTRUCT_CHANGES`
+ * and before `SEAL_CHANGES`.
  */
 const SCHEDULE_CHANGES = {
   "src/epoch.ts": [
@@ -427,7 +461,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

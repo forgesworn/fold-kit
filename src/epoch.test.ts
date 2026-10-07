@@ -601,6 +601,68 @@ describe('scheduled rekeys', () => {
   })
 })
 
+describe('self-destructing closures', () => {
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const current = deriveEpoch({ epoch: 0, secret: ROOM_SECRET })
+  const keptSk = generateSecretKey()
+  const kept = getPublicKey(keptSk)
+  const gone = getPublicKey(generateSecretKey())
+  const next = { epoch: 1, secret: generateEpochSecret() }
+  const base = { roomId, authoritySk, current, next, recipients: [kept], removed: [] as string[], now: NOW }
+  const bodyOf = (event: { content: string }) => JSON.parse(nip44.v2.decrypt(event.content, current.key)) as Record<string, unknown>
+  const read = (event: Parameters<typeof decodeRekeyEvent>[0]) => decodeRekeyEvent(event, { roomId, authority, current, deviceSk: keptSk })
+
+  /** A rekey signed by the authority whose body says whatever it is told. */
+  function signedBody(body: Record<string, unknown>) {
+    return finalizeEvent(
+      { kind: KINDS.ROOM_REKEY, created_at: NOW, tags: [['d', roomId], ['epoch', '1']], content: nip44.v2.encrypt(JSON.stringify(body), current.key) },
+      authoritySk,
+    )
+  }
+
+  it('carries the flag inside the closing body, after closed, and the reader reports it', () => {
+    const event = encodeRekeyEvent({ ...base, closed: true, destruct: true })
+    expect(event.tags).toEqual([['d', roomId], ['epoch', '1']])
+    expect(event.content).not.toContain('destruct')
+    expect(bodyOf(event)).toEqual({ v: 1, epoch: 1, removed: [], closed: true, destruct: true, keys: {} })
+    expect(Object.keys(bodyOf(event))).toEqual(['v', 'epoch', 'removed', 'closed', 'destruct', 'keys'])
+    expect(read(event)).toEqual({ epoch: 1, removed: [], closed: true, destruct: true, at: NOW })
+  })
+
+  it('without the flag, or with it false, a closure is byte for byte what 0.8.0 wrote', () => {
+    // A closure seals nothing, so the whole plaintext is fixed and comparable.
+    for (const destruct of [undefined, false]) {
+      const event = encodeRekeyEvent({ ...base, closed: true, destruct })
+      expect(JSON.stringify(bodyOf(event))).toBe('{"v":1,"epoch":1,"removed":[],"closed":true,"keys":{}}')
+      expect(read(event)).toEqual({ epoch: 1, removed: [], closed: true, at: NOW })
+    }
+  })
+
+  it('refuses to self-destruct a room it is not closing, and a scheduled turn never closes', () => {
+    expect(() => encodeRekeyEvent({ ...base, destruct: true })).toThrow(/only a closing rekey/)
+    expect(() => encodeRekeyEvent({ ...base, destruct: true, removed: [gone] })).toThrow(/only a closing rekey/)
+    expect(() => encodeRekeyEvent({ ...base, destruct: true, scheduled: true })).toThrow(/scheduled|closing/)
+    expect(() => encodeRekeyEvent({ ...base, destruct: true, closed: true, scheduled: true })).toThrow(/scheduled/)
+  })
+
+  it('a flag beside an open room is not believed, and the rekey is still read', () => {
+    // Refusing the rekey would strand the device in the old epoch and hide
+    // a removal; a 0.8.0 reader reads it too. So the flag is dropped instead.
+    const withRemoval = read(signedBody({ v: 1, epoch: 1, removed: [gone], destruct: true, keys: {} }))
+    expect(withRemoval).toEqual({ epoch: 1, removed: [gone], closed: false, at: NOW })
+    const scheduled = read(signedBody({ v: 1, epoch: 1, removed: [], destruct: true, scheduled: true, keys: {} }))
+    expect(scheduled).toEqual({ epoch: 1, removed: [], closed: false, scheduled: true, at: NOW })
+    // Only `true` marks it, even on a close.
+    for (const destruct of ['true', 1, null, {}]) {
+      expect(read(signedBody({ v: 1, epoch: 1, removed: [], closed: true, destruct, keys: {} }))).toEqual({ epoch: 1, removed: [], closed: true, at: NOW })
+    }
+    // A closing body that also claims to be scheduled is a close, and self-destructs.
+    expect(read(signedBody({ v: 1, epoch: 1, removed: [], closed: true, destruct: true, scheduled: true, keys: {} })))
+      .toEqual({ epoch: 1, removed: [], closed: true, destruct: true, at: NOW })
+  })
+})
+
 describe('the history window', () => {
   const day = 86_400
 

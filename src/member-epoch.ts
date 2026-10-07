@@ -116,6 +116,7 @@ interface RekeyBodyView {
   epoch?: unknown
   removed?: unknown
   closed?: unknown
+  destruct?: unknown
   scheduled?: unknown
   commit?: unknown
   members?: unknown
@@ -126,6 +127,8 @@ export interface RekeyEvidence {
   epoch: number
   removed: string[]
   closed: boolean
+  /** The closed room self-destructs: see `RekeyNotice.destruct`. */
+  destruct?: true
   /** A scheduled turn of the key: see `RekeyNotice.scheduled`. */
   scheduled?: true
   /** The epoch commitment, when the authority wrote one. */
@@ -153,6 +156,7 @@ export function readRekeyEvidence(event: Event, opts: { roomId: string; authorit
       removed: [...new Set((body.removed as string[]).map(normaliseHex))].sort(),
       closed: body.closed === true,
     }
+    if (body.destruct === true && evidence.closed) evidence.destruct = true
     if (body.scheduled === true && evidence.removed.length === 0 && !evidence.closed) evidence.scheduled = true
     if (typeof body.commit === 'string' && HEX64.test(body.commit)) evidence.commit = normaliseHex(body.commit)
     const members = readMemberList(body.members)

@@ -23,6 +23,9 @@ export interface PersistentRoomAdmission {
   /** The room's own relays, as its inviter signed them: every member's pool
    *  includes them. Absent from an invitation written before 0.4.0. */
   relays?: string[]
+  /** The room self-destructs: when it ends, every device deletes what it
+   *  wrote and forgets the room. Absent for a room that simply ends. */
+  destruct?: true
 }
 
 function welcomeKey(invitation: RoomInvitation): Uint8Array {
@@ -47,6 +50,10 @@ export function encodePersistentInvitation(opts: {
    *  form (see `isInvitationRelays`), else it throws. Omitted, the body is
    *  byte-identical to 0.3.0's. */
   relays?: readonly string[]
+  /** The room self-destructs when it ends, by its time or by its authority
+   *  closing it. Written inside the encrypted body only, never as a tag.
+   *  Omitted or false, the event is byte-identical to 0.8.0's. */
+  destruct?: boolean
 }): Event {
   if (getPublicKey(opts.inviterSk) !== opts.invitation.inviter) throw new Error('only the inviter can publish a group invitation')
   const room = deriveRoom(opts.roomSecret).roomId
@@ -57,7 +64,7 @@ export function encodePersistentInvitation(opts: {
     created_at: opts.now,
     tags: ends === undefined ? [['d', deriveInvitationId(opts.invitation)]] : [['d', deriveInvitationId(opts.invitation)], ['expiration', String(ends)]],
     content: nip44.v2.encrypt(JSON.stringify({
-      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(relays === undefined ? {} : { relays }),
+      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(opts.destruct ? { destruct: true } : {}), ...(relays === undefined ? {} : { relays }),
     }), welcomeKey(opts.invitation)),
   }, opts.inviterSk)
 }
@@ -82,8 +89,12 @@ export function decodePersistentInvitation(event: Event, invitation: RoomInvitat
     // The room's relays, when the body names them, must be a list the encoder
     // would write; a malformed one refuses the envelope rather than half of it.
     if (body.relays !== undefined && !isInvitationRelays(body.relays)) return null
+    // Self-destruct is `true` or absent; anything else is a malformed
+    // envelope, refused as a malformed end is.
+    if (body.destruct !== undefined && body.destruct !== true) return null
     const admission: PersistentRoomAdmission = ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }
     if (body.relays !== undefined) admission.relays = [...body.relays]
+    if (body.destruct === true) admission.destruct = true
     return admission
   } catch { return null }
 }
@@ -133,6 +144,9 @@ export function requestPersistentRoomAdmission(opts: {
         // Two signed copies that disagree on when the room ends: the earlier
         // end stands, so a stale copy can never keep a room open longer.
         if (admission?.endsAt !== undefined && (decoded.endsAt === undefined || decoded.endsAt > admission.endsAt)) decoded.endsAt = admission.endsAt
+        // Two signed copies that disagree on self-destruct: it sticks, for
+        // the same reason, so a stale copy can never keep a room's content.
+        if (admission?.destruct) decoded.destruct = true
         // Two signed copies that disagree on the room's relays: the newest
         // copy that names any stands. A copy naming none (an older writer)
         // says nothing about them, and on equal timestamps the first heard stays.

@@ -1,0 +1,675 @@
+{
+  "protocolVersion": "kithmoot/v1",
+  "generatedBy": "scripts/generate-destruct.mjs (forgesworn/fold-kit)",
+  "nostrToolsVersion": "2.25.0",
+  "groups": {
+    "destruct": [
+      {
+        "name": "destruct-invitation",
+        "kind": "positive",
+        "note": "A kind-1463 group invitation for a conference room that self-destructs: `\"destruct\": true` inside the encrypted body, after `ends` and before `relays` (body order v, room, secret, ends, destruct, relays), and never as a tag, so a relay cannot tell it from any other invitation. A reader accepts the flag only as `true` (see `destruct-invitation-malformed`) and reports it as `destruct: true` on the admission. `randomHex`: the body nonce, the aux-rand. `unflagged` is the same invitation with the same draws and no flag, which is every invitation before 0.9.0: its body is `bodyJson` without `\"destruct\":true,`. `oldReader` is what a 0.8.0 reader makes of the flagged event: the same admission without `destruct`, so an old client joins and ends the room the old way.",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "inviterSkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "roomSecretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "createdAt": 1800000000,
+          "endsAt": 1800086400,
+          "relays": [
+            "wss://relay.example.com/"
+          ],
+          "event": {
+            "id": "526ed7535a2ead66313654f6b97a86af4d827af11b005ce2d248c675097d5c78",
+            "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "created_at": 1800000000,
+            "kind": 1463,
+            "tags": [
+              [
+                "d",
+                "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+              ],
+              [
+                "expiration",
+                "1800086400"
+              ]
+            ],
+            "content": "AhKIoHqYG4uOcnjHZ/7EHKpG1oknjFfGX/gvvT2u9PAIJYXCDlIPSvR5TutkG+Nx5hGvco9Z/C40vaXhVi4PNy7fETWGqCb+hFLpnZokAB2a2111Zc42hFUOrLnmahl6LXJdVtkgesGXnYe9LrskUR+PekcO+GazVPxDc7TOZRaCPd6tWLB37U+1o7w+jhyBPHZvurz59i7EqCK4cYgQox03i7JlXxOvT9I6ebQJJM5f1Z6zYmvuPIWMklHJEnJAGFFQ9JkhX3yQlTlYjhRn3e+B1ct3mAxFL5qoWBWXZ4TtTo4bINzqVBHWpnLmvZjhXBhGTVDJc6H8+azqOVhEqktzvIcn+TAGzVX5rywXlR3ZgNVLORtp/k70KakDt1dkKIp5",
+            "sig": "3db32e6460f29f804c3502a4156bec06d00ee4fa3f6e29c57193149d50d3c71075cfa930a981f89dd9919791d073c795a0f039a0061f0c1e9b18e19ea44f2afd"
+          },
+          "randomHex": [
+            "1288a07a981b8b8e7278c767fec41caa46d689278c57c65ff82fbd3daef4f008",
+            "e70b320ea3f8ea2efc3b6120d3a07908ee32f1d438332c02513ef5dde2d30d7e"
+          ],
+          "unflagged": {
+            "event": {
+              "id": "5b31789aca6f969e7472688636bd8ad236eb79a572f2b80793bfc1ac75288870",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800000000,
+              "kind": 1463,
+              "tags": [
+                [
+                  "d",
+                  "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                ],
+                [
+                  "expiration",
+                  "1800086400"
+                ]
+              ],
+              "content": "AhKIoHqYG4uOcnjHZ/7EHKpG1oknjFfGX/gvvT2u9PAIJZXCDlIPSvR5TutkG+Nx5hGvco9Z/C40vaXhVi4PNy7fETWGqCb+hFLpnZokAB2a2111Zc42hFUOrLnmahl6LXJdVtkgesGXnYe9LrskUR+PekcO+GazVPxDc7TOZRaCPd6tWLB37U+1o7w+jhyBPHZvurz59i7EqCK4cYgQox03i7JlXxOvT9I6ebQJJM5f1Z6zYmvuPIWMklHJEmRAB0Rb8thvJmSTlD8HjRln3e+B1ZYw2jYKKIW+TFnXeM6jcopWJM9Fcgn6nvuxBCDzIw8Cd4g8OKdKXeX9664RPqCRCA==",
+              "sig": "36a5dc73f330985626d91edaabd1a2fa6f3a27b885834fa6d8f4895f04a6dfe772feff95b79be0c20b15e878869844acf32189968191cbf209767622367824e0"
+            },
+            "randomHex": [
+              "1288a07a981b8b8e7278c767fec41caa46d689278c57c65ff82fbd3daef4f008",
+              "e70b320ea3f8ea2efc3b6120d3a07908ee32f1d438332c02513ef5dde2d30d7e"
+            ]
+          }
+        },
+        "output": {
+          "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"ends\":1800086400,\"destruct\":true,\"relays\":[\"wss://relay.example.com/\"]}",
+          "unflaggedBodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"ends\":1800086400,\"relays\":[\"wss://relay.example.com/\"]}",
+          "admission": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true
+          },
+          "unflaggedAdmission": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ]
+          },
+          "oldReader": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ]
+          }
+        }
+      },
+      {
+        "name": "destruct-invitation-no-end",
+        "kind": "positive",
+        "note": "A group invitation with `destruct` and no `ends`: valid. The room has no fixed end and self-destructs when its authority closes it. No expiration tag, as for any group with no end. `randomHex`: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "inviterSkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "roomSecretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "createdAt": 1800000000,
+          "event": {
+            "id": "824d7c025cda000955e697611ac8715cd04260bb71ac2b189325d421f5cc977b",
+            "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "created_at": 1800000000,
+            "kind": 1463,
+            "tags": [
+              [
+                "d",
+                "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+              ]
+            ],
+            "content": "Ar2/gSpXQYq/bOeYByDqnIjpXz+MkD5ZeS3d/zm3xXgfbKpwDAY4YHFki6YgOB91OIoom0qFYQ/7L3hykgYI+5sjoFHReBK5T4tdM2RZsUsuNGztNC6PHuCuxWoR3t1+li3Xk0GW1s5RjbGjWAHFMl/3/HGj9zTaLwgfwy1T61bLlcLYxhtRkF6IHHsNegpjRP6fiq3cGY661hG3+PkcOTjIDtSZdvzPG7KbvZmuFXBJ611pApyK8VfZICk+mC2ls9Gj609S2guZoBntEnQdAmsSK9st+UXeVtMR18850DlKLgY=",
+            "sig": "c576a3a1e3149b723136ced230d5934e2f1fb18abaaba95a88069f9db0f62edc92472881a772e133a580b264d3ad64e3242afaca0114ee7b22a9117825c341b3"
+          },
+          "randomHex": [
+            "bdbf812a57418abf6ce7980720ea9c88e95f3f8c903e59792dddff39b7c5781f",
+            "556b37bc374f271443b645f473fe0fc07ef5384c628e3a14cc936136f8dccb3d"
+          ]
+        },
+        "output": {
+          "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"destruct\":true}",
+          "admission": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "destruct": true
+          },
+          "oldReader": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0
+          }
+        }
+      },
+      {
+        "name": "destruct-invitation-malformed",
+        "kind": "negative",
+        "note": "Group invitations signed by the inviter whose body carries `destruct` as something other than `true`: `false`, the string `\"true\"`, `1`, `null`. Built by hand (`bodyJson`, then `randomHex`: the body nonce, the aux-rand). A reader refuses each envelope outright (null), as it refuses a malformed `ends`. A 0.8.0 reader, which never looks at the field, still admits each one (`oldReader`).",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "inviterSkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "roomSecretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "cases": {
+            "false": {
+              "event": {
+                "id": "99bb8b1f573f4c0bf83a43e7f9d22fb3d5798dc1c6f34a897afd0e5c33341482",
+                "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                  ]
+                ],
+                "content": "Auri0a+JHb2EUxVXoLZ7pCtFilbL6S8+xF0q5zBJKVpeaRq0c86+ZnMcHmfp+5tm/DX+XdKXmX9yOMLz8mkKt3n2ZJg+GgnC/t1L0LlokgaVH4CPGT8+C7yTiJFIFdNF6c76Ta+t2cZuatA+PQTHruBDafFG8BvTYpWeEHlyiYrdbRplFg4jso37JisPZB2g48GLKwQQHR1qjyfKd+nKPqFbG3mDVe82ISAntabZz855S3fqzMW+roGKb8tksDe4SS2Zqvg0pozhgxCaTw1gC92loFh6DSDltz/vyZR9pYcMwQ0=",
+                "sig": "614e6bd4dd94ce5569c157bd00f3afdac875656eb0beac417aa7544c82673eafd4c7941a1bace18268a4e374e2ed3e2231df32d15e5d63633347bd3e62a2bc53"
+              },
+              "randomHex": [
+                "eae2d1af891dbd84531557a0b67ba42b458a56cbe92f3ec45d2ae73049295a5e",
+                "ced40f26ae7e9c2907fbdce2991a8daacefb7739c0780b4e186f4d07f2775ea8"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"destruct\":false}"
+            },
+            "string": {
+              "event": {
+                "id": "e00d2125c88e132c21ce1519d17cdd541467240210dc4c5fc9520b2c495a8f96",
+                "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                  ]
+                ],
+                "content": "AoSjS3R7pOmM6LqSsTwJC38zSylOxll/zIGx620jEFSMCxtmiegakh9oyofzUB5yncm6wHTAC9xjNh9PrfN2U3L3XHo0Wi5RcqKT6kPvYLKFzbKlXefM1V3uxiaFLsAW3sErkOIWKbC7+4ZVW8LDQv58PKeXPY9E68qxq78Wbbd9i1RW1dSdmZzBhGDIQB5xRP+sZXwtXEhnaL84lE4vXwGJI87eWMC0iC8vAiKiiuQfldgDqzyhHYZjE3IHAYX2nAqmD0PdEwOBj1fsjrb7g0hs+LPnXqNiP22SsyEIlqk1OH8=",
+                "sig": "fc52b06b5d089bb6837f6cb4fd501927abcd5cf8973f0a48946ee0912e74ad63c9a8588a47f328b6e1030a1204333a37ce6d8d6d72b114893a85392b2426253f"
+              },
+              "randomHex": [
+                "84a34b747ba4e98ce8ba92b13c090b7f334b294ec6597fcc81b1eb6d2310548c",
+                "b4114d68af4779911af998dd2d43e56db75fd2e686e8bf63e43cdabc2755ed1d"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"destruct\":\"true\"}"
+            },
+            "number": {
+              "event": {
+                "id": "f97f3de9b8b1227b9fe5f911dfaab269f5a6927df6f612688b9fd934ca87cc09",
+                "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                  ]
+                ],
+                "content": "AmHcx8yLgRa/Oa+sIw47P4MwMV2AuEORn1XSQQWV+oz4Fgbj3HSNanTE2MC8iV4j4w3UmHrLA62SV7Plti2xjDwhYJTW+XJMLu2on/PS/lt/Kl2XvAHXnHrJ/gNSma+JpJyL/YIW3aNbaWp/yHQossFjr+t7A7Ej3oz6tHdrdaaQpH1vfyg44hC+T0dlKr+0xZg23Is4Uf0TsM287oNru2JhV6+CqET4MGpUaFvxKulSRQpvX+tZPHwSQHplf+lFvHvZUpErDzqhS8tmH34VEIhCPnT25mpu8NKBr3HN0xyrl+8=",
+                "sig": "cd714956b3e96a6deccc1654ff823de404cfb85d548c0f9b478c35e0507dff960b146a56f41a34ccf59192d255ca488a216edc3c4b261508fe86c2e1fc5f4133"
+              },
+              "randomHex": [
+                "61dcc7cc8b8116bf39afac230e3b3f8330315d80b843919f55d2410595fa8cf8",
+                "cc4d068aff3fa914a212bf68ed39d9b402c2f7bc8c540acb490b3d017f476ac9"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"destruct\":1}"
+            },
+            "null": {
+              "event": {
+                "id": "a31ba9cf7106813bd2d01de861e7f612be29adcbc84879fed99bb3b0b98d536e",
+                "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                  ]
+                ],
+                "content": "AsvyriQzQy6dRH/yC3e8fNvxU5i/lR8OixB3yVytXzq7+3SYS4KZzKfQYNzSndix9QQYHUgO2S5euVOTo19DMCbpC1IrnIL4UfFWgSx4XqzFfQGQ4UtXO9S+gRJjzkyJHrvNETeIrotXcAABG1Mo/gr6nHhhAMw1+YiPH9RJMFwb8djuBjfVriwEQwq6IFn8IctDDy9DA8Ami8zNVxcX9Fn1Iw0JHZsLpMN7xC4DMEW35IxUHg0kRB2sLPTfv8+DChAmWHj4vk737sIQqJ1cSuuBm7G1w6Olo0ybM7eJAt9YWhI=",
+                "sig": "f828a69d9e58c976180f848142d154faf4c0338d09cf74fb92597ab89a63a49cd12f38f145658dc3ce84e80a1df83c083263da5d548debfd6bdf744a763a4001"
+              },
+              "randomHex": [
+                "cbf2ae2433432e9d447ff20b77bc7cdbf15398bf951f0e8b1077c95cad5f3abb",
+                "006a1daf9bd649cd57d2e5cbf4c51a8549fb5bfbd0035fdbac1d89be0a76b3e2"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6\",\"secret\":\"dtp2VlDxGbZKTJCMSQmS0SVia9JyyQuLM2IBCJI1big\",\"destruct\":null}"
+            }
+          }
+        },
+        "output": {
+          "admission": {
+            "false": null,
+            "string": null,
+            "number": null,
+            "null": null
+          },
+          "oldReader": {
+            "false": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0
+            },
+            "string": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0
+            },
+            "number": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0
+            },
+            "null": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0
+            }
+          }
+        }
+      },
+      {
+        "name": "destruct-invitation-copies",
+        "kind": "positive",
+        "note": "Two signed copies of one group invitation that disagree: `older` (created_at NOW) self-destructs, `newer` (NOW + 60) names the room relays and has no flag. `requestPersistentRoomAdmission` hears both and admits with `destruct: true` in either order (`olderFirst`, `newerFirst`; `alone` is each copy read by itself): self-destruct is sticky, as the earlier `ends` is, so a stale or careless copy can never keep a room's content alive. The relays still come from the newest copy that names any. `randomHex` on each: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "inviterSkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "roomSecretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "older": {
+            "event": {
+              "id": "bf927b24f6956b3b51c4db990fb34e194e33efe3e1c9c43aa51653e41c52f9db",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800000000,
+              "kind": 1463,
+              "tags": [
+                [
+                  "d",
+                  "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                ]
+              ],
+              "content": "AjHpz19NgPNarY9R7eWHpy4k3zsjLXvATwVknx+DPW05EKLaaWW/XgjOw8aPMVwqt1ZaolyOMT6s2gUerWCaEIp38NjKsirkNmpKCw3cd3Ouzzu2nn5+QgGJAMH3OaZSRu4Zu9b/VqO/HhMrWQ92XILwuutTn+BrrwoJmG4V571RpS866L0XM9JE2Mkup/zuzZvmhoqQC30fwUMqlNvWilAuJF9MVW0nzw0+nVBXQkf3mQZmDAa053Jfpi4UJ3ENu1TMZ73r/LDlgFlavIhC7eS7DRwb3/Kl75hVhdfFv1O7R6A=",
+              "sig": "ab8d460d5d571859ad59d7ec17675f2a9c63abed76c09837626c7ef548f455959ca63168af56ab9122ffa54e8a84ecdb176ca252822f48d7b7faa511c9cb61e3"
+            },
+            "randomHex": [
+              "31e9cf5f4d80f35aad8f51ede587a72e24df3b232d7bc04f05649f1f833d6d39",
+              "aed5df214155aefbdd54cdf7eb415014ba000d9a4f1f787e09f17ec5d03cd3f4"
+            ]
+          },
+          "newer": {
+            "event": {
+              "id": "50457bca51dd68b0d15cb16c5d3ebe7c5e748e3ea460edf204900f73de9dd074",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800000060,
+              "kind": 1463,
+              "tags": [
+                [
+                  "d",
+                  "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                ]
+              ],
+              "content": "AiSsGzVre7NuU2R1ilNei7Np9z/Rg1ijlatOwpbs8s31YE9g/IDAm9iTlkZlezUCRz4et94GEr1h38NGMjTWbQzLYn10jhxy0+o4sUXP1DNLVIBkIMShLReqDxQC7sC/pDHxplHslGnB8CBxfEafsMQLv8A8UxWp7NZio7sGCNe6a95ZazFqokLImMrmJpjkqCbIFqzGzoH6HElvEVKMWTSS4YpGLYk2tjH7h8KlJYoxr3jPV5dAOKLCwAGMJ2LWGs9DLfIjWmdPnSPQPdQK214ZsNuPst1ObckGmb88UozIpW/ppOr5uS7q7eFSyYq/tJVJAlmQUVuih6pi4L7ZBJC0AQ==",
+              "sig": "450526ef0933591e9e3af2cddaf7936dc43247f8ab5427bd65fbd55c2b62a0710aabc25e70515f4216c41df14a636c0cf6a3d3006f8750c1ef43c680d2f6aafb"
+            },
+            "randomHex": [
+              "24ac1b356b7bb36e5364758a535e8bb369f73fd18358a395ab4ec296ecf2cdf5",
+              "f7c71d2ef1e5e0ca0962d40476ace63fb43012c671ba6e6a7c9130060beda77b"
+            ]
+          }
+        },
+        "output": {
+          "olderFirst": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true
+          },
+          "newerFirst": {
+            "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+            "persistent": true,
+            "epoch": 0,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true
+          },
+          "alone": {
+            "older": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0,
+              "destruct": true
+            },
+            "newer": {
+              "secretHex": "76da765650f119b64a4c908c490992d125626bd272c90b8b3362010892356e28",
+              "persistent": true,
+              "epoch": 0,
+              "relays": [
+                "wss://relay.example.com/"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "destruct-retirement",
+        "kind": "positive",
+        "note": "A kind-1461 retirement of the invitation above, saying the room was ended and self-destructs: content `{\"v\":1,\"ended\":true,\"destruct\":true}`. This content is plain JSON, not encrypted, as `ended` always was; the `d` tag is the invitation id, which nobody without the link can tie to a room. A reader reports `{ ended: true, destruct: true }`. `randomHex`: the aux-rand. `unflagged` is the same retirement with the same draw and no flag (0.8.0's `ended` retirement). `oldReader`: a 0.8.0 reader sees an ordinary ended room.",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "inviterSkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "createdAt": 1800003600,
+          "event": {
+            "id": "88503f949adc9ef36f283cb5956f6d6e19267c9c3873508dafb4f1e07178b1ff",
+            "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "created_at": 1800003600,
+            "kind": 1461,
+            "tags": [
+              [
+                "d",
+                "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+              ]
+            ],
+            "content": "{\"v\":1,\"ended\":true,\"destruct\":true}",
+            "sig": "e71b9f81f82c7c683ffc0d52d97396a6d5780e78163b84bfd5ede41b3ec126e11811a555b30382fe544add45eaf149a83f58f8011dacdb0fae3ee0e0070d5e91"
+          },
+          "randomHex": [
+            "a949d71b4873256ad433d5d1de0e9551b2f44fa63becdfef2554843e8dcc9b2e"
+          ],
+          "unflagged": {
+            "event": {
+              "id": "f7cba6d0721398ba9b6f5d79e16600da534c990f223db68291e68dc1e30e3c98",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800003600,
+              "kind": 1461,
+              "tags": [
+                [
+                  "d",
+                  "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+                ]
+              ],
+              "content": "{\"v\":1,\"ended\":true}",
+              "sig": "e299e745d62ac489a69566d557584bccabbe932aaaba15ad2ce53f7251317c3e8393c334a15f76e2746a5e310f5070f78b109d10317f326dd11f04a6c23d7067"
+            },
+            "randomHex": [
+              "a949d71b4873256ad433d5d1de0e9551b2f44fa63becdfef2554843e8dcc9b2e"
+            ]
+          }
+        },
+        "output": {
+          "notice": {
+            "ended": true,
+            "destruct": true
+          },
+          "unflaggedNotice": {
+            "ended": true
+          },
+          "oldReader": {
+            "ended": true
+          }
+        }
+      },
+      {
+        "name": "destruct-retirement-not-ended",
+        "kind": "negative",
+        "note": "A retirement signed by the inviter whose content is `{\"v\":1,\"destruct\":true}`: a flag without `ended`. The encoder refuses it (`encoder`), so it is built by hand (`randomHex`: the aux-rand). A reader still honours the retirement, since a retired link must stay retired, and does not believe the flag: `{ ended: false }`.",
+        "input": {
+          "invitation": {
+            "bearerHex": "63da81a93ddf0a90ae34ed2b24bb91e664383e117bcacec5cc05e0da5d3d2612",
+            "inviter": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "persistent": true
+          },
+          "event": {
+            "id": "65c29f31e3520b2ee8ea981904a48edb8ee75a39b841710d68a9f124b1caa08b",
+            "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "created_at": 1800003600,
+            "kind": 1461,
+            "tags": [
+              [
+                "d",
+                "3bbaca427676d0f5a796278a86bf2166d8f66e7abd09d40caa6581f1e7454914"
+              ]
+            ],
+            "content": "{\"v\":1,\"destruct\":true}",
+            "sig": "519018291651ba182de5f1d34355539fdaed555f35863e97030a2613a4b536700481a83b6aeecf4acbbdb74e28b2a3ba73a8ab7996e5a15b506ac19792bde684"
+          },
+          "randomHex": [
+            "7e483c437263f98c287eb2c2a76ab6ad25f2c306cfeaa5e2d86f0c4a6b93931d"
+          ],
+          "bodyJson": "{\"v\":1,\"destruct\":true}"
+        },
+        "output": {
+          "encoder": "refused",
+          "notice": {
+            "ended": false
+          }
+        }
+      },
+      {
+        "name": "destruct-closure",
+        "kind": "positive",
+        "note": "A kind-1462 rekey from epoch 1 to 2 that closes the room and self-destructs it: `\"closed\": true, \"destruct\": true` inside the body encrypted to epoch 1 (body order v, epoch, removed, closed, destruct, keys), and never as a tag. A closure seals the new secret to nobody, so `keys` is empty and the only draws are `randomHex`: the body nonce, the aux-rand. `unflagged` is the same closure with the same draws and no flag (every closure before 0.9.0). `notice` is `decodeRekeyEvent`, `evidence` is `readRekeyEvidence`; both report `destruct`. `oldReader`: a 0.8.0 reader sees an ordinary close.",
+        "input": {
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "authority": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+          "authoritySkHex": "a090036fcabc0a442fc1eaa5afc5c7ddda6f95c6bf8fe1f7b3b69589e621d643",
+          "previous": {
+            "epoch": 1,
+            "secretHex": "0f01eb2bc987461c1d130d1fd592156e3098a2f970dfd67057f5eeaa4bf812e4"
+          },
+          "next": {
+            "epoch": 2,
+            "secretHex": "9fdaac66de22f73960879abf83e9065bc882ba84440800c96418b27e4dfaec05"
+          },
+          "recipients": [
+            "b7229740b568be30f7307667afc9d23a292b9efa8dffbc6dbfc4a014048fb797"
+          ],
+          "deviceSkHex": "2ace7e7b383f931a0d45b2bc74df1262d356ec4a7137d88792e89b664828d698",
+          "createdAt": 1800003600,
+          "event": {
+            "id": "37458191b69ad786b091c3b695507a52a0b8596431f286d7a44daf91b7a7398a",
+            "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+            "created_at": 1800003600,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6"
+              ],
+              [
+                "epoch",
+                "2"
+              ]
+            ],
+            "content": "AhOnbBRNMDzM9miIeGKbl2Dua0UpbT7Ifq5pljxTcm/R4wocpZDmpbWrmCHysCzurnZABNn7QFp3ZzwJzSRv7zyQlWFjWaNHEi0W4yYV3cjp3EE4Sfq+iPy8bKAmXjq2VDqlnVoiV1VMSsJN3pivf/gviJ3SJX18QZUR0XHMN0hZ0C41InAxa5whdgycHfKNHoRP7cVh6Gan3JBRU06GCAQcSQ==",
+            "sig": "781c78fc9fc9ec22b9b0eb37110a4794f27fef05bba9ae0c99323bed3c6f61c546dee16dc19fb37382c93e0dff3345c28f1cb2f4e9411c61811d820c1dbe6f1d"
+          },
+          "randomHex": [
+            "13a76c144d303cccf6688878629b9760ee6b45296d3ec87eae69963c53726fd1",
+            "3b0382104a935d062308889ecba5aca4d961b92670de5a7c0940e1415d0c7c30"
+          ],
+          "unflagged": {
+            "event": {
+              "id": "88c5d00afcdba39ed0f771642f18ff390168509116cedf1e6bf6f3993fc79290",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800003600,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "AhOnbBRNMDzM9miIeGKbl2Dua0UpbT7Ifq5pljxTcm/R43ocpZDmpbWrmCHysCzurnZABNn7QFp3ZzwJzSRv7zyQlWFjWaNHEi0W4yYV3cjm3Es/GbWmgaOGGNJTOxaUP1/cxa5YK7MiGMSmucDORDd1IQZy1aTeyii0eGDaRCofQvA=",
+              "sig": "cd0c9a216f9d46ffca874bf5aed2c64d5216b2e36b87b0900c588fcd00d833bbe0698f2e7cc46ef96e9988277beaa1028f777cd6d59f8bfb2c4fb4d570ab69d2"
+            },
+            "randomHex": [
+              "13a76c144d303cccf6688878629b9760ee6b45296d3ec87eae69963c53726fd1",
+              "3b0382104a935d062308889ecba5aca4d961b92670de5a7c0940e1415d0c7c30"
+            ]
+          }
+        },
+        "output": {
+          "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"closed\":true,\"destruct\":true,\"keys\":{}}",
+          "unflaggedBodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"closed\":true,\"keys\":{}}",
+          "notice": {
+            "epoch": 2,
+            "removed": [],
+            "closed": true,
+            "destruct": true,
+            "at": 1800003600
+          },
+          "evidence": {
+            "epoch": 2,
+            "removed": [],
+            "closed": true,
+            "destruct": true
+          },
+          "unflaggedNotice": {
+            "epoch": 2,
+            "removed": [],
+            "closed": true,
+            "at": 1800003600
+          },
+          "oldReader": {
+            "epoch": 2,
+            "removed": [],
+            "closed": true,
+            "at": 1800003600
+          }
+        }
+      },
+      {
+        "name": "destruct-rekey-open",
+        "kind": "negative",
+        "note": "Two rekeys from epoch 1 to 2, signed by the authority, whose bodies carry `destruct` without `closed`: beside a removal (`withRemoval`) and beside the scheduled marker (`withScheduled`). The encoder refuses both (`encoder`), so they are built by hand (`bodyJson`, then `randomHex`: the body nonce, the aux-rand). A reader still reads each rekey, so the removal is announced and the device moves on, and does not believe the flag: it is absent from `notice` and `evidence`.",
+        "input": {
+          "roomId": "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6",
+          "authority": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+          "previous": {
+            "epoch": 1,
+            "secretHex": "0f01eb2bc987461c1d130d1fd592156e3098a2f970dfd67057f5eeaa4bf812e4"
+          },
+          "deviceSkHex": "2ace7e7b383f931a0d45b2bc74df1262d356ec4a7137d88792e89b664828d698",
+          "withRemoval": {
+            "event": {
+              "id": "86e6fd76b5ffd82d455130760697f4b81022123750803cfa2d40a6751579ec88",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800000000,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "Apee+KxMVIt4qxTDWlRzJE+t5N2mWq+KOdlTakLIH3L2Z6ibR4g0cAOAuPPHVtmavPV9m5xySfg3jBwV3bG6mdoSTKbzURzy0WvBRNjVKL8xovNTae2nMMxN5Pe6G27gnHpJ7Rd/zQtiTT0VlLLvPpuxLZAhuPhMGh73N8Lx3qeuCquspdQ7vab5Y3qAOEHTNIzN5gMYao9m7+zNjDjPp7HfeeWuA1wbe4XAz/xYEacvP2UypRVIL8UtOhJggFHzbIKB",
+              "sig": "8d4f94c1500929bacbb060760e5eadecabdb04ef15ae88de97af3ca3fc10803346d5de8baf2c3afd2087cc341d9ceed8c0bb2de40cf51eabaff950a35d81dd65"
+            },
+            "randomHex": [
+              "979ef8ac4c548b78ab14c35a5473244fade4dda65aaf8a39d9536a42c81f72f6",
+              "9749a08bd8414bac8d9cd070954da2e0f3e879b0221a0da9506576e56ab0e04c"
+            ],
+            "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[\"e795ed3fc0ba9cd6635f68e50a6123c15fb0b947b4030ae40b2768b08e27b827\"],\"destruct\":true,\"keys\":{}}"
+          },
+          "withScheduled": {
+            "event": {
+              "id": "ec2c2987c0a28287e39b35de0ff7bf247640e061c46fd8a049ebb76932e1e584",
+              "pubkey": "66df4b7febed3972515d9f663fe00a8ef9b2c69fbcb6bee3f5587b5d0b96605e",
+              "created_at": 1800000000,
+              "kind": 1462,
+              "tags": [
+                [
+                  "d",
+                  "629cb9accf2af03a0da629f4cf0e2a8a88d2e127208116f0e849c107e21c51f6"
+                ],
+                [
+                  "epoch",
+                  "2"
+                ]
+              ],
+              "content": "AoH8yCso6ZNKjV9SGxSnVlzR7LBTCbHgXvGBp1BdAEwp67WbwBnUhdIYTE3OJMrwTRKpkbHSAbSL/HuLaXKNQ6QauW0MGXITkcOTX6ASQM2LMMtHHI7qP0xh8aAxUUzZWlB2M6k9A0Zdp1g0XQDo1Zq5ag4XEHoPmz++SnbM1APZs+ymM6U2bGEcgb4HZ9FVpGxZ/+LgM09t7uv+NQgLlwIwIA==",
+              "sig": "816c0323a3dbd9a5d7a40096b500bf62534b4a8909c14723ea27469a9c10be613b89d83e0176729c3cf45494b62d89e809c112e5385518d3ca0085e0cad44018"
+            },
+            "randomHex": [
+              "81fcc82b28e9934a8d5f521b14a7565cd1ecb05309b1e05ef181a7505d004c29",
+              "bb35e9d71648525a76693a2eb68580502684d0456c67c66d37eb0136343d9911"
+            ],
+            "bodyJson": "{\"v\":1,\"epoch\":2,\"removed\":[],\"destruct\":true,\"scheduled\":true,\"keys\":{}}"
+          }
+        },
+        "output": {
+          "encoder": {
+            "withRemoval": "refused",
+            "withScheduled": "refused"
+          },
+          "withRemoval": {
+            "notice": {
+              "epoch": 2,
+              "removed": [
+                "e795ed3fc0ba9cd6635f68e50a6123c15fb0b947b4030ae40b2768b08e27b827"
+              ],
+              "closed": false,
+              "at": 1800000000
+            },
+            "evidence": {
+              "epoch": 2,
+              "removed": [
+                "e795ed3fc0ba9cd6635f68e50a6123c15fb0b947b4030ae40b2768b08e27b827"
+              ],
+              "closed": false
+            }
+          },
+          "withScheduled": {
+            "notice": {
+              "epoch": 2,
+              "removed": [],
+              "closed": false,
+              "scheduled": true,
+              "at": 1800000000
+            },
+            "evidence": {
+              "epoch": 2,
+              "removed": [],
+              "closed": false,
+              "scheduled": true
+            }
+          }
+        }
+      }
+    ]
+  }
+}
