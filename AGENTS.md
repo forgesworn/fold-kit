@@ -30,6 +30,9 @@ npm run prepublishOnly   # check + bundle-check + tarball-smoke; runs automatica
 ```
 
 There is no separate lint script.
+Local Vitest runs use one worker so pre-push checks do not multiply crypto-heavy
+work on a shared workstation. CI keeps Vitest's default worker pool. Neither
+test deadlines nor assertions differ between the two.
 
 `npm run diff-source` needs a local checkout of the pinned KithMoot source
 commit; point `FOLD_KIT_SOURCE_DIR` at it. KithMoot is public, so CI checks
