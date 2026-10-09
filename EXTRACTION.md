@@ -438,3 +438,12 @@ KithMoot has cut over to this kit (T2.1) and pins an exact npm version;
 its moved files are re-export shims. Any change here that alters behaviour
 KithMoot's vectors record (for example the #205 fix) lands in KithMoot in
 the same PR as the version bump.
+
+## Live persistent admission
+
+`src/live-persistent-admission.ts` is a new opt-in profile, not a change to a
+moved invitation module. It uses kinds 20466/20467 with a distinct request KDF
+and body profile, preserves kind 1463 bytes, and grants no delegation. Its
+descriptor, challenge and answer codecs own no transport or storage. The host
+lifecycle journal, client epoch gate and physical transport remain separate
+integration requirements; see `docs/live-persistent-admission.md`.

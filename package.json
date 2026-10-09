@@ -26,7 +26,8 @@
     "vectors/destruct-vectors.json",
     "LICENSE",
     "README.md",
-    "llms.txt"
+    "llms.txt",
+    "vectors/live-persistent-vectors.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -44,7 +45,8 @@
     "vectors": "vitest run vectors/",
     "check": "npm run typecheck && npm test && npm run diff-source",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run check && npm run bundle-check && npm run tarball-smoke"
+    "prepublishOnly": "npm run check && npm run bundle-check && npm run tarball-smoke",
+    "generate-live-persistent": "node scripts/generate-live-persistent.mjs"
   },
   "keywords": [
     "nostr",

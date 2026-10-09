@@ -263,3 +263,21 @@ There is no separate lint script.
 ## Licence
 
 MIT
+
+### Live persistent admission (opt-in codecs)
+
+`parseLivePersistentEvent` bounds raw event JSON and refuses duplicate fields.
+`encodeLivePersistentDescriptor` / `decodeLivePersistentDescriptor` carry
+routing metadata alongside an unchanged persistent invitation link.
+`encodeLivePersistentRequest` / `decodeLivePersistentRequest` and
+`encodeLivePersistentAnswer` / `decodeLivePersistentAnswer` implement a fresh,
+root-signed challenge/answer with no delegation. The answer retains epoch-zero
+capability separately from `epochHint`. Constants bound request/answer lifetimes
+to 90/30 seconds. `LIVE_PERSISTENT_ADMISSION_LABELS` freezes its distinct KDF.
+
+These functions are codecs, not an offline join API. The host must have exclusive
+durable lifecycle authority; the client must complete authenticated epoch
+admission before publishing, including at epoch zero. No application enables
+this profile automatically. See [the wire profile and integration gates](docs/live-persistent-admission.md).
+Frozen synthetic fixtures are in `vectors/live-persistent-vectors.json`; run
+`npm run build && npm run generate-live-persistent` to regenerate them.

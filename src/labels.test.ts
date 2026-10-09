@@ -22,6 +22,7 @@ import { EPOCH_COMMIT_LABELS } from './epoch-commit.js'
 import { MEMBER_EPOCH_LABELS } from './member-epoch.js'
 import { INVITATION_LABELS } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
+import { LIVE_PERSISTENT_ADMISSION_LABELS } from './live-persistent-admission.js'
 import { ROOM_LABELS } from './room.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -61,6 +62,7 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v1/epoch-request:',
   'kithmoot/v1/kindred:',
   'kithmoot/v1/member-epoch-request-key',
+  'kithmoot/v1/persistent-live/request-key',
   'kithmoot/v1/room-id',
   'kithmoot/v1/room-key',
   'kithmoot/v2/invitation-delegation:',
@@ -101,6 +103,7 @@ const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = 
   ['member-epoch.ts', MEMBER_EPOCH_LABELS],
   ['invitation.ts', INVITATION_LABELS],
   ['persistent-invitation.ts', PERSISTENT_INVITATION_LABELS],
+  ['live-persistent-admission.ts', LIVE_PERSISTENT_ADMISSION_LABELS],
   ['room.ts', ROOM_LABELS],
 ]
 
