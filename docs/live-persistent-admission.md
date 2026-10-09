@@ -142,8 +142,12 @@ allocated event object they receive.
 Refuse oversize envelopes instead of trimming relay policy or authority fields.
 
 The exchange owner allows one outstanding challenge per device/room, a
-90-second monotonic deadline, and at most three identical offers at 0, 30 and
-60 seconds. Wall-clock rollback cancels it; time changes never extend the
+90-second monotonic deadline, and at most three identical offers at 0, 10 and
+20 seconds. Retries must fit inside the cached response's 30-second lifetime:
+the previously specified 0/30/60 schedule could recover a lost request but
+could never recover a lost response. The shared-mesh integration exposed this
+on 2026-10-09. Response bytes and expiry remain unchanged; an expired response
+is never re-signed to extend it. Wall-clock rollback cancels it; time changes never extend the
 monotonic deadline. Silence is unavailable, not admission or an automatic
 internet fallback. There is no cache-complete/EOSE substitute.
 
