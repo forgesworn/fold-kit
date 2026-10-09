@@ -233,3 +233,6 @@ export {
   isDowngrade,
 } from './lane.js'
 export type { Lane } from './lane.js'
+
+// Opt-in live persistent capability exchange; host lifecycle and epoch gates remain required.
+export * from "./live-persistent-admission.js"

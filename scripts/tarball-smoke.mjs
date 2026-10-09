@@ -70,6 +70,10 @@ const expectedMain = ${JSON.stringify([
       'canonicalChannels', 'signChannels', 'verifyChannels', 'signAdmins', 'verifyAdmins', 'EPOCH_LABELS',
       'deriveChannel', 'CHANNEL_ID_INFO', 'CHANNEL_KEY_INFO', 'MAX_CHANNEL_NAME_LENGTH', 'CHANNEL_LABELS',
       'deriveScoped', 'SCOPED_LABEL_PATTERN',
+      'parseLivePersistentEvent', 'encodeLivePersistentDescriptor', 'decodeLivePersistentDescriptor',
+      'encodeLivePersistentRequest', 'decodeLivePersistentRequest',
+      'encodeLivePersistentAnswer', 'decodeLivePersistentAnswer',
+      'LIVE_PERSISTENT_REQUEST_SECONDS', 'LIVE_PERSISTENT_RESPONSE_SECONDS', 'LIVE_PERSISTENT_ADMISSION_LABELS',
       'createSubKeyCertificate', 'verifySubKeyCertificate', 'SUB_KEY_CERTIFICATE_SCOPE',
       'LANES', 'LANE_MEANING', 'LANE_LABEL', 'LANE_GLYPH', 'isLane', 'laneOfRelayUrl', 'laneOfRelays', 'weakestLane', 'isDowngrade',
     ])}
