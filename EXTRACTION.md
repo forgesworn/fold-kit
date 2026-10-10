@@ -459,3 +459,35 @@ exceptions cannot change the publication outcome. These are local API and
 timing changes; request/grant encoders, kinds, envelopes and derivation labels
 are unchanged. `GRANT_PUBLICATION_CHANGES` in `scripts/diff-source.mjs` reverses
 the two exact interface/host hunks before comparing with the extracted source.
+
+## Invitation account proof and bounded request lifecycle
+
+The live invitation request now accepts an optional `accountProof`. The new
+proof profile signs kind 20466 with exactly the tags
+`t=kithmoot/v2/invitation-account-proof`, `d=<invitation id>` and
+`p=<pinned inviter>`, content `{"v":1,"device":"<request device>"}` and the
+outer request's timestamp. Its account pubkey must match `participant`.
+The version-1 proof body is a new profile under its own domain; the existing
+version-1 encrypted request body retains its bytes when the field is absent.
+Existing readers ignore the optional field. No existing derivation label,
+kind or grant format changes. The proof is nested inside the bearer-encrypted
+request and must never be independently published.
+
+`encodeInvitationAccountProof` validates the matching signer's actual returned
+signature and context. `decodeInvitationRequest` exposes `verifiedParticipant`
+only after an uncached verification of the matching proof. The existing
+`participant` remains an unverified claim; invalid proofs do not prevent a
+host from considering an anonymous/manual request, but cannot establish an
+account's authority. Consumers must use `verifiedParticipant` for automatic
+account-based admission. New known-answer vectors record the new profile,
+legacy requests and forged or substituted nested proofs.
+
+The request helper optionally creates the proof using its caller's matching
+identity. Account signing and relay waiting share a deadline no longer than
+the 90-second request freshness window. Cancellation or retirement suppresses
+late signing/publication; only a cloned request key is erased. Host decisions
+recheck freshness before granting and report expired decisions via the failure
+observer. `INVITATION_ACCOUNT_CHANGES` in `scripts/diff-source.mjs` reverses
+these exact additions before the previously declared changes and the complete
+comparison with the pinned source. This is an additive public API release,
+0.11.0; it does not make an unmodified consumer's admission policy safe.

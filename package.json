@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/fold-kit",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,8 @@
     "LICENSE",
     "README.md",
     "llms.txt",
-    "vectors/live-persistent-vectors.json"
+    "vectors/live-persistent-vectors.json",
+    "vectors/invitation-account-vectors.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -46,7 +47,8 @@
     "check": "npm run typecheck && npm test && npm run diff-source",
     "prepare": "npm run build",
     "prepublishOnly": "npm run check && npm run bundle-check && npm run tarball-smoke",
-    "generate-live-persistent": "node scripts/generate-live-persistent.mjs"
+    "generate-live-persistent": "node scripts/generate-live-persistent.mjs",
+    "generate-invitation-account": "node scripts/generate-invitation-account.mjs"
   },
   "keywords": [
     "nostr",

@@ -20,13 +20,12 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
   process.exit(1)
 }
 
-// Budgets are about 25% headroom over what the current build measures
-// (index: 51.2 KB minified / 14.9 KB gzip, since member epoch catch-up added
-// about 9 KB of its own code to 0.4.0's 41.8 KB; lane: 0.9 KB / 0.5 KB),
-// tight enough to catch an accidental dependency or a bundled peer, loose
-// enough not to fail on ordinary code growth.
+// 0.11's account proof and bounded signer/request lifecycle add 2,725 bytes
+// minified / 729 bytes gzip over 0.10, without adding a dependency. Measured
+// index: 65.4 KiB / 19.2 KiB gzip; lane: 0.9 KiB / 0.5 KiB. Keep a small
+// margin for ordinary growth while catching a bundled peer or dependency.
 const BUDGETS_KB = {
-  index: { minified: 64, gzip: 19 },
+  index: { minified: 68, gzip: 20 },
   lane: { minified: 1.2, gzip: 0.7 },
 }
 

@@ -60,11 +60,13 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `parseRoomLink(url)` / `encodeRoomLink(base, link)` → `RoomLink` - the v1/v2/v3 link envelope
 - `createRoomInvitation(persistent?)`, `roomInvitation(bearer, inviter, persistent?)`, `deriveInvitationId(invitation)`
 - `encodeInvitationRequest(opts)` / `decodeInvitationRequest(event, opts)` - v2 live rendezvous request
+- `encodeInvitationAccountProof({ invitation, device, identity, now })` - account signature bound to this invitation, ephemeral request device and exact timestamp. The optional proof remains inside the encrypted request; it grants no room access. `participant` alone is unverified. Automatic account-based admission must use decoded `verifiedParticipant`; invalid/missing proof never sets it.
 - `encodeInvitationGrant(opts)` / `decodeRoomAdmissionGrant(event, opts)` - v2 grant, with a delegation chain
 - `verifyInvitationDelegation(invitation, chain, now)`
 - `encodeInvitationRetirement(opts)` / `decodeInvitationRetirementNotice(event, invitation)` - durable tombstone (kind 1461)
 - `hostRoomInvitation(opts)` / `requestRoomAdmission(opts)` - the live desk, both sides
-- Host `onGrantPublished(request)` / legacy `onAdmitted(device)` run after transport publication acknowledgement, not on approval. `onGrantFailed(request, error)` reports send failure; closed hosts suppress outstanding callbacks. Publication does not prove guest receipt or room entry.
+- `requestRoomAdmissionCapability(opts)` retains responder delegation; the secret-only wrapper discards it. Optional matching `identity` creates an account proof; signer errors reject without switching identities. Optional `signal` cancels. Signing and relay waiting share one deadline capped at 90 seconds. Late signatures/grants cannot revive cancelled/expired/retired requests. Caller-owned request keys are copied and preserved.
+- Host `onGrantPublished(request)` / legacy `onAdmitted(device)` run after transport publication acknowledgement, not on approval. Hosts recheck request freshness after a decision. `onGrantFailed(request, error)` reports send failure or approval after expiry; closed hosts suppress outstanding callbacks. Publication does not prove guest receipt or room entry.
 - `encodePersistentInvitation(opts)` / `decodePersistentInvitation(event, invitation)` - v3 stored group invitation (kind 1463)
 - `requestPersistentRoomAdmission(opts)` - joins from stored admission alone, no live desk needed
 - Conference rooms: `encodePersistentInvitation({ ..., endsAt })` puts `ends` in the body and `['expiration', String(endsAt)]` on the 1463; `decodePersistentInvitation` returns `endsAt` and is null when an `expiration` tag disagrees with the body; `encodeInvitationRetirement({ ..., endsAt })` tags the 1461 the same way
