@@ -3,6 +3,7 @@ import { bytesToHex } from '@noble/hashes/utils'
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure'
 import { SimRelay, SimTransport } from '../test/sim-relay.js'
 import { KINDS } from './kinds.js'
+import type { RelayTransport } from './transport.js'
 import {
   createRoomInvitation,
   decodeInvitationGrant,
@@ -140,6 +141,109 @@ describe('invitation envelopes', () => {
 })
 
 describe('invitation exchange', () => {
+  for (const closed of [false, true]) {
+    it(`reports a grant only after publication settles${closed ? ', and suppresses a closed host callback' : ''}`, async () => {
+      const relay = new SimRelay()
+      const base = new SimTransport(relay)
+      let release!: () => void
+      const waiting = new Promise<void>(resolve => { release = resolve })
+      let publishing = false
+      const transport: RelayTransport = {
+        publish: event => {
+          if (event.kind !== KINDS.INVITATION_GRANT) return base.publish(event)
+          publishing = true
+          return waiting.then(() => base.publish(event))
+        },
+        subscribe: (...args) => base.subscribe(...args),
+        close: () => base.close(),
+      }
+      const host = createRoomInvitation()
+      const requesterSk = generateSecretKey()
+      const request = encodeInvitationRequest({ invitation: host.invitation, requesterSk, now: NOW, name: 'Rowan' })
+      const admitted: string[] = []
+      const published: string[] = []
+      const serving = hostRoomInvitation({
+        transport, invitation: host.invitation, inviterSk: host.inviterSk,
+        roomSecret: new Uint8Array(32).fill(73), now,
+        onAdmitted: device => admitted.push(device),
+        onGrantPublished: request => published.push(request.request),
+      })
+      try {
+        await base.publish(request)
+        await expect.poll(() => publishing).toBe(true)
+        expect(admitted).toEqual([])
+        expect(published).toEqual([])
+        if (closed) serving.close()
+        release()
+        await expect.poll(() => relay.published.filter(event => event.kind === KINDS.INVITATION_GRANT).length).toBe(1)
+        // Let both the transport acknowledgement and its observer settle.
+        await waiting
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(admitted).toEqual(closed ? [] : [getPublicKey(requesterSk)])
+        expect(published).toEqual(closed ? [] : [request.id])
+      } finally { serving.close(); release() }
+    })
+  }
+
+  for (const synchronous of [false, true]) {
+    it(`reports ${synchronous ? 'a synchronous throw' : 'a rejected publication'} for the exact request without claiming admission`, async () => {
+      const relay = new SimRelay()
+      const base = new SimTransport(relay)
+      const failure = new Error('Synthetic grant publication failure')
+      const transport: RelayTransport = {
+        publish: event => {
+          if (event.kind !== KINDS.INVITATION_GRANT) return base.publish(event)
+          if (synchronous) throw failure
+          return Promise.reject(failure)
+        },
+        subscribe: (...args) => base.subscribe(...args),
+        close: () => base.close(),
+      }
+      const host = createRoomInvitation()
+      const requesterSk = generateSecretKey()
+      const request = encodeInvitationRequest({ invitation: host.invitation, requesterSk, now: NOW, name: 'Rowan' })
+      const admitted: string[] = []
+      const failures: Array<{ request: string; error: unknown }> = []
+      const serving = hostRoomInvitation({
+        transport, invitation: host.invitation, inviterSk: host.inviterSk,
+        roomSecret: new Uint8Array(32).fill(73), now,
+        onAdmitted: device => admitted.push(device),
+        onGrantFailed: (request, error) => failures.push({ request: request.request, error }),
+      })
+      try {
+        await base.publish(request)
+        await expect.poll(() => failures.length).toBe(1)
+        expect(failures).toEqual([{ request: request.id, error: failure }])
+        expect(admitted).toEqual([])
+        expect(relay.published.filter(event => event.kind === KINDS.INVITATION_GRANT)).toEqual([])
+      } finally { serving.close() }
+    })
+  }
+
+  it('a throwing publication observer does not change the outcome or stop later guests', async () => {
+    const relay = new SimRelay()
+    const host = createRoomInvitation()
+    const roomSecret = new Uint8Array(32).fill(73)
+    const admitted: string[] = []
+    const failures: unknown[] = []
+    const serving = hostRoomInvitation({
+      transport: new SimTransport(relay), invitation: host.invitation,
+      inviterSk: host.inviterSk, roomSecret, now,
+      onGrantPublished: () => { throw new Error('Synthetic observer failure') },
+      onAdmitted: device => admitted.push(device),
+      onGrantFailed: (_request, error) => failures.push(error),
+    })
+    try {
+      for (let guest = 0; guest < 2; guest++) {
+        const secret = await requestRoomAdmission({ transport: new SimTransport(relay), invitation: host.invitation, now })
+        expect(bytesToHex(secret)).toBe(bytesToHex(roomSecret))
+      }
+      await expect.poll(() => admitted.length).toBe(2)
+      expect(new Set(admitted).size).toBe(2)
+      expect(failures).toEqual([])
+    } finally { serving.close() }
+  })
+
   it('turns a bearer into the room secret without putting that secret in the request', async () => {
     const relay = new SimRelay()
     const host = createRoomInvitation()
@@ -205,6 +309,9 @@ describe('invitation exchange', () => {
       invitation: root.invitation,
       now,
     })
+    // Receiving the grant can precede the publisher's acknowledgement.
+    // Wait for that acknowledgement before closing the serving desk.
+    await expect.poll(() => memberAdmissions).toBe(1)
     member.close()
 
     expect(bytesToHex(second)).toBe(bytesToHex(roomSecret))

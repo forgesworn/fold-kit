@@ -104,6 +104,15 @@ the rest).
 
 ### Links and invitations
 
+`hostRoomInvitation` distinguishes approval from grant publication. Its
+`onGrantPublished(request)` and legacy `onAdmitted(device)` callbacks run only
+after the injected transport acknowledges the grant's publication.
+`onGrantFailed(request, error)` reports a rejected or throwing publication;
+neither success callback runs for that failure. Closing or retiring the host
+suppresses callbacks from outstanding sends. Publication acknowledgement does
+not prove that a guest received the grant or joined; the guest validates its
+grant independently. Observer exceptions do not change the publish outcome.
+
 - `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3 link envelope
 - `createRoomInvitation`, `roomInvitation`, `deriveInvitationId`,
   `encodeInvitationRequest`, `decodeInvitationRequest`,

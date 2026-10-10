@@ -440,7 +440,13 @@ export interface HostRoomInvitationOptions {
   /** Root-to-this-responder chain. Empty/absent only on the creator. */
   delegation?: InvitationDelegation[]
   now?: () => number
+  /** Called after the injected transport acknowledges publication. This is
+   * not proof that the guest received the grant or joined the room. */
   onAdmitted?: (device: string) => void
+  /** The same publication acknowledgement, correlated to the request. */
+  onGrantPublished?: (request: InvitationRequest) => void
+  /** Publication rejected or threw. No admission callback is made. */
+  onGrantFailed?: (request: InvitationRequest, error: unknown) => void
   /** Called when the creator's durable retirement tombstone is heard. */
   onRetired?: () => void
   /** The epoch this responder is at, asked on every grant because it
@@ -607,8 +613,20 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
           close()
           return
         }
-        opts.transport.publish(grant).catch(() => {})
-        opts.onAdmitted?.(request.device)
+        // The decision to approve and the publication of its grant are
+        // separate states. A rejected send must never look like admission.
+        Promise.resolve()
+          .then(() => { if (!closed) return opts.transport.publish(grant) })
+          .then(() => {
+            if (closed) return
+            // One observer throwing must not change the publish outcome or
+            // prevent an independent observer from hearing it.
+            try { opts.onGrantPublished?.(request) } catch { /* Observer only. */ }
+            try { opts.onAdmitted?.(request.device) } catch { /* Observer only. */ }
+          }, error => {
+            if (!closed) opts.onGrantFailed?.(request, error)
+          })
+          .catch(() => { /* A failure observer cannot escape the relay loop. */ })
       }
       if (!opts.admit) { grantNow(); return }
       // A host that asks first answers later, if at all. Never awaited in

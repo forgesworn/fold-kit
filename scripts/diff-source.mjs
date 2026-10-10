@@ -155,6 +155,24 @@ for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints
   checkWholeFile(`src/${f}`, `src/${f}`)
 }
 
+/** Grant publication acknowledgement: transport settlement changes local
+ * callbacks only. Request/grant encoders and envelope versions are unchanged.
+ * Undo the two exact declared hunks before checking the extracted source. */
+const GRANT_PUBLICATION_CHANGES = {
+  "src/invitation.ts": [
+    [
+      "  now?: () => number\n  /** Called after the injected transport acknowledges publication. This is\n   * not proof that the guest received the grant or joined the room. */\n  onAdmitted?: (device: string) => void\n  /** The same publication acknowledgement, correlated to the request. */\n  onGrantPublished?: (request: InvitationRequest) => void\n  /** Publication rejected or threw. No admission callback is made. */\n  onGrantFailed?: (request: InvitationRequest, error: unknown) => void\n  /** Called when the creator's durable retirement tombstone is heard. */\n",
+      "  now?: () => number\n  onAdmitted?: (device: string) => void\n  /** Called when the creator's durable retirement tombstone is heard. */\n",
+      1
+    ],
+    [
+      "        }\n        // The decision to approve and the publication of its grant are\n        // separate states. A rejected send must never look like admission.\n        Promise.resolve()\n          .then(() => { if (!closed) return opts.transport.publish(grant) })\n          .then(() => {\n            if (closed) return\n            // One observer throwing must not change the publish outcome or\n            // prevent an independent observer from hearing it.\n            try { opts.onGrantPublished?.(request) } catch { /* Observer only. */ }\n            try { opts.onAdmitted?.(request.device) } catch { /* Observer only. */ }\n          }, error => {\n            if (!closed) opts.onGrantFailed?.(request, error)\n          })\n          .catch(() => { /* A failure observer cannot escape the relay loop. */ })\n      }\n",
+      "        }\n        opts.transport.publish(grant).catch(() => {})\n        opts.onAdmitted?.(request.device)\n      }\n",
+      1
+    ]
+  ]
+}
+
 /**
  * Self-destructing rooms (0.9.0, see docs/room-destruct.md): an optional
  * `destruct: true` in the group invitation body, beside `ends`, in an ended
@@ -461,7 +479,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

@@ -447,3 +447,15 @@ and body profile, preserves kind 1463 bytes, and grants no delegation. Its
 descriptor, challenge and answer codecs own no transport or storage. The host
 lifecycle journal, client epoch gate and physical transport remain separate
 integration requirements; see `docs/live-persistent-admission.md`.
+
+## Grant publication callbacks
+
+The host's publication callbacks now follow settlement of the injected
+transport's `publish(grant)` promise. `onGrantPublished(request)` correlates
+success to the request; the legacy `onAdmitted(device)` observes the same
+acknowledgement. `onGrantFailed(request, error)` exposes a rejected or throwing
+send. A closed or retired host suppresses outstanding callbacks, and observer
+exceptions cannot change the publication outcome. These are local API and
+timing changes; request/grant encoders, kinds, envelopes and derivation labels
+are unchanged. `GRANT_PUBLICATION_CHANGES` in `scripts/diff-source.mjs` reverses
+the two exact interface/host hunks before comparing with the extracted source.
