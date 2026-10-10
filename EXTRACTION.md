@@ -491,3 +491,21 @@ observer. `INVITATION_ACCOUNT_CHANGES` in `scripts/diff-source.mjs` reverses
 these exact additions before the previously declared changes and the complete
 comparison with the pinned source. This is an additive public API release,
 0.11.0; it does not make an unmodified consumer's admission policy safe.
+
+## Authenticated admission refusal (0.12.0)
+
+The new `invitation-decline.ts` codec uses a version-3 refusal envelope on the
+existing encrypted reply kind 20467. The version-2 grant body, existing keys,
+derivation labels and invitation URLs are unchanged. A refusal is addressed to
+one request device and event ID, signed by the pinned root or authenticated via
+its current bounded delegation chain; it carries no traffic secret or newly
+issued authority. Bearer possession alone cannot refuse another guest.
+New request helpers stop their immutable retries and erase only the owned
+exchange key on an authenticated refusal. Earlier readers reject this envelope
+as a grant and retain their previous bounded timeout. Host false decisions
+retain their historical silence unless a consumer explicitly publishes the new
+refusal. Concurrent authorised replies use the first valid received outcome; a
+refusal does not revoke an already granted capability. `INVITATION_DECLINE_CHANGES`
+reverses the exact helper import and response handling before all earlier
+declared normalisations and the full pinned-source comparison. Synthetic known
+answers cover the new profile and hostile request, authority and version changes.

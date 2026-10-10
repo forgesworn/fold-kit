@@ -12,6 +12,7 @@ import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
 import { deriveRoom } from './room.js'
 import type { ParticipantIdentity } from './identity.js'
+import { decodeInvitationDecline, InvitationDeclinedError } from './invitation-decline.js'
 
 const INVITATION_ID_INFO = 'kithmoot/v2/invitation-id'
 const INVITATION_REQUEST_KEY_INFO = 'kithmoot/v2/invitation-request-key'
@@ -776,6 +777,8 @@ export function requestRoomAdmissionCapability(opts: RequestRoomAdmissionOptions
         const retired = decodeInvitationRetirementNotice(event, opts.invitation)
         if (retired) { finish(() => reject(retirementError(retired))); return }
         if (!request) return
+        const declined = decodeInvitationDecline(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
+        if (declined) { finish(() => reject(new InvitationDeclinedError())); return }
         const admission = decodeRoomAdmissionGrant(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
         if (admission) {
           // The delegation owns its responder key after admission. Erasing

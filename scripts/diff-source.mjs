@@ -155,6 +155,22 @@ for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints
   checkWholeFile(`src/${f}`, `src/${f}`)
 }
 
+/** Authenticated refusals: exact additions, preserving all earlier profiles. */
+const INVITATION_DECLINE_CHANGES = {
+  "src/invitation.ts": [
+    [
+      "import { decodeInvitationDecline, InvitationDeclinedError } from './invitation-decline.js'\n",
+      "",
+      1
+    ],
+    [
+      "        const declined = decodeInvitationDecline(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })\n        if (declined) { finish(() => reject(new InvitationDeclinedError())); return }\n",
+      "",
+      1
+    ]
+  ]
+}
+
 /** Account proof and request lifecycle: undo only the exact declared hunks. */
 const INVITATION_ACCOUNT_CHANGES = {
   "src/invitation.ts": [
@@ -535,7 +551,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

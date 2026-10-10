@@ -114,6 +114,9 @@ export type {
   RequestRoomAdmissionOptions,
 } from './invitation.js'
 
+export { encodeInvitationDecline, decodeInvitationDecline, InvitationDeclinedError } from './invitation-decline.js'
+export type { EncodeInvitationDeclineOptions, InvitationDecline } from './invitation-decline.js'
+
 export {
   encodePersistentInvitation,
   decodePersistentInvitation,
