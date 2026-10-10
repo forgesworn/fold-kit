@@ -107,19 +107,41 @@ the rest).
 `hostRoomInvitation` distinguishes approval from grant publication. Its
 `onGrantPublished(request)` and legacy `onAdmitted(device)` callbacks run only
 after the injected transport acknowledges the grant's publication.
-`onGrantFailed(request, error)` reports a rejected or throwing publication;
+`onGrantFailed(request, error)` reports a rejected or throwing publication,
+or approval of a request which has expired;
 neither success callback runs for that failure. Closing or retiring the host
 suppresses callbacks from outstanding sends. Publication acknowledgement does
 not prove that a guest received the grant or joined; the guest validates its
 grant independently. Observer exceptions do not change the publish outcome.
 
+An invitation request's `participant` is an unverified account claim.
+Automatic admission of a previously invited account must use
+`verifiedParticipant`, which is present only after a fresh signature check of
+an account proof bound to this invitation, ephemeral request device and request
+timestamp. `encodeInvitationAccountProof` creates that proof through the
+supplied matching `ParticipantIdentity`. It grants no room access itself and
+stays inside the bearer-encrypted request, rather than being published as a
+public account event. Invalid or missing proofs leave a request unverified;
+hosts can still make an explicit decision for anonymous and older clients.
+
+Pass `identity` to `requestRoomAdmissionCapability` (or its secret-only wrapper)
+to create the proof automatically. If `participant` is also supplied, it must
+match the signer; a signer failure rejects the request without falling back to
+another identity. `signal` cancels signing or waiting. Signing and relay waiting
+share one deadline, capped at the request's 90-second freshness window, and
+late signatures or grants cannot revive a cancelled, expired or retired request.
+Retrying publication uses the same signed request. A fresh human retry starts a
+new exchange. The helper copies a supplied `requesterSk` before signing and
+erases only its owned copy on settlement. Hosts recheck freshness when a human
+decision completes, so approval cannot extend an expired request's authority.
+
 - `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3 link envelope
 - `createRoomInvitation`, `roomInvitation`, `deriveInvitationId`,
-  `encodeInvitationRequest`, `decodeInvitationRequest`,
+  `encodeInvitationAccountProof`, `encodeInvitationRequest`, `decodeInvitationRequest`,
   `verifyInvitationDelegation`, `encodeInvitationGrant`,
   `decodeRoomAdmissionGrant`, `encodeInvitationRetirement`,
   `decodeInvitationRetirementNotice`, `hostRoomInvitation`,
-  `requestRoomAdmission` - the v2 live rendezvous invitation, its delegation
+  `requestRoomAdmissionCapability`, `requestRoomAdmission` - the v2 live rendezvous invitation, its delegation
   chain and retirement
 - `encodePersistentInvitation`, `decodePersistentInvitation`,
   `requestPersistentRoomAdmission` - the v3 stored group invitation (1463).

@@ -55,7 +55,7 @@ const expectedMain = ${JSON.stringify([
       'isSafeIceUrl', 'safeIceUrls', 'assertNetworkHintBounds', 'sanitiseDisplayName', 'MAX_DISPLAY_NAME_LENGTH',
       'issueKindredProof', 'evaluateAccess', 'ACCESS_LABELS',
       'INVITATION_DELEGATION_TTL_SECONDS', 'MAX_INVITATION_DELEGATION_DEPTH', 'createRoomInvitation', 'roomInvitation',
-      'deriveInvitationId', 'encodeInvitationRequest', 'decodeInvitationRequest', 'verifyInvitationDelegation',
+      'deriveInvitationId', 'encodeInvitationAccountProof', 'encodeInvitationRequest', 'decodeInvitationRequest', 'verifyInvitationDelegation',
       'encodeInvitationGrant', 'decodeRoomAdmissionGrant', 'decodeInvitationGrant', 'ROOM_ENDED_MESSAGE',
       'encodeInvitationRetirement', 'decodeInvitationRetirement', 'decodeInvitationRetirementNotice', 'retirementError',
       'hostRoomInvitation', 'requestRoomAdmissionCapability', 'requestRoomAdmission', 'INVITATION_LABELS',
@@ -93,6 +93,17 @@ if (!/^[0-9a-f]{64}$/.test(room.roomId)) throw new Error('deriveRoom did not ret
 if (lane.laneOfRelayUrl('wss://relay.example') !== 'public') throw new Error('laneOfRelayUrl misbehaved')
 const scoped = main.deriveScoped({ epoch: 0, id: room.roomId, key: room.roomKey }, 'smoke/v1/x')
 if (!/^[0-9a-f]{64}$/.test(scoped.id)) throw new Error('deriveScoped did not return a hex id')
+
+// Exercise the optional account proof through the installed tarball's public
+// entry point, including its real signer and uncached request verification.
+const identity = main.localIdentity(new Uint8Array(32).fill(8))
+const requesterSk = new Uint8Array(32).fill(9)
+const invitation = main.createRoomInvitation().invitation
+const now = 1700000000
+const proof = await main.encodeInvitationAccountProof({ invitation, identity, device: main.localIdentity(requesterSk).pubkey, now })
+const event = main.encodeInvitationRequest({ invitation, requesterSk, participant: identity.pubkey, accountProof: proof, now })
+const request = main.decodeInvitationRequest(event, { invitation, now })
+if (request?.verifiedParticipant !== identity.pubkey) throw new Error('packaged invitation account proof did not verify')
 
 console.log('tarball-smoke: all ' + expectedMain.length + ' main exports and ' + expectedLane.length + ' lane exports present and callable')
 `,

@@ -68,6 +68,7 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v2/invitation-delegation:',
   'kithmoot/v2/invitation-id',
   'kithmoot/v2/invitation-request-key',
+  'kithmoot/v2/invitation-account-proof',
   'kithmoot/v3/group-invitation-key',
 ]
 

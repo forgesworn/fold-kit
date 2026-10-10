@@ -35,4 +35,6 @@ jobs:
         env:
           FOLD_KIT_SOURCE_DIR: ${{ github.workspace }}/.kithmoot-src
       - run: npm run build
+      - run: npm run bundle-check
+      - run: npm run tarball-smoke
       - run: npm pack --dry-run

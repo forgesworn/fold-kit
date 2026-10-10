@@ -11,9 +11,11 @@ import type { RelayTransport } from './transport.js'
 import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
 import { deriveRoom } from './room.js'
+import type { ParticipantIdentity } from './identity.js'
 
 const INVITATION_ID_INFO = 'kithmoot/v2/invitation-id'
 const INVITATION_REQUEST_KEY_INFO = 'kithmoot/v2/invitation-request-key'
+const INVITATION_ACCOUNT_PROOF = 'kithmoot/v2/invitation-account-proof'
 const INVITATION_MAX_AGE_SECONDS = 90
 const DEFAULT_TIMEOUT_MS = 60_000
 const DEFAULT_RETRY_MS = 2_000
@@ -130,10 +132,10 @@ interface InvitationRequestBody {
    *  before letting people in has a name to decide on. Optional, and a
    *  claim like any name: the host's card says who *says* they are. */
   name?: string
-  /** Their participant key, when they hold one: a Nostr account, or a
-   *  room identity already made. A host can then recognise a member
-   *  coming back, or a key the room already knows. */
+  /** A claimed account or room identity. This does not establish control
+   *  of that account; only a matching accountProof can do that. */
   participant?: string
+  accountProof?: Event
 }
 
 /** How much of a name an admission request carries. The same bound as a
@@ -146,6 +148,44 @@ export interface EncodeInvitationRequestOptions {
   now: number
   name?: string
   participant?: string
+  /** Account-signed proof bound to this invitation, request device and time.
+   *  The proof stays inside the bearer-encrypted request, never a public relay
+   *  event. Without it, `participant` remains an unverified claim. */
+  accountProof?: Event
+}
+
+export interface EncodeInvitationAccountProofOptions {
+  invitation: RoomInvitation
+  device: string
+  identity: ParticipantIdentity
+  now: number
+}
+
+/** Prove control of an account for one ephemeral admission device. This is
+ * deliberately separate from a room device credential: a guest does not yet
+ * know the room or its traffic key, and this proof grants neither. */
+export async function encodeInvitationAccountProof(opts: EncodeInvitationAccountProofOptions): Promise<Event> {
+  if (!Number.isSafeInteger(opts.now) || opts.now < 0) throw new Error('invalid invitation account proof time')
+  const device = requirePubkey(opts.device), participant = requirePubkey(opts.identity.pubkey)
+  const proof = await opts.identity.signEvent({
+    kind: KINDS.INVITATION_REQUEST,
+    created_at: opts.now,
+    tags: [['t', INVITATION_ACCOUNT_PROOF], ['d', deriveInvitationId(opts.invitation)], ['p', requirePubkey(opts.invitation.inviter)]],
+    content: JSON.stringify({ v: 1, device }),
+  })
+  if (!accountProofMatches(proof, { invitation: opts.invitation, device, participant, now: opts.now })) throw new Error('invalid invitation account proof from signer')
+  return proof
+}
+
+function accountProofMatches(raw: unknown, opts: { invitation: RoomInvitation; device: string; participant?: string; now: number }): boolean {
+  try {
+    if (!raw || typeof raw !== 'object' || !opts.participant) return false
+    const proof = raw as Event
+    if (proof.kind !== KINDS.INVITATION_REQUEST || proof.created_at !== opts.now || !hexEquals(proof.pubkey, opts.participant)) return false
+    if (JSON.stringify(proof.tags) !== JSON.stringify([['t', INVITATION_ACCOUNT_PROOF], ['d', deriveInvitationId(opts.invitation)], ['p', requirePubkey(opts.invitation.inviter)]])) return false
+    if (proof.content !== JSON.stringify({ v: 1, device: requirePubkey(opts.device) })) return false
+    return verifyEventUncached(proof)
+  } catch { return false }
 }
 
 /** Who is asking, as decoded from a request. */
@@ -154,6 +194,10 @@ export interface InvitationRequest {
   request: string
   name?: string
   participant?: string
+  /** Present only after fresh signature verification of an account proof
+   *  bound to this exact invitation, request-signing device and timestamp.
+   *  Never authorise automatic admission from `participant` alone. */
+  verifiedParticipant?: string
 }
 
 /** Prove possession of the bearer without putting it, or a traffic key, on a relay. */
@@ -164,6 +208,10 @@ export function encodeInvitationRequest(opts: EncodeInvitationRequestOptions): E
   const name = opts.name?.trim().slice(0, MAX_REQUEST_NAME_LENGTH)
   if (name) body.name = name
   if (opts.participant !== undefined) body.participant = requirePubkey(opts.participant)
+  if (opts.accountProof !== undefined) {
+    if (!accountProofMatches(opts.accountProof, { invitation: opts.invitation, device, participant: body.participant, now: opts.now })) throw new Error('invalid invitation account proof')
+    body.accountProof = opts.accountProof
+  }
   return finalizeEvent(
     {
       kind: KINDS.INVITATION_REQUEST,
@@ -210,6 +258,7 @@ export function decodeInvitationRequest(
       if (name) decoded.name = name
     }
     if (typeof body.participant === 'string' && /^[0-9a-f]{64}$/i.test(body.participant)) decoded.participant = body.participant.toLowerCase()
+    if (accountProofMatches(body.accountProof, { invitation: opts.invitation, device: decoded.device, participant: decoded.participant, now: event.created_at })) decoded.verifiedParticipant = decoded.participant
     return decoded
   } catch {
     return null
@@ -445,7 +494,8 @@ export interface HostRoomInvitationOptions {
   onAdmitted?: (device: string) => void
   /** The same publication acknowledgement, correlated to the request. */
   onGrantPublished?: (request: InvitationRequest) => void
-  /** Publication rejected or threw. No admission callback is made. */
+  /** Publication failed, or approval came after the request expired.
+   * No admission callback is made. */
   onGrantFailed?: (request: InvitationRequest, error: unknown) => void
   /** Called when the creator's durable retirement tombstone is heard. */
   onRetired?: () => void
@@ -595,6 +645,10 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
       if (answered.size > 256) answered.delete(answered.values().next().value!)
       const grantNow = (): void => {
         if (closed) return
+        if (!decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })) {
+          try { opts.onGrantFailed?.(request, new Error('the invitation request expired before admission')) } catch { /* Observer only. */ }
+          return
+        }
         let grant: Event
         try {
           grant = encodeInvitationGrant({
@@ -650,69 +704,100 @@ export interface RequestRoomAdmissionOptions {
   /** Carried in the request for a host who asks before letting people in. */
   name?: string
   participant?: string
+  /** Optional proof of the claimed account, made by this matching identity.
+   *  A signer error is a failed request, never a switch to another account. */
+  identity?: ParticipantIdentity
+  signal?: AbortSignal
 }
 
-/** Resolve the room and a bounded responder delegation, with no account or
- * prompt. Retaining the delegation is what removes the creator as an
- * availability dependency for the next arrival. */
+/** Resolve the room and a bounded responder delegation. Anonymous requests
+ * need no account. Supplying an identity signs a proof for this request; its
+ * signer may ask the person to approve. Retaining the delegation removes the
+ * creator as an availability dependency for the next arrival. */
 export function requestRoomAdmissionCapability(opts: RequestRoomAdmissionOptions): Promise<RoomAdmission> {
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
-  const requesterSk = opts.requesterSk ?? generateSecretKey()
-  const requester = getPublicKey(requesterSk)
-  const request = encodeInvitationRequest({
-    invitation: opts.invitation, requesterSk, now: now(),
-    ...(opts.name !== undefined ? { name: opts.name } : {}),
-    ...(opts.participant !== undefined ? { participant: opts.participant } : {}),
-  })
-
   return new Promise<RoomAdmission>((resolve, reject) => {
     let settled = false
+    let ownedKey: Uint8Array | undefined
+    let request: Event | undefined
     let retry: ReturnType<typeof setInterval> | undefined
     let expiry: ReturnType<typeof setTimeout> | undefined
-    const invitationId = deriveInvitationId(opts.invitation)
-
     let unsub = () => {}
-    unsub = opts.transport.subscribe(
-      [
-        { kinds: [KINDS.INVITATION_GRANT], '#d': [invitationId], '#p': [requester] },
-        { kinds: [KINDS.INVITATION_RETIREMENT], '#d': [invitationId], authors: [opts.invitation.inviter] },
-      ],
-      (event) => {
-        const retired = decodeInvitationRetirementNotice(event, opts.invitation)
-        if (retired) {
-          finish(() => reject(retirementError(retired)))
-          return
-        }
-        const admission = decodeRoomAdmissionGrant(event, {
-          invitation: opts.invitation,
-          requesterSk,
-          request: request.id,
-          now: now(),
-        })
-        if (admission) finish(() => resolve(admission))
-      },
-    )
-    if (settled) unsub()
 
     function finish(settle: () => void): void {
       if (settled) return
       settled = true
       if (retry !== undefined) clearInterval(retry)
       if (expiry !== undefined) clearTimeout(expiry)
-      unsub()
+      opts.signal?.removeEventListener('abort', abort)
+      try { unsub() } catch { /* A broken observer cannot keep the request live. */ }
+      ownedKey?.fill(0)
       settle()
     }
-
+    function abort(): void {
+      const error = new Error('invitation request cancelled')
+      error.name = 'AbortError'
+      finish(() => reject(error))
+    }
     function ask(): void {
-      if (!settled) opts.transport.publish(request).catch(() => {})
+      if (!settled && request) {
+        // Keep the same signed request on retries; a late publish result
+        // never revives a cancelled or expired exchange.
+        try { void opts.transport.publish(request).catch(() => {}) } catch { /* Retried within the same deadline. */ }
+      }
     }
 
-    expiry = setTimeout(
-      () => finish(() => reject(new Error('the room is not answering this invitation'))),
-      opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    )
-    retry = setInterval(ask, opts.retryMs ?? DEFAULT_RETRY_MS)
-    ask()
+    try {
+      if (opts.signal?.aborted) { abort(); return }
+      const requestedTimeout = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, retryMs = opts.retryMs ?? DEFAULT_RETRY_MS
+      if (!Number.isFinite(requestedTimeout) || requestedTimeout <= 0 || !Number.isFinite(retryMs) || retryMs <= 0) throw new Error('invalid invitation request timing')
+      const participant = opts.participant === undefined
+        ? (opts.identity ? requirePubkey(opts.identity.pubkey) : undefined)
+        : requirePubkey(opts.participant)
+      if (opts.identity && (!participant || !hexEquals(requirePubkey(opts.identity.pubkey), participant))) throw new Error('invitation account does not match the requested participant')
+      // Clone caller-owned keys before asynchronous signing, and erase only
+      // our copy on every outcome. The caller retains ownership of its key.
+      if (opts.requesterSk) require32(opts.requesterSk, 'requester secret key')
+      ownedKey = opts.requesterSk?.slice() ?? generateSecretKey()
+      const requester = getPublicKey(ownedKey), invitationId = deriveInvitationId(opts.invitation), requestedAt = now()
+      if (!Number.isSafeInteger(requestedAt) || requestedAt < 0) throw new Error('invalid invitation request time')
+      // Signing and relay waiting share one deadline, no longer than the
+      // request's authenticated freshness window. Approval does not renew it.
+      expiry = setTimeout(() => finish(() => reject(new Error(opts.identity && !request
+        ? 'the account did not finish signing the invitation request'
+        : 'the room is not answering this invitation'))), Math.min(requestedTimeout, INVITATION_MAX_AGE_SECONDS * 1000))
+      opts.signal?.addEventListener('abort', abort, { once: true })
+      if (opts.signal?.aborted) { abort(); return }
+      unsub = opts.transport.subscribe([
+        { kinds: [KINDS.INVITATION_GRANT], '#d': [invitationId], '#p': [requester] },
+        { kinds: [KINDS.INVITATION_RETIREMENT], '#d': [invitationId], authors: [opts.invitation.inviter] },
+      ], event => {
+        if (settled) return
+        const retired = decodeInvitationRetirementNotice(event, opts.invitation)
+        if (retired) { finish(() => reject(retirementError(retired))); return }
+        if (!request) return
+        const admission = decodeRoomAdmissionGrant(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
+        if (admission) {
+          // The delegation owns its responder key after admission. Erasing
+          // our exchange key must not erase that independently retained key.
+          const retained = { ...admission, delegate: { ...admission.delegate, delegateSk: admission.delegate.delegateSk.slice() } }
+          finish(() => resolve(retained))
+        }
+      })
+      if (settled) { unsub(); return }
+      const prepare = async (): Promise<void> => {
+        const accountProof = opts.identity ? await encodeInvitationAccountProof({ invitation: opts.invitation, device: requester, identity: opts.identity, now: requestedAt }) : undefined
+        if (settled) return
+        const at = now()
+        if (!Number.isSafeInteger(at) || Math.abs(at - requestedAt) > INVITATION_MAX_AGE_SECONDS) throw new Error('the invitation request expired while signing')
+        request = encodeInvitationRequest({ invitation: opts.invitation, requesterSk: ownedKey!, now: requestedAt,
+          ...(opts.name !== undefined ? { name: opts.name } : {}), ...(participant !== undefined ? { participant } : {}),
+          ...(accountProof ? { accountProof } : {}) })
+        retry = setInterval(ask, retryMs)
+        ask()
+      }
+      void prepare().catch(error => finish(() => reject(error)))
+    } catch (error) { finish(() => reject(error)) }
   })
 }
 
@@ -727,6 +812,7 @@ export async function requestRoomAdmission(opts: RequestRoomAdmissionOptions): P
  *  list rather than scanning file text for matching comments. Pure data -
  *  adding this export changes no runtime behaviour. */
 export const INVITATION_LABELS = [
+  "kithmoot/v2/invitation-account-proof",
   "kithmoot/v2/invitation-delegation:",
   "kithmoot/v2/invitation-id",
   "kithmoot/v2/invitation-request-key",

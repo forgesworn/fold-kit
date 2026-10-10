@@ -5,6 +5,36 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.11.0
+
+### Added
+
+- Optional account-signed invitation proofs, bound to the invitation, pinned
+  inviter, request device and timestamp. `encodeInvitationAccountProof` checks
+  the matching signer's returned signature and context. The proof remains
+  inside the bearer-encrypted request; it must never be published separately.
+- `InvitationRequest.verifiedParticipant`, set only after fresh verification.
+  `participant` remains an unverified claim. Consumers must use the verified
+  field for automatic admission based on an invited account.
+- Matching `identity` and cancellation `signal` options for
+  `requestRoomAdmissionCapability`, with known-answer proof vectors and a
+  packaged-consumer proof round trip.
+
+### Changed
+
+- Signing and relay waiting share one deadline capped at the 90-second request
+  freshness window. Cancellation, retirement and expiry suppress late signing
+  and retries; a host rechecks freshness after an awaited admission decision.
+- Request helpers clone and erase their own exchange key while preserving the
+  caller's key and the admitted responder's retained delegation key.
+- Browser size budgets cover measured growth of 2,725 minified bytes and
+  729 gzip bytes over 0.10, with no new dependency. CI checks browser bundles
+  and a real installed tarball as well as protocol/unit tests.
+
+Without an account proof, the existing request and grant wire formats remain
+unchanged. This additive API does not repair a consumer that still trusts an
+unverified `participant` claim.
+
 ## 0.9.0
 
 ### Added
