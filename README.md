@@ -312,3 +312,15 @@ admission before publishing, including at epoch zero. No application enables
 this profile automatically. See [the wire profile and integration gates](docs/live-persistent-admission.md).
 Frozen synthetic fixtures are in `vectors/live-persistent-vectors.json`; run
 `npm run build && npm run generate-live-persistent` to regenerate them.
+
+## Authenticated invitation refusal (0.12.0)
+
+`encodeInvitationDecline` and `decodeInvitationDecline` exchange a private,
+request-bound refusal from the pinned inviter or a current delegated responder.
+The version-3 refusal body uses reply kind 20467 and contains no room secret or
+new delegation. Legacy version-2 grant readers ignore it.
+`requestRoomAdmissionCapability` stops retries and rejects with
+`InvitationDeclinedError` after verifying a refusal. Existing host `admit` hooks
+returning false still leave requests unanswered; hosts must explicitly publish
+a refusal using their guarded, acknowledged decision path. No UI integration or
+physical acceptance is claimed by this protocol release.
