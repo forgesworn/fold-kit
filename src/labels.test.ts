@@ -23,6 +23,7 @@ import { MEMBER_EPOCH_LABELS } from './member-epoch.js'
 import { INVITATION_LABELS } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
 import { LIVE_PERSISTENT_ADMISSION_LABELS } from './live-persistent-admission.js'
+import { MLS_ADMISSION_LABELS } from './mls-admission.js'
 import { ROOM_LABELS } from './room.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -70,6 +71,17 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v2/invitation-request-key',
   'kithmoot/v2/invitation-account-proof',
   'kithmoot/v3/group-invitation-key',
+  'kithmoot/v4/mls-invitation-id',
+  'kithmoot/v4/mls-request-key',
+  'kithmoot/v4/mls-answer-key',
+  'kithmoot/v4/mls-request',
+  'kithmoot/v4/mls-answer',
+  'kithmoot/v4/mls-joiner-account-proof',
+  'kithmoot/v4/mls-browser-device-proof',
+  'kithmoot/v4/mls-engine-device-proof',
+  'kithmoot/v4/mls-keeper-account-proof',
+  'kithmoot/v4/mls-keeper-device-proof',
+
 ]
 
 describe('kithmoot/ wire-format labels', () => {
@@ -106,6 +118,7 @@ const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = 
   ['persistent-invitation.ts', PERSISTENT_INVITATION_LABELS],
   ['live-persistent-admission.ts', LIVE_PERSISTENT_ADMISSION_LABELS],
   ['room.ts', ROOM_LABELS],
+  ['mls-admission.ts', MLS_ADMISSION_LABELS],
 ]
 
 function findLabelsInFile(file: string): string[] {

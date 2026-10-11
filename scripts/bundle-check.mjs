@@ -14,8 +14,9 @@ const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 const distIndex = join(root, 'dist', 'index.js')
 const distLane = join(root, 'dist', 'lane.js')
+const distMls = join(root, 'dist', 'mls-admission.js')
 
-if (!existsSync(distIndex) || !existsSync(distLane)) {
+if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls)) {
   console.error('bundle-check: dist/ is missing - run `npm run build` first')
   process.exit(1)
 }
@@ -27,11 +28,14 @@ if (!existsSync(distIndex) || !existsSync(distLane)) {
 const BUDGETS_KB = {
   index: { minified: 68, gzip: 20 },
   lane: { minified: 1.2, gzip: 0.7 },
+  // Separate opt-in v4 codec measured at 12.8 KiB / 5.1 KiB gzip.
+  // Existing index/lane budgets stay unchanged.
+  mls: { minified: 14, gzip: 6 },
 }
 
 let failed = false
 
-for (const [name, entry] of [['index', distIndex], ['lane', distLane]]) {
+for (const [name, entry] of [['index', distIndex], ['lane', distLane], ['mls', distMls]]) {
   const result = esbuild.buildSync({
     entryPoints: [entry],
     bundle: true,
@@ -69,4 +73,4 @@ if (failed) {
   console.error('\nbundle-check: failed')
   process.exit(1)
 }
-console.log('\nbundle-check: no node: imports, both entries within budget')
+console.log('\nbundle-check: no node: imports, all entries within budget')

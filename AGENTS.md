@@ -81,7 +81,8 @@ hand - it prints a notice and exits 0 rather than failing.
 
 ## Exports
 
-Two entry points, `@forgesworn/fold-kit` and `@forgesworn/fold-kit/lane`.
+Three entry points: `@forgesworn/fold-kit`, `@forgesworn/fold-kit/lane`, and
+`@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec).
 See README.md for the full list, grouped by area (identity/verification,
 kinds/types, rooms/credentials/access, links/invitations, epochs, channel
 derivation, lane).

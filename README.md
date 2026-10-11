@@ -59,10 +59,10 @@ ESM only (`"type": "module"`). Node.js `>=22.13`.
 
 ## Exports
 
-Two entry points: `@forgesworn/fold-kit` (everything) and
+Three entry points: `@forgesworn/fold-kit` (circle primitives),
 `@forgesworn/fold-kit/lane` (just the lane helpers, for a consumer that only
 wants to classify a relay as `public`/`sheltered`/`direct` without pulling in
-the rest).
+the rest), and `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec).
 
 ### Identity, verification, hex
 
@@ -324,3 +324,24 @@ new delegation. Legacy version-2 grant readers ignore it.
 returning false still leave requests unanswered; hosts must explicitly publish
 a refusal using their guarded, acknowledged decision path. No UI integration or
 physical acceptance is claimed by this protocol release.
+
+### MLS admission v4 evidence codec
+
+The separate opt-in v4 codec binds an encrypted account/device request to signed
+keeper consent and an expected MLS group. It uses existing 20466/20467 carriers,
+strict canonical arrays and a fixed payload bucket. Existing room links/codecs
+are unchanged. Import from `@forgesworn/fold-kit/mls-admission`; see [API and boundaries](docs/mls-admission-v4.md).
+
+Exports: `encodeMlsInvitationV4`, `readMlsInvitationV4`,
+`mlsAdmissionProofTemplatesV4`, `encodeMlsAdmissionRequestV4`,
+`decodeMlsAdmissionRequestV4`, `readMlsAdmissionRequestV4`,
+`encodeMlsAdmissionAnswerV4`, `decodeMlsAdmissionAnswerV4`,
+`readMlsAdmissionAnswerV4`, `MLS_ADMISSION_LABELS`,
+`MLS_ADMISSION_PLAINTEXT_BYTES`, `MLS_ADMISSION_CIPHERTEXT_CHARACTERS`;
+types `VerifiedMlsAdmissionRequest` and `VerifiedAdmissionAnswer`.
+
+Verified answers are evidence only. Actual admission requires new purpose-bound
+vault proof and authoritative live box/Link role-witness APIs, a conditional
+keeper revision at the effect boundary, current custody/consent, durable counter
+and one-shot operation storage, and VMLS/Welcome verification. No browser
+admission, authority factory, transport, storage or automatic retry is provided.

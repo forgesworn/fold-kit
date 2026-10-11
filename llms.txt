@@ -2,7 +2,7 @@
 
 > Circle primitives for private Nostr groups nobody operates: a room key per epoch, sealed to each device that stays; link invitations as capabilities; member removal by rekey; device credentials so a person approves a device once and it signs from then on. Extracted from KithMoot, byte-identical on the wire. Framework-free: owns no storage, UI, relay defaults or identity keys, and does no relay I/O of its own.
 
-ESM-only, Node.js 22.13+. Two entry points: `@forgesworn/fold-kit` (everything) and `@forgesworn/fold-kit/lane` (relay lane classification only).
+ESM-only, Node.js 22.13+. Three entry points: `@forgesworn/fold-kit` (circle primitives), `@forgesworn/fold-kit/lane` (relay lane classification only), and `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec).
 
 ## Install
 
@@ -146,3 +146,20 @@ new delegation. Legacy version-2 grant readers ignore it.
 returning false still leave requests unanswered; hosts must explicitly publish
 a refusal using their guarded, acknowledged decision path. No UI integration or
 physical acceptance is claimed by this protocol release.
+
+MLS admission v4 (opt-in pure evidence codec): docs/mls-admission-v4.md.
+encodeMlsInvitationV4/readMlsInvitationV4 handle a separate canonical fragment.
+mlsAdmissionProofTemplatesV4 constructs exact purpose-bound role templates;
+account/device signers stay caller-owned under real custody. Core/proof inputs
+are canonical fixed-array JSON; outer event inputs/outputs are compact JSON
+NIP-01 objects. encode/decodeMlsAdmissionRequestV4 and
+encode/decodeMlsAdmissionAnswerV4 verify every outer/inner signature afresh.
+Only decoders issue nominal VerifiedMlsAdmissionRequest/VerifiedAdmissionAnswer;
+readMlsAdmissionRequestV4/readMlsAdmissionAnswerV4 expose immutable evidence
+strings, never authority. MLS_ADMISSION_LABELS freezes v4 domain labels;
+MLS_ADMISSION_PLAINTEXT_BYTES=16384, MLS_ADMISSION_CIPHERTEXT_CHARACTERS=21936.
+Do not turn root/keeper signatures or decoder handles into admission authority.
+Actual owners need purpose-specific vault proof, fresh authenticated conditional
+box/Link keeper witness, current consent/custody/clock, durable global counter
+and one-shot operation storage, VMLS policy and exact-group Welcome adoption.
+No transport, storage, browser join or automatic retry is implemented here.
