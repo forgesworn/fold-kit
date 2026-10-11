@@ -14,7 +14,11 @@
       "types": "./dist/lane.d.ts",
       "default": "./dist/lane.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./mls-admission": {
+      "types": "./dist/mls-admission.d.ts",
+      "default": "./dist/mls-admission.js"
+    }
   },
   "files": [
     "dist",
@@ -29,7 +33,9 @@
     "llms.txt",
     "vectors/live-persistent-vectors.json",
     "vectors/invitation-account-vectors.json",
-    "vectors/invitation-decline-vectors.json"
+    "vectors/invitation-decline-vectors.json",
+    "vectors/mls-admission-v4.json",
+    "docs/mls-admission-v4.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -50,7 +56,8 @@
     "prepublishOnly": "npm run check && npm run bundle-check && npm run tarball-smoke",
     "generate-live-persistent": "node scripts/generate-live-persistent.mjs",
     "generate-invitation-account": "node scripts/generate-invitation-account.mjs",
-    "generate-invitation-decline": "node scripts/generate-invitation-decline.mjs"
+    "generate-invitation-decline": "node scripts/generate-invitation-decline.mjs",
+    "generate-mls-admission": "node scripts/generate-mls-admission.mjs"
   },
   "keywords": [
     "nostr",

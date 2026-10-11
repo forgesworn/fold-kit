@@ -46,6 +46,8 @@ try {
     `
 import * as main from '@forgesworn/fold-kit'
 import * as lane from '@forgesworn/fold-kit/lane'
+import * as mls from '@forgesworn/fold-kit/mls-admission'
+import { readFileSync } from 'node:fs'
 
 const expectedMain = ${JSON.stringify([
       'hexEquals', 'normaliseHex', 'verifyEventUncached', 'boundedEventVerifier', 'localIdentity',
@@ -79,9 +81,11 @@ const expectedMain = ${JSON.stringify([
     ])}
 const expectedLane = ${JSON.stringify(['LANES', 'LANE_MEANING', 'LANE_LABEL', 'LANE_GLYPH', 'isLane', 'laneOfRelayUrl', 'laneOfRelays', 'weakestLane', 'isDowngrade'])}
 
+const expectedMls = ["MLS_ADMISSION_LABELS", "MLS_ADMISSION_PLAINTEXT_BYTES", "MLS_ADMISSION_CIPHERTEXT_CHARACTERS", "encodeMlsInvitationV4", "readMlsInvitationV4", "mlsAdmissionProofTemplatesV4", "encodeMlsAdmissionRequestV4", "decodeMlsAdmissionRequestV4", "readMlsAdmissionRequestV4", "encodeMlsAdmissionAnswerV4", "decodeMlsAdmissionAnswerV4", "readMlsAdmissionAnswerV4"]
 let missing = []
 for (const name of expectedMain) if (!(name in main)) missing.push('main:' + name)
 for (const name of expectedLane) if (!(name in lane)) missing.push('lane:' + name)
+for (const name of expectedMls) if (!(name in mls)) missing.push('mls:' + name)
 if (missing.length > 0) {
   console.error('tarball-smoke: missing exports: ' + missing.join(', '))
   process.exit(1)
@@ -105,7 +109,12 @@ const event = main.encodeInvitationRequest({ invitation, requesterSk, participan
 const request = main.decodeInvitationRequest(event, { invitation, now })
 if (request?.verifiedParticipant !== identity.pubkey) throw new Error('packaged invitation account proof did not verify')
 
-console.log('tarball-smoke: all ' + expectedMain.length + ' main exports and ' + expectedLane.length + ' lane exports present and callable')
+const vector = JSON.parse(readFileSync(new URL('./node_modules/@forgesworn/fold-kit/vectors/mls-admission-v4.json', import.meta.url), 'utf8'))
+const requestKey = new Uint8Array(Buffer.from(vector.requestSecretHex, 'hex'))
+const mlsRequest = mls.decodeMlsAdmissionRequestV4({ fragment: vector.fragment, event: vector.requestEvent, localSecretKey: requestKey, side: 'joiner', now: vector.now })
+const mlsAnswer = mls.decodeMlsAdmissionAnswerV4({ fragment: vector.fragment, request: mlsRequest, event: vector.allowEvent, requestSecretKey: requestKey, now: vector.now })
+if (mls.readMlsAdmissionAnswerV4(mlsAnswer).digest !== vector.allowDigest) throw new Error('packaged MLS Allow evidence did not verify')
+console.log('tarball-smoke: all ' + expectedMain.length + ' main exports and ' + expectedLane.length + ' lane exports and ' + expectedMls.length + ' MLS exports present and callable')
 `,
   )
   execFileSync('node', ['smoke.mjs'], { cwd: scratch, stdio: 'inherit' })
