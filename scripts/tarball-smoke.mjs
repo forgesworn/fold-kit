@@ -49,7 +49,7 @@ import * as lane from '@forgesworn/fold-kit/lane'
 import * as mls from '@forgesworn/fold-kit/mls-admission'
 import * as evidence from '@forgesworn/fold-kit/persistent-invitation-evidence'
 import { readFileSync } from 'node:fs'
-for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES']) {
+for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'revalidatePersistentInvitationSource', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES']) {
   if (!(name in evidence)) throw new Error('missing packaged evidence export ' + name)
 }
 
@@ -111,6 +111,11 @@ const now = 1700000000
 const groupHost = main.createRoomInvitation(true)
 const groupSecret = new Uint8Array(32).fill(12)
 const groupEvent = main.encodePersistentInvitation({ ...groupHost, roomSecret: groupSecret, now, relays: ['wss://fixed.example/'] })
+const groupSource = evidence.revalidatePersistentInvitationSource({ event: groupEvent, invitation: groupHost.invitation, expectedRoomSecret: groupSecret })
+const sourceReload = evidence.revalidatePersistentInvitationSource({ event: groupSource.event, invitation: groupHost.invitation, expectedRoomSecret: groupSecret })
+if (groupSource.eventId !== groupEvent.id || sourceReload.event !== groupSource.event || sourceReload.admission.relays[0] !== 'wss://fixed.example/' || 'completion' in sourceReload) throw new Error('packaged single invitation source did not revalidate')
+groupSource.admission.secret.fill(0)
+sourceReload.admission.secret.fill(0)
 let evidenceStopped = false
 const groupEvidence = await evidence.requestPersistentRoomAdmissionEvidence({ invitation: groupHost.invitation, transport: {
   publish: async () => { throw new Error('evidence query published') }, close() {},

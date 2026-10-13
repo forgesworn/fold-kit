@@ -8,6 +8,34 @@ storage or routing effects and supplies no relay defaults. The existing
 Import from `@forgesworn/fold-kit/persistent-invitation-evidence`; the existing
 main entry and its bundle budget remain unchanged.
 
+## A single creator source
+
+`revalidatePersistentInvitationSource({ event, invitation, expectedRoomSecret })`
+validates one actual `encodePersistentInvitation` Event, or the exact canonical
+carrier string retained from it. The exact 32-byte room-root pin is mandatory;
+missing, malformed or mismatching pins fail rather than disabling the check.
+The capability and root are copied before carrier verification, and temporary
+copies and derived keys are erased. The returned `admission.secret` is a fresh
+owned buffer that the caller must erase. Caller buffers are never erased.
+
+`PersistentInvitationSource` is a frozen envelope with `version: 1`,
+`invitationId`, `inviter`, `eventId`, `createdAt`, the canonical `event` string
+and owned `admission` fields. It authenticates the supported encoder's exact
+signature, inviter, invitation ID, root, end/expiration, destruction flag and
+relay list. Retirement events and noncanonical reload strings are rejected.
+The same plain-data boundary and 16,384-byte carrier limit below apply, with
+string bounds checked before parsing and object bounds before verification.
+
+This source has **no completion/EOSE claim**. It is not a query observation,
+latest-event selection, publication receipt, current membership authority or
+evidence of absence of retirement. A creator retains the canonical event,
+actual owner/fixed metadata and a bounded pending publication intent in
+acknowledged protected custody before opening any relay pool. After uncertain
+delivery it retries these exact event bytes without signing again or changing
+the timestamp. Every underlying write still needs a fresh client authority,
+generation and lifecycle guard. These storage and effect rules are client
+responsibilities; this validator performs no signing, relay I/O or storage.
+
 ## Carrier and bounds
 
 `PersistentInvitationEvidence` version 1 contains `invitationId`, `inviter`,
