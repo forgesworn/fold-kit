@@ -160,6 +160,14 @@ decision completes, so approval cannot extend an expired request's authority.
   EOSE is local observation metadata, never proof of current membership or
   global non-retirement. Persist the evidence in protected custody before
   using its decoded fields. See [the evidence contract](docs/persistent-invitation-evidence.md).
+- The same optional entry exports `revalidatePersistentInvitationSource` for
+  an actual encoder event or its exact canonical retained string. It requires
+  the invitation capability and exact room-root pin, independently verifies
+  the signature and supported body/tags, and returns one canonical carrier
+  plus owned decoded fields. This single source has no EOSE, publication,
+  latest-selection or current-membership claim. Creators retain that event
+  and their publication intent before opening a pool, then retry the same
+  bytes; protected persistence and fresh effect guards belong to the client.
 - Room relays: pass `relays` (one to eight distinct safe relay URLs in
   canonical `normalizeURL` form, e.g. `wss://relay.example.com/`) and the
   encrypted body carries them after `ends`. Every member's pool includes

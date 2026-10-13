@@ -51,6 +51,21 @@ export interface PersistentInvitationEvidenceResult {
   readonly outcome: PersistentInvitationEvidenceOutcome
 }
 
+/** One authenticated group event, without an observation/completion claim.
+ * This proves its signed fields only, not publication, current membership,
+ * latest selection or absence of retirement. */
+export interface PersistentInvitationSource {
+  readonly version: 1
+  readonly invitationId: string
+  readonly inviter: string
+  readonly eventId: string
+  readonly createdAt: number
+  /** Exact canonical carrier bytes to retain and reuse for publication. */
+  readonly event: string
+  /** Fresh owned decoded fields; caller must erase the secret after use. */
+  readonly admission: PersistentRoomAdmission
+}
+
 /** Incomplete observations are bounded diagnostic custody only. They are
  * never accepted by revalidatePersistentInvitationEvidence. */
 export class PersistentInvitationEvidenceQueryError extends Error {
@@ -182,6 +197,45 @@ function decodeEvidenceEvent(event: Event, invitation: RoomInvitation): Persiste
   } catch { return null } finally {
     key.fill(0)
     if (!accepted) secret?.fill(0)
+  }
+}
+
+/** Validate an actual encoder Event or its exact retained canonical carrier.
+ * A room-root pin is mandatory. No signing, query, storage or publication is
+ * performed. In particular, this cannot manufacture one-event EOSE evidence. */
+export function revalidatePersistentInvitationSource(opts: {
+  event: unknown
+  invitation: RoomInvitation
+  expectedRoomSecret: Uint8Array
+}): PersistentInvitationSource {
+  const invitation = copyInvitation(opts.invitation)
+  let root: Uint8Array | undefined, admission: PersistentRoomAdmission | undefined
+  let transferred = false
+  try {
+    const expected = opts.expectedRoomSecret
+    if (!(expected instanceof Uint8Array) || expected.length !== 32) throw new Error('invalid expected room root')
+    root = expected.slice()
+    const raw = opts.event
+    let c: ReturnType<typeof carrier>
+    if (typeof raw === 'string') {
+      if (raw.length > MAX_PERSISTENT_INVITATION_EVENT_BYTES || utf8.encode(raw).length > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized invitation source carrier')
+      c = carrier(JSON.parse(raw))
+      if (c.canonical !== raw) throw new Error('noncanonical invitation source carrier')
+    } else c = carrier(raw)
+    if (c.event.kind !== KINDS.GROUP_INVITATION) throw new Error('a group invitation source is required')
+    const decoded = decodeEvidenceEvent(c.event, invitation)
+    if (!decoded || decoded === 'retired') throw new Error('invalid signed invitation source')
+    admission = decoded
+    if (!admission.secret.every((byte, i) => byte === root![i])) throw new Error('wrong invitation source room root')
+    const result: PersistentInvitationSource = Object.freeze({ version: 1 as const,
+      invitationId: deriveInvitationId(invitation), inviter: invitation.inviter,
+      eventId: c.event.id, createdAt: c.event.created_at, event: c.canonical, admission })
+    transferred = true
+    return result
+  } finally {
+    if (!transferred) admission?.secret.fill(0)
+    root?.fill(0)
+    invitation.bearer.fill(0)
   }
 }
 
