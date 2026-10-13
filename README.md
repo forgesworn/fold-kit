@@ -59,10 +59,12 @@ ESM only (`"type": "module"`). Node.js `>=22.13`.
 
 ## Exports
 
-Three entry points: `@forgesworn/fold-kit` (circle primitives),
+Four entry points: `@forgesworn/fold-kit` (circle primitives),
 `@forgesworn/fold-kit/lane` (just the lane helpers, for a consumer that only
 wants to classify a relay as `public`/`sheltered`/`direct` without pulling in
-the rest), and `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec).
+the rest), `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec), and
+`@forgesworn/fold-kit/persistent-invitation-evidence` (bounded stored invitation
+observation and independent revalidation).
 
 ### Identity, verification, hex
 
@@ -149,6 +151,15 @@ decision completes, so approval cannot extend an expired request's authority.
   conference room: the encrypted body carries `ends` and the event a NIP-40
   `expiration` tag, so relays drop it when the room ends; the decoder returns
   `endsAt` and refuses a tag that disagrees with the body
+- From `@forgesworn/fold-kit/persistent-invitation-evidence`,
+  `requestPersistentRoomAdmissionEvidence` and
+  `revalidatePersistentInvitationEvidence` retain and independently recheck a
+  bounded set of canonical signed invitation/retirement carriers, with exact
+  invitation and contributing event IDs. The additive evidence path holds on
+  conflicting newest equal-time relay lists; the legacy request is unchanged.
+  EOSE is local observation metadata, never proof of current membership or
+  global non-retirement. Persist the evidence in protected custody before
+  using its decoded fields. See [the evidence contract](docs/persistent-invitation-evidence.md).
 - Room relays: pass `relays` (one to eight distinct safe relay URLs in
   canonical `normalizeURL` form, e.g. `wss://relay.example.com/`) and the
   encrypted body carries them after `ends`. Every member's pool includes
