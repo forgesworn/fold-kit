@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Real-tarball consumer smoke test: `npm pack`, install the tarball into a
 // scratch directory alongside the peer dependencies, and import every
-// export from both entry points. See EXTRACTION.md for the extraction this
+// export from all entry points. See EXTRACTION.md for the extraction this
 // check belongs to.
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, readdirSync } from 'node:fs'
@@ -47,7 +47,11 @@ try {
 import * as main from '@forgesworn/fold-kit'
 import * as lane from '@forgesworn/fold-kit/lane'
 import * as mls from '@forgesworn/fold-kit/mls-admission'
+import * as evidence from '@forgesworn/fold-kit/persistent-invitation-evidence'
 import { readFileSync } from 'node:fs'
+for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES']) {
+  if (!(name in evidence)) throw new Error('missing packaged evidence export ' + name)
+}
 
 const expectedMain = ${JSON.stringify([
       'hexEquals', 'normaliseHex', 'verifyEventUncached', 'boundedEventVerifier', 'localIdentity',
@@ -104,6 +108,16 @@ const identity = main.localIdentity(new Uint8Array(32).fill(8))
 const requesterSk = new Uint8Array(32).fill(9)
 const invitation = main.createRoomInvitation().invitation
 const now = 1700000000
+const groupHost = main.createRoomInvitation(true)
+const groupSecret = new Uint8Array(32).fill(12)
+const groupEvent = main.encodePersistentInvitation({ ...groupHost, roomSecret: groupSecret, now, relays: ['wss://fixed.example/'] })
+let evidenceStopped = false
+const groupEvidence = await evidence.requestPersistentRoomAdmissionEvidence({ invitation: groupHost.invitation, transport: {
+  publish: async () => { throw new Error('evidence query published') }, close() {},
+  subscribe(_filters, onEvent, onEose) { onEvent(groupEvent); onEose(); return () => { evidenceStopped = true } },
+} })
+const evidenceReload = evidence.revalidatePersistentInvitationEvidence({ evidence: JSON.parse(JSON.stringify(groupEvidence.evidence)), invitation: groupHost.invitation, expectedRoomSecret: groupSecret })
+if (!evidenceStopped || evidenceReload.outcome.status !== 'admitted' || evidenceReload.outcome.admission.relays[0] !== 'wss://fixed.example/') throw new Error('packaged persistent invitation evidence did not revalidate')
 const proof = await main.encodeInvitationAccountProof({ invitation, identity, device: main.localIdentity(requesterSk).pubkey, now })
 const event = main.encodeInvitationRequest({ invitation, requesterSk, participant: identity.pubkey, accountProof: proof, now })
 const request = main.decodeInvitationRequest(event, { invitation, now })

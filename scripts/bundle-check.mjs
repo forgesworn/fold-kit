@@ -15,8 +15,9 @@ const root = join(here, '..')
 const distIndex = join(root, 'dist', 'index.js')
 const distLane = join(root, 'dist', 'lane.js')
 const distMls = join(root, 'dist', 'mls-admission.js')
+const distEvidence = join(root, 'dist', 'persistent-invitation-evidence.js')
 
-if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls)) {
+if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !existsSync(distEvidence)) {
   console.error('bundle-check: dist/ is missing - run `npm run build` first')
   process.exit(1)
 }
@@ -31,11 +32,14 @@ const BUDGETS_KB = {
   // Separate opt-in v4 codec measured at 12.8 KiB / 5.1 KiB gzip.
   // Existing index/lane budgets stay unchanged.
   mls: { minified: 14, gzip: 6 },
+  // Optional evidence entry measured at 13.8 KiB / 5.2 KiB gzip.
+  // Existing entry budgets remain unchanged.
+  evidence: { minified: 15, gzip: 6 },
 }
 
 let failed = false
 
-for (const [name, entry] of [['index', distIndex], ['lane', distLane], ['mls', distMls]]) {
+for (const [name, entry] of [['index', distIndex], ['lane', distLane], ['mls', distMls], ['evidence', distEvidence]]) {
   const result = esbuild.buildSync({
     entryPoints: [entry],
     bundle: true,

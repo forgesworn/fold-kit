@@ -18,6 +18,10 @@
     "./mls-admission": {
       "types": "./dist/mls-admission.d.ts",
       "default": "./dist/mls-admission.js"
+    },
+    "./persistent-invitation-evidence": {
+      "types": "./dist/persistent-invitation-evidence.d.ts",
+      "default": "./dist/persistent-invitation-evidence.js"
     }
   },
   "files": [
@@ -35,7 +39,8 @@
     "vectors/invitation-account-vectors.json",
     "vectors/invitation-decline-vectors.json",
     "vectors/mls-admission-v4.json",
-    "docs/mls-admission-v4.md"
+    "docs/mls-admission-v4.md",
+    "docs/persistent-invitation-evidence.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

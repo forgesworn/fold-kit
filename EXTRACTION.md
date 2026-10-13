@@ -135,8 +135,10 @@ Every label byte value is unchanged from KithMoot's frozen list.
 
 ## Package
 
-ESM only, `exports` for `.` (everything), `./lane` (lane helpers only) and
-`./package.json`, peer dependencies (`nostr-tools >=2.24.2 <3`,
+ESM only, `exports` for `.` (circle primitives), `./lane` (lane helpers),
+`./mls-admission` (opt-in v4 codecs), `./persistent-invitation-evidence`
+(bounded stored invitation observations) and `./package.json`.
+Peer dependencies (`nostr-tools >=2.24.2 <3`,
 `@noble/hashes ^1.8.0`, `@noble/curves ^2.0.1`) matching KithMoot's pinned
 versions so a consumer keeps a single copy of each, `engines.node >=22.13`,
 `sideEffects: false`. `@noble/hashes` is pinned to its 1.x major only:
@@ -429,10 +431,10 @@ does not silently change KithMoot's own public surface:
   24: green on both.
 - `scripts/diff-source.mjs` against commit `5babfec`: zero differences.
 - Both vector files verify against this kit's own functions.
-- `scripts/bundle-check.mjs`: esbuild browser bundle of both entry points,
+- `scripts/bundle-check.mjs`: esbuild browser bundle of all entry points,
   no `node:` import, within the recorded size budget.
 - `scripts/tarball-smoke.mjs`: `npm pack`, install into a scratch directory,
-  import and exercise every export from both entry points.
+  import and exercise every export from all entry points.
 
 KithMoot has cut over to this kit (T2.1) and pins an exact npm version;
 its moved files are re-export shims. Any change here that alters behaviour
@@ -509,3 +511,14 @@ refusal does not revoke an already granted capability. `INVITATION_DECLINE_CHANG
 reverses the exact helper import and response handling before all earlier
 declared normalisations and the full pinned-source comparison. Synthetic known
 answers cover the new profile and hostile request, authority and version changes.
+
+## Persistent invitation evidence
+
+`persistent-invitation-evidence.ts` is an additive observation/custody API. It
+uses the existing signed group invitation and retirement formats and leaves
+`persistent-invitation.ts` and its legacy request/error behaviour unchanged.
+The evidence path independently rechecks a complete bounded observed set and
+holds on conflicting newest equal-time relay lists; its EOSE receipt does not
+establish global absence or current membership. No storage or client effects
+move into the kit. See `docs/persistent-invitation-evidence.md` for the carrier,
+selection, refusal and caller integration boundaries.
