@@ -756,6 +756,9 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
         if (closed) return
         const delay = delayRange ? replyDelay(delayRange, random) : 0
         if (delay === 0) { grantAfterWait(); return }
+        // Bounded, as the epoch desk's queue is: a request turned away while
+        // it is full is forgotten, and answered when it is retried.
+        if (waits.size >= 256) { answered.delete(request.request); return }
         let cancel = (): void => {}
         let done = false
         cancel = schedule(() => { done = true; waits.delete(cancel); grantAfterWait() }, delay)

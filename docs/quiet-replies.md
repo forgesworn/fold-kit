@@ -63,6 +63,8 @@ added, and grants are published exactly as before.
   down at most once per request. It then forgets the request, so the
   requester's next retry of the same request is answered without asking
   `admit` again.
+- No more than 256 grants wait at once; a request turned away while the
+  queue is full is answered when it is retried.
 
 ## The member desk (`hostMemberEpochDesk`)
 
