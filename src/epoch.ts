@@ -18,6 +18,7 @@ import { epochCommitment } from './epoch-commit.js'
 import type { RelayTransport } from './transport.js'
 import type { DeviceCredential, KindredProof, RoomPolicy } from './types.js'
 import type { MemberEpochSource } from './member-epoch.js'
+import { DEFAULT_REPLY_DELAY_MS, REFUSE_AGAIN_AFTER_SECONDS, RefusalLimiter, defaultReplySchedule, replyDelay, type ReplyDelayRange, type ReplySchedule } from './quiet-reply.js'
 
 /**
  * Room epochs: how a member is removed.
@@ -874,15 +875,34 @@ export interface HostRoomEpochOptions {
    *  is making `known` say yes; the requester's next ask is then granted. */
   onUnknown?: (request: EpochRequest) => void
   /** Seconds before a participant still unknown and still asking is
-   *  reported again. Default 60. */
+   *  reported again. Default 60. An `unknown` answer goes on the wire at
+   *  the same cadence: a fresh request inside it is reported to nobody and
+   *  answered with silence. */
   reportUnknownEvery?: number
   policy?: RoomPolicy
   legacyParticipants?: ReadonlySet<string>
   now?: () => number
   onGranted?: (request: EpochRequest) => void
+  /** Called for every refusal, including one the limits below kept off the
+   *  wire. */
   onRefused?: (request: EpochRequest, why: EpochRefusal) => void
   /** A conference room's end: every grant carries it as an expiration. */
   expiresAt?: number
+  /** Seconds before the same participant is sent a `removed` or `closed`
+   *  refusal again. Default 3600 (`REFUSE_AGAIN_AFTER_SECONDS`). A request
+   *  inside it is not answered, so the asker times out instead. */
+  refuseAgainAfter?: number
+  /** Refusals of any kind published in any 60 seconds, whoever asks.
+   *  Default 20 (`MAX_REFUSALS_PER_MINUTE`). Grants are never limited. */
+  maxRefusalsPerMinute?: number
+  /** The random wait, in milliseconds, before any answer is published,
+   *  grant or refusal. Default `[500, 2000]` (`DEFAULT_REPLY_DELAY_MS`);
+   *  `[0, 0]` answers at once, as before. */
+  replyDelayMs?: ReplyDelayRange
+  /** For tests: a source of numbers in [0, 1). Default `Math.random`. */
+  random?: () => number
+  /** For tests: how the wait is timed. Default `setTimeout`. */
+  schedule?: ReplySchedule
 }
 
 /** What a desk hands over of `past()`: the window's epochs below the one it
@@ -952,6 +972,13 @@ export function sealCredential(
  * to participants the room knows (`known`), and answers anybody else
  * `unknown` until a member lets them in. A room that has never removed
  * anybody is answered exactly as before.
+ *
+ * Every answer waits a random `replyDelayMs` first, and refusals are
+ * rationed: one a participant per `refuseAgainAfter` (per
+ * `reportUnknownEvery` for `unknown`), and `maxRefusalsPerMinute` in all.
+ * A removed member who still holds the room key can otherwise ask with
+ * fresh requests for ever and time each signed reply, which tells them
+ * when the authority is online. What an answer says is unchanged.
  */
 export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   require32(opts.authoritySk, 'authority secret key')
@@ -969,6 +996,13 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
   const bound = (set: Set<string>): void => {
     if (set.size > 256) set.delete(set.values().next().value!)
   }
+  const refusals = new RefusalLimiter({ perMinute: opts.maxRefusalsPerMinute })
+  const delayRange = opts.replyDelayMs ?? DEFAULT_REPLY_DELAY_MS
+  const random = opts.random ?? Math.random
+  const schedule = opts.schedule ?? defaultReplySchedule
+  /** Requests waiting out their delay, each with how to cancel it. Bounded:
+   *  a request turned away while it is full is answered on its retry. */
+  const pending = new Map<string, () => void>()
   let closed = false
   const unsub = opts.transport.subscribe(
     [{ kinds: [KINDS.EPOCH_REQUEST], '#d': [roomId], '#p': [authority] }],
@@ -982,68 +1016,91 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
         policy: opts.policy,
         legacyParticipants: opts.legacyParticipants,
       })
-      if (!read || answered.has(read.request.request)) return
+      if (!read || answered.has(read.request.request) || pending.has(read.request.request)) return
       const request = read.request
-      let refused: EpochRefusal | undefined
-      if (opts.closed?.()) refused = 'closed'
-      else if (opts.removed().has(request.participant)) refused = 'removed'
-      else if (opts.removed().size > 0 && !opts.known?.(request.participant)) refused = 'unknown'
-      if (refused === 'unknown') {
-        if (waiting.has(request.request)) return
-        waiting.add(request.request)
-        bound(waiting)
-      } else {
-        waiting.delete(request.request)
-        answered.add(request.request)
-        bound(answered)
-      }
-      let grant: Event
-      try {
-        if (refused) {
-          grant = encodeEpochGrant({
-            roomId,
-            authoritySk: opts.authoritySk,
-            device: request.device,
-            request: request.request,
-            now: now(),
-            refused,
-            credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
-            expiresAt: opts.expiresAt,
-          })
+      const reply = (): void => {
+        pending.delete(request.request)
+        if (closed) return
+        let refused: EpochRefusal | undefined
+        if (opts.closed?.()) refused = 'closed'
+        else if (opts.removed().has(request.participant)) refused = 'removed'
+        else if (opts.removed().size > 0 && !opts.known?.(request.participant)) refused = 'unknown'
+        if (refused === 'unknown') {
+          if (waiting.has(request.request)) return
+          waiting.add(request.request)
+          bound(waiting)
         } else {
-          const epoch = opts.current()
-          grant = encodeEpochGrant({
-            roomId,
-            authoritySk: opts.authoritySk,
-            device: request.device,
-            request: request.request,
-            now: now(),
-            epoch,
-            removed: [...opts.removed()],
-            ...(opts.members ? { members: [...opts.members()] } : {}),
-            ...(opts.past ? { passed: passedFor(opts.past, epoch.epoch, now()) } : {}),
-            credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
-            expiresAt: opts.expiresAt,
-          })
+          waiting.delete(request.request)
+          answered.add(request.request)
+          bound(answered)
         }
-      } catch {
+        const quiet = refused !== undefined && !refusals.allow(
+          request.participant,
+          refused === 'unknown' ? (opts.reportUnknownEvery ?? REPORT_UNKNOWN_EVERY_SECONDS) : (opts.refuseAgainAfter ?? REFUSE_AGAIN_AFTER_SECONDS),
+          now(),
+        )
+        if (!quiet) {
+          let grant: Event
+          try {
+            if (refused) {
+              grant = encodeEpochGrant({
+                roomId,
+                authoritySk: opts.authoritySk,
+                device: request.device,
+                request: request.request,
+                now: now(),
+                refused,
+                credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
+                expiresAt: opts.expiresAt,
+              })
+            } else {
+              const epoch = opts.current()
+              grant = encodeEpochGrant({
+                roomId,
+                authoritySk: opts.authoritySk,
+                device: request.device,
+                request: request.request,
+                now: now(),
+                epoch,
+                removed: [...opts.removed()],
+                ...(opts.members ? { members: [...opts.members()] } : {}),
+                ...(opts.past ? { passed: passedFor(opts.past, epoch.epoch, now()) } : {}),
+                credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
+                expiresAt: opts.expiresAt,
+              })
+            }
+          } catch {
+            return
+          }
+          opts.transport.publish(grant).catch(() => {})
+        }
+        if (refused === 'unknown' && now() - (reported.get(request.participant) ?? -Infinity) >= (opts.reportUnknownEvery ?? REPORT_UNKNOWN_EVERY_SECONDS)) {
+          reported.set(request.participant, now())
+          if (reported.size > 256) reported.delete(reported.keys().next().value!)
+          opts.onUnknown?.(request)
+        }
+        if (!refused) reported.delete(request.participant)
+        if (!refused) refusals.forget(request.participant)
+        if (refused) opts.onRefused?.(request, refused)
+        else opts.onGranted?.(request)
+      }
+      const delay = replyDelay(delayRange, random)
+      if (delay === 0) {
+        reply()
         return
       }
-      opts.transport.publish(grant).catch(() => {})
-      if (refused === 'unknown' && now() - (reported.get(request.participant) ?? -Infinity) >= (opts.reportUnknownEvery ?? REPORT_UNKNOWN_EVERY_SECONDS)) {
-        reported.set(request.participant, now())
-        if (reported.size > 256) reported.delete(reported.keys().next().value!)
-        opts.onUnknown?.(request)
-      }
-      if (!refused) reported.delete(request.participant)
-      if (refused) opts.onRefused?.(request, refused)
-      else opts.onGranted?.(request)
+      if (pending.size >= 256) return
+      pending.set(request.request, () => {})
+      const cancel = schedule(reply, delay)
+      if (pending.has(request.request)) pending.set(request.request, cancel)
     },
   )
   return {
     close() {
       if (closed) return
       closed = true
+      for (const cancel of pending.values()) cancel()
+      pending.clear()
       unsub()
     },
   }

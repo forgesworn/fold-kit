@@ -26,8 +26,11 @@ if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !
 // minified / 729 bytes gzip over 0.10, without adding a dependency. Measured
 // index: 65.4 KiB / 19.2 KiB gzip; lane: 0.9 KiB / 0.5 KiB. Keep a small
 // margin for ordinary growth while catching a bundled peer or dependency.
+// Quiet automatic replies (reply delays, the refusal limiter and the
+// coordinated invitation responder) add 2,242 bytes minified / 845 bytes
+// gzip, without a dependency: index measured at 69.6 KiB / 20.4 KiB gzip.
 const BUDGETS_KB = {
-  index: { minified: 68, gzip: 20 },
+  index: { minified: 71, gzip: 21 },
   lane: { minified: 1.2, gzip: 0.7 },
   // Separate opt-in v4 codec measured at 12.8 KiB / 5.1 KiB gzip.
   // Existing index/lane budgets stay unchanged.

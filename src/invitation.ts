@@ -13,6 +13,7 @@ import { withExpiration } from './expiration.js'
 import { deriveRoom } from './room.js'
 import type { ParticipantIdentity } from './identity.js'
 import { decodeInvitationDecline, InvitationDeclinedError } from './invitation-decline.js'
+import { DEFAULT_REPLY_DELAY_MS, defaultReplySchedule, replyDelay, type ReplyDelayRange, type ReplySchedule } from './quiet-reply.js'
 
 const INVITATION_ID_INFO = 'kithmoot/v2/invitation-id'
 const INVITATION_REQUEST_KEY_INFO = 'kithmoot/v2/invitation-request-key'
@@ -513,6 +514,30 @@ export interface HostRoomInvitationOptions {
    * room's link has always meant.
    */
   admit?: (request: InvitationRequest) => boolean | Promise<boolean>
+  /**
+   * Wait a random time in this range, in milliseconds, before publishing
+   * each grant, after `admit` when there is one. Absent, a grant goes out
+   * as soon as it is decided, as it always has (or after
+   * `DEFAULT_REPLY_DELAY_MS` when `coordinate` is set). For a device that
+   * answers automatically: an instant answer under the same key tells
+   * whoever holds the link when that device is online.
+   */
+  grantDelayMs?: ReplyDelayRange
+  /**
+   * Several of the room's devices answer the same link: wait first, and
+   * stand down if another responder's grant to the same requester appears
+   * during the wait, so normally one device answers. Waits
+   * `grantDelayMs`, default `[500, 2000]`. A grant is seen by its public
+   * tags only, so anyone holding the link could post a false one; this
+   * responder stands down at most once per request, and answers the
+   * requester's next retry. Absent or false, nothing changes and no extra
+   * subscription is opened.
+   */
+  coordinate?: boolean
+  /** For tests: a source of numbers in [0, 1). Default `Math.random`. */
+  random?: () => number
+  /** For tests: how the wait is timed. Default `setTimeout`. */
+  schedule?: ReplySchedule
 }
 
 export interface EncodeInvitationRetirementOptions {
@@ -605,14 +630,31 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
   const responder = getPublicKey(opts.inviterSk)
   const invitationId = deriveInvitationId(opts.invitation)
   const answered = new Set<string>()
+  const delayRange = opts.grantDelayMs ?? (opts.coordinate ? DEFAULT_REPLY_DELAY_MS : undefined)
+  const random = opts.random ?? Math.random
+  const schedule = opts.schedule ?? defaultReplySchedule
+  /** Grants waiting out their delay, each as how to cancel it. */
+  const waits = new Set<() => void>()
+  /** Requesting devices another responder's grant was seen for since their
+   *  request reached this one. Only with `coordinate`. */
+  const grantSeen = new Set<string>()
+  /** Requests this responder has already stood down for once. */
+  const stoodDown = new Set<string>()
+  const bound = (set: Set<string>): void => {
+    if (set.size > 256) set.delete(set.values().next().value!)
+  }
   let closed = false
   let unsubRequests = () => {}
   let unsubRetirement = () => {}
+  let unsubGrants = () => {}
   const close = (): void => {
     if (closed) return
     closed = true
+    for (const cancel of waits) cancel()
+    waits.clear()
     unsubRequests()
     unsubRetirement()
+    unsubGrants()
   }
 
   // Subscribe to the durable tombstone before accepting requests. Real
@@ -631,6 +673,19 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
     return { close }
   }
 
+  if (opts.coordinate) {
+    unsubGrants = opts.transport.subscribe(
+      [{ kinds: [KINDS.INVITATION_GRANT], '#d': [invitationId] }],
+      (event) => {
+        if (closed || hexEquals(event.pubkey, responder)) return
+        const to = event.tags.find((t) => t[0] === 'p')?.[1]
+        if (to === undefined || !/^[0-9a-f]{64}$/i.test(to)) return
+        grantSeen.add(normaliseHex(to))
+        bound(grantSeen)
+      },
+    )
+  }
+
   unsubRequests = opts.transport.subscribe(
     [{ kinds: [KINDS.INVITATION_REQUEST], '#d': [invitationId], '#p': [opts.invitation.inviter] }],
     (event) => {
@@ -644,6 +699,7 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
       // bound. Duplicate requests are harmless after eviction: they only
       // cause the same encrypted grant to be sent again.
       if (answered.size > 256) answered.delete(answered.values().next().value!)
+      grantSeen.delete(normaliseHex(request.device))
       const grantNow = (): void => {
         if (closed) return
         if (!decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })) {
@@ -683,12 +739,35 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
           })
           .catch(() => { /* A failure observer cannot escape the relay loop. */ })
       }
-      if (!opts.admit) { grantNow(); return }
+      const grantAfterWait = (): void => {
+        if (closed) return
+        if (opts.coordinate && grantSeen.has(normaliseHex(request.device)) && !stoodDown.has(request.request)) {
+          // Somebody else answered. Forget the request, so that if their
+          // grant was false the requester's retry is answered after all.
+          stoodDown.add(request.request)
+          bound(stoodDown)
+          answered.delete(request.request)
+          return
+        }
+        stoodDown.delete(request.request)
+        grantNow()
+      }
+      const grantLater = (): void => {
+        if (closed) return
+        const delay = delayRange ? replyDelay(delayRange, random) : 0
+        if (delay === 0) { grantAfterWait(); return }
+        let cancel = (): void => {}
+        let done = false
+        cancel = schedule(() => { done = true; waits.delete(cancel); grantAfterWait() }, delay)
+        if (!done) waits.add(cancel)
+      }
+      // A request stood down for was approved already: not asked again.
+      if (!opts.admit || stoodDown.has(request.request)) { grantLater(); return }
       // A host that asks first answers later, if at all. Never awaited in
       // the relay callback, and a hook that throws declines.
       Promise.resolve()
         .then(() => opts.admit!(request))
-        .then((yes) => { if (yes) grantNow() })
+        .then((yes) => { if (yes) grantLater() })
         .catch(() => {})
     },
   )

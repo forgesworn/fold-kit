@@ -227,6 +227,7 @@ describe('healing at the desks', () => {
     const epoch = { epoch: 2, secret: generateEpochSecret() }
     const desk = hostRoomEpoch({
       transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
       roomId,
       authoritySk,
       roomKey,
@@ -272,7 +273,7 @@ describe('healing at the desks', () => {
     const { copiedSeal, copied } = await incident()
     const relay = new SimRelay()
     const epoch = { epoch: 2, secret: generateEpochSecret() }
-    const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => epoch, removed: () => new Set(), now })
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => epoch, removed: () => new Set(), now })
     const grant = await requestRoomEpoch({
       transport: new SimTransport(relay), roomId, authority, deviceSk, roomKey, credential: copied, sealSks: () => [copiedSeal.secretKey], now, timeoutMs: 1_000,
     })

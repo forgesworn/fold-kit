@@ -211,6 +211,7 @@ describe('epoch requests and grants', () => {
     const removedIdentity = localIdentity(generateSecretKey())
     const desk = hostRoomEpoch({
       transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
       roomId,
       authoritySk,
       roomKey,
@@ -295,6 +296,7 @@ describe('epoch requests and grants', () => {
     const epoch = { epoch: 2, secret: generateEpochSecret() }
     const desk = hostRoomEpoch({
       transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
       roomId,
       authoritySk,
       roomKey,
@@ -368,6 +370,7 @@ describe('the known-members gate (#207)', () => {
   function desk(relay: SimRelay, extra: Partial<Parameters<typeof hostRoomEpoch>[0]> = {}) {
     return hostRoomEpoch({
       transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
       roomId,
       authoritySk,
       roomKey,
@@ -531,7 +534,7 @@ describe('a conference room\'s epoch events', () => {
   it('the desk and the asker pass the end through to what they publish', async () => {
     const relay = new SimRelay()
     const epoch = { epoch: 2, secret: generateEpochSecret() }
-    const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => epoch, removed: () => new Set(), now, expiresAt: ends })
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => epoch, removed: () => new Set(), now, expiresAt: ends })
     const credential = await createDeviceCredential({ identity, devicePubkey: device, roomId, expiresAt: NOW + 3600, now })
     await requestRoomEpoch({ transport: new SimTransport(relay), roomId, authority, deviceSk, roomKey, credential, now, timeoutMs: 1_000, expiresAt: ends })
     desk.close()
@@ -789,6 +792,7 @@ describe('an authority grant carries the window', () => {
     const kept = [left(16), left(17)]
     const desk = hostRoomEpoch({
       transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
       roomId,
       authoritySk,
       roomKey,
@@ -818,7 +822,7 @@ describe('an authority grant carries the window', () => {
       [() => Array.from({ length: 20 }, (_, i) => left(i + 1, NOW - 60)).filter((e) => e.epoch < 18), 16],
     ] as const) {
       const relay = new SimRelay()
-      const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), past, now })
+      const desk = hostRoomEpoch({ transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), past, now })
       const answer = await requestRoomEpoch({
         transport: new SimTransport(relay),
         roomId,
@@ -837,7 +841,7 @@ describe('an authority grant carries the window', () => {
 
   it('a desk with no past() grants exactly as before', async () => {
     const relay = new SimRelay()
-    const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), now })
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => granted, removed: () => new Set(), now })
     const answer = await requestRoomEpoch({
       transport: new SimTransport(relay),
       roomId,
