@@ -81,8 +81,10 @@ hand - it prints a notice and exits 0 rather than failing.
 
 ## Exports
 
-Three entry points: `@forgesworn/fold-kit`, `@forgesworn/fold-kit/lane`, and
-`@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec).
+Four entry points: `@forgesworn/fold-kit`, `@forgesworn/fold-kit/lane`,
+`@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec), and
+`@forgesworn/fold-kit/persistent-invitation-evidence` (bounded stored invitation
+observation and independent revalidation).
 See README.md for the full list, grouped by area (identity/verification,
 kinds/types, rooms/credentials/access, links/invitations, epochs, channel
 derivation, lane).
@@ -120,9 +122,9 @@ derivation, lane).
 - Do not edit generated output in `dist/` by hand.
 - A change to a moved module's *behaviour* (not just its home) is a wire
   compatibility question first: check EXTRACTION.md for which KithMoot
-  module it came from, and whether KithMoot still carries its own copy of
-  the same code (it does today; T2.1, KithMoot's cutover to this kit, is a
-  separate, later step - see the extraction plan).
+  module it came from, and how KithMoot consumes it (it has cut
+  over, T2.1: its moved files are re-export shims pinned to an exact npm
+  version, so a behaviour change here lands in KithMoot with its version bump).
 - `evaluateAgentAccess` stayed in KithMoot (`access.ts`) because it needs
   `ownership.ts` and `RosterEntry`, neither of which moved. `ChatLog` and
   the chat event codecs stayed in KithMoot (`chat.ts`); only `deriveChannel`
@@ -134,10 +136,11 @@ derivation, lane).
 
 ## Release Notes
 
-Pre-1.0. Seeded on npm as `@forgesworn/fold-kit@0.0.0-seed.0` under the
-`seed` dist-tag with trusted publishing configured; the real `0.1.0` release
-has not been published yet. Until it is, a consumer pins an immutable Git
-commit (see README "Install").
+Pre-1.0. Published on npm as `@forgesworn/fold-kit` with trusted publishing.
+`main` is at 0.12.0 and can run ahead of the npm `latest` release (0.10.0 when
+checked on 2026-10-16; `0.0.0-seed.0` remains under the `seed` dist-tag). A
+consumer who needs an unreleased change pins an immutable Git commit (see
+README "Install").
 
 Releases go through the shared `forgesworn/anvil` reusable workflow
 (`.github/workflows/release.yml`), triggered by a published GitHub Release

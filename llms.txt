@@ -10,19 +10,67 @@ ESM-only, Node.js 22.13+. Four entry points: `@forgesworn/fold-kit` (circle prim
 npm install @forgesworn/fold-kit
 ```
 
-Not yet published to npm under this API. Until it is, pin an immutable Git commit:
+This file describes `main` (version 0.12.0), which can run ahead of the npm `latest` release; compare `npm view @forgesworn/fold-kit version` with the version of the API you need. To use an unreleased change, pin an immutable Git commit (a full SHA, for example from `git ls-remote https://github.com/forgesworn/fold-kit main`); the `prepare` script builds `dist/` on install:
 
-```json
-{
-  "dependencies": {
-    "@forgesworn/fold-kit": "github:forgesworn/fold-kit#<commit>"
-  }
-}
+```bash
+npm install "github:forgesworn/fold-kit#<commit>"
 ```
 
 ### Peer dependencies
 
 `nostr-tools` (`>=2.24.2 <3`), `@noble/hashes` (`^1.8.0`), `@noble/curves` (`^2.0.1`) - peers, not dependencies, so a consumer keeps a single copy of each. `@noble/hashes` is 1.x only: this kit's imports have no `.js` suffix and its `hkdf` calls pass a string `info`, both of which 2.x rejects.
+
+```bash
+npm install "nostr-tools@>=2.24.2 <3" "@noble/hashes@^1.8.0" "@noble/curves@^2.0.1"
+```
+
+## Quick start
+
+Derive a room, then publish and load a stored group invitation through a `RelayTransport` you supply (this one is an in-memory stub; a real transport talks to relays and applies the filters):
+
+```ts
+import {
+  generateRoomSecret,
+  deriveRoom,
+  deriveEpoch,
+  localIdentity,
+  createRoomInvitation,
+  encodePersistentInvitation,
+  requestPersistentRoomAdmission,
+  type RelayTransport,
+} from '@forgesworn/fold-kit'
+import { generateSecretKey, type Event } from 'nostr-tools/pure'
+
+// The person: a local signer. An external one (NIP-07, NIP-46) fits the same seam.
+const me = localIdentity(generateSecretKey())
+
+// The room: one secret opens epoch 0; later epochs come from rekeys.
+const roomSecret = generateRoomSecret()
+const { roomId, roomKey } = deriveRoom(roomSecret)
+const epoch0 = deriveEpoch({ epoch: 0, secret: roomSecret }) // { epoch: 0, id: roomId, key: roomKey }
+
+// A RelayTransport stub: stores events, replays them on subscribe, then signals EOSE.
+const stored: Event[] = []
+const transport: RelayTransport = {
+  async publish(event) { stored.push(event) },
+  subscribe(_filters, onEvent, onEose) {
+    queueMicrotask(() => { for (const event of stored) onEvent(event); onEose?.() })
+    return () => {}
+  },
+  close() {},
+}
+
+// Invitation flow (v3 stored group invitation): the inviter publishes once, and a
+// guest holding the link loads it from the relays with no responder online.
+const { invitation, inviterSk } = createRoomInvitation(true)
+await transport.publish(encodePersistentInvitation({
+  invitation, inviterSk, roomSecret, now: Math.floor(Date.now() / 1000),
+}))
+const admission = await requestPersistentRoomAdmission({ transport, invitation })
+// admission.secret is the room secret: deriveRoom(admission.secret).roomId === roomId
+```
+
+Invitation versions: v1 (`encodeJoinUrl`, the room secret in the link) is legacy, and new links go through `createRoomInvitation`. Use `createRoomInvitation()` for the v2 live rendezvous, which needs a responder online (`hostRoomInvitation` answers, `requestRoomAdmissionCapability` joins), or `createRoomInvitation(true)` for the v3 stored group invitation above, which needs none.
 
 ## Exports
 
@@ -65,7 +113,10 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `verifyInvitationDelegation(invitation, chain, now)`
 - `encodeInvitationRetirement(opts)` / `decodeInvitationRetirementNotice(event, invitation)` - durable tombstone (kind 1461)
 - `hostRoomInvitation(opts)` / `requestRoomAdmission(opts)` - the live desk, both sides
-- `requestRoomAdmissionCapability(opts)` retains responder delegation; the secret-only wrapper discards it. Optional matching `identity` creates an account proof; signer errors reject without switching identities. Optional `signal` cancels. Signing and relay waiting share one deadline capped at 90 seconds. Late signatures/grants cannot revive cancelled/expired/retired requests. Caller-owned request keys are copied and preserved.
+- `requestRoomAdmissionCapability(opts)` → `Promise<RoomAdmission>` retains responder delegation; `requestRoomAdmission(opts)` → `Promise<Uint8Array>`, its secret-only wrapper, resolves to just the room secret and discards it. Optional matching `identity` creates an account proof; signer errors reject without switching identities. Optional `signal` cancels. Signing and relay waiting share one deadline capped at 90 seconds. Late signatures/grants cannot revive cancelled/expired/retired requests. Caller-owned request keys are copied and preserved.
+- `encodeInvitationDecline({ invitation, inviterSk, requester, request, now, delegation? })` → `Event` - a private, request-bound refusal from the pinned inviter or a current delegated responder (reply kind 20467, version-3 body `decision: 'declined'`). `requester` is the requester's pubkey and `request` the request event id, both hex. It carries no room secret or new delegation, and legacy version-2 grant readers ignore it. Throws `responder is not delegated for invitation` when `inviterSk` is neither the root nor the end of `delegation`. Main entry (0.12.0)
+- `decodeInvitationDecline(event, { invitation, requesterSk, request, now, maxAgeSeconds? })` → `InvitationDecline | null` (`{ request, responder }`) - null unless the refusal is fresh (`maxAgeSeconds` defaults to 90), addressed to this requester, bound to this `request` and signed by the pinned root or a delegated responder; a bearer holder cannot refuse someone else. Main entry
+- `InvitationDeclinedError` - no constructor arguments, message `Someone in the room declined your request to join.`; `requestRoomAdmissionCapability` stops retrying and rejects with it after verifying a refusal. Host `admit` hooks returning false still leave requests unanswered, so hosts must publish a refusal explicitly through their guarded, acknowledged decision path. Types `EncodeInvitationDeclineOptions`, `InvitationDecline`. Vectors: `vectors/invitation-decline-vectors.json`. No UI integration or physical acceptance is claimed
 - Host `onGrantPublished(request)` / legacy `onAdmitted(device)` run after transport publication acknowledgement, not on approval. Hosts recheck request freshness after a decision. `onGrantFailed(request, error)` reports send failure or approval after expiry; closed hosts suppress outstanding callbacks. Publication does not prove guest receipt or room entry.
 - `encodePersistentInvitation(opts)` / `decodePersistentInvitation(event, invitation)` - v3 stored group invitation (kind 1463)
 - `requestPersistentRoomAdmission(opts)` - joins from stored admission alone, no live desk needed
@@ -107,6 +158,35 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - `isLane(value)`, `weakestLane(lanes)`, `isDowngrade(requested, actual)`
 - `LANES`, `LANE_MEANING`, `LANE_LABEL`, `LANE_GLYPH`
 
+### Live persistent admission (main entry, opt-in codecs)
+
+All from `@forgesworn/fold-kit`. `LivePersistentContext` is `{ invitation: RoomInvitation, roomId: string }`: a persistent (v3) invitation plus the room id from the separate routing descriptor. Encoders throw `invalid live persistent admission` on bad input; decoders return `null`.
+
+- `parseLivePersistentEvent(json, request)` → `Event | null` - bounds raw event JSON (4096 bytes when `request` is true, else 20480) and refuses duplicate fields
+- `encodeLivePersistentDescriptor({ invitation, roomId })` → `string` / `decodeLivePersistentDescriptor(encoded, invitation)` → `LivePersistentContext | null` - routing metadata (never the bearer) alongside an unchanged persistent invitation link
+- `encodeLivePersistentRequest({ invitation, roomId, requesterSk, now })` → `Event` / `decodeLivePersistentRequest(event, { invitation, roomId, now })` → `LivePersistentRequest | null` (`{ requestId, requester, createdAt, expiresAt }`) - a fresh request, kind 20466, addressed to the root inviter
+- `encodeLivePersistentAnswer({ invitation, roomId, request, invitationEvent, inviterSk, epoch, now })` → `Event` / `decodeLivePersistentAnswer(event, { invitation, roomId, request, requesterSk, now })` → `LivePersistentAnswer | null` (`{ admission, epochHint, requestId, expiresAt }`) - a root-signed answer, kind 20467, with no delegation. `admission` is the epoch-zero capability, kept separate from `epochHint`
+- `LIVE_PERSISTENT_REQUEST_SECONDS` (90), `LIVE_PERSISTENT_RESPONSE_SECONDS` (30), `LIVE_PERSISTENT_ADMISSION_LABELS` (freezes its distinct KDF label); types `LivePersistentContext`, `LivePersistentRequest`, `LivePersistentAnswer`
+
+These functions are codecs, not an offline join API. The host must have exclusive durable lifecycle authority; the client must complete authenticated epoch admission before publishing, including at epoch zero. No application enables this profile automatically. See [the wire profile and integration gates](docs/live-persistent-admission.md). Frozen synthetic fixtures are in `vectors/live-persistent-vectors.json`; run `npm run build && npm run generate-live-persistent` to regenerate them.
+
+### MLS admission v4 (`@forgesworn/fold-kit/mls-admission`, opt-in evidence codec)
+
+Import from `@forgesworn/fold-kit/mls-admission`; none of these is on the main entry. A separate pure evidence codec that binds an encrypted account/device request to signed keeper consent and an expected MLS group, on the existing 20466/20467 carriers with strict canonical arrays and a fixed payload bucket. Existing room links and codecs are unchanged. `core` and `proofs` inputs are canonical fixed-array JSON strings; outer events are compact JSON NIP-01 strings. Validation failures throw `invalid MLS admission v4`. See [API and boundaries](docs/mls-admission-v4.md).
+
+- `encodeMlsInvitationV4(root, bearer)` → `string` - the link fragment for a root pubkey (hex) and a 32-byte bearer; the caller owns CSPRNG generation and secret lifetime
+- `readMlsInvitationV4(fragment)` → `{ root, bearer, invitationId }`
+- `mlsAdmissionProofTemplatesV4({ fragment, core, now, request? })` → `{ pubkey, event: UnsignedEvent }[]` - exact purpose-bound role templates; account/device signers stay caller-owned under real custody, and templates confer no authority. `core` is the exact canonical request array or, when `request` (a `VerifiedMlsAdmissionRequest`) is passed, the Allow array
+- `encodeMlsAdmissionRequestV4({ fragment, core, proofs, requestSecretKey, now })` → `string`
+- `decodeMlsAdmissionRequestV4({ fragment, event, localSecretKey, side, now })` → `VerifiedMlsAdmissionRequest` - `side` is `'root' | 'joiner'`; verifies every outer and inner signature afresh
+- `readMlsAdmissionRequestV4(handle)` → `{ core, digest, eventId }` - immutable evidence strings, never authority
+- `encodeMlsAdmissionAnswerV4({ fragment, request, core, proofs, rootSecretKey, now })` → `string`
+- `decodeMlsAdmissionAnswerV4({ fragment, request, event, requestSecretKey, now })` → `VerifiedAdmissionAnswer`
+- `readMlsAdmissionAnswerV4(handle)` → `{ decision, core, digest, eventId, requestEventId }` - `decision` is `'allow' | 'deny'`
+- `MLS_ADMISSION_LABELS` (frozen v4 domain labels), `MLS_ADMISSION_PLAINTEXT_BYTES` (16384), `MLS_ADMISSION_CIPHERTEXT_CHARACTERS` (21936); types `VerifiedMlsAdmissionRequest`, `VerifiedAdmissionAnswer`
+
+Only the decoders issue the nominal `Verified*` handles. Verified answers are evidence only: do not turn root or keeper signatures, or decoder handles, into admission authority. Actual admission needs purpose-specific vault proof, a fresh authenticated conditional box/Link keeper witness, current consent, custody and clock, a durable global counter and one-shot operation storage, VMLS policy and exact-group Welcome adoption. No transport, storage, browser join or automatic retry is implemented here.
+
 ## Design notes
 
 - Every `kithmoot/v*` derivation label and message prefix is byte-identical to the source KithMoot commit this kit was extracted from (see EXTRACTION.md). These are protocol names now, not branding.
@@ -118,50 +198,5 @@ Not yet published to npm under this API. Until it is, pin an immutable Git commi
 - README.md - full API overview, peer dependency rationale, how this kit relates to `covey-kit` and `roost-kit`
 - EXTRACTION.md - the source commit, exactly which modules and functions moved, and the two splits (`access.ts`, `chat.ts`) performed on the way
 - AGENTS.md - build/test commands and repository conventions for an agent working in this repo
-
-### Live persistent admission (opt-in codecs)
-
-`parseLivePersistentEvent` bounds raw event JSON and refuses duplicate fields.
-`encodeLivePersistentDescriptor` / `decodeLivePersistentDescriptor` carry
-routing metadata alongside an unchanged persistent invitation link.
-`encodeLivePersistentRequest` / `decodeLivePersistentRequest` and
-`encodeLivePersistentAnswer` / `decodeLivePersistentAnswer` implement a fresh,
-root-signed challenge/answer with no delegation. The answer retains epoch-zero
-capability separately from `epochHint`. Constants bound request/answer lifetimes
-to 90/30 seconds. `LIVE_PERSISTENT_ADMISSION_LABELS` freezes its distinct KDF.
-
-These functions are codecs, not an offline join API. The host must have exclusive
-durable lifecycle authority; the client must complete authenticated epoch
-admission before publishing, including at epoch zero. No application enables
-this profile automatically. See [the wire profile and integration gates](docs/live-persistent-admission.md).
-Frozen synthetic fixtures are in `vectors/live-persistent-vectors.json`; run
-`npm run build && npm run generate-live-persistent` to regenerate them.
-
-## Authenticated invitation refusal (0.12.0)
-
-`encodeInvitationDecline` and `decodeInvitationDecline` exchange a private,
-request-bound refusal from the pinned inviter or a current delegated responder.
-The version-3 refusal body uses reply kind 20467 and contains no room secret or
-new delegation. Legacy version-2 grant readers ignore it.
-`requestRoomAdmissionCapability` stops retries and rejects with
-`InvitationDeclinedError` after verifying a refusal. Existing host `admit` hooks
-returning false still leave requests unanswered; hosts must explicitly publish
-a refusal using their guarded, acknowledged decision path. No UI integration or
-physical acceptance is claimed by this protocol release.
-
-MLS admission v4 (opt-in pure evidence codec): docs/mls-admission-v4.md.
-encodeMlsInvitationV4/readMlsInvitationV4 handle a separate canonical fragment.
-mlsAdmissionProofTemplatesV4 constructs exact purpose-bound role templates;
-account/device signers stay caller-owned under real custody. Core/proof inputs
-are canonical fixed-array JSON; outer event inputs/outputs are compact JSON
-NIP-01 objects. encode/decodeMlsAdmissionRequestV4 and
-encode/decodeMlsAdmissionAnswerV4 verify every outer/inner signature afresh.
-Only decoders issue nominal VerifiedMlsAdmissionRequest/VerifiedAdmissionAnswer;
-readMlsAdmissionRequestV4/readMlsAdmissionAnswerV4 expose immutable evidence
-strings, never authority. MLS_ADMISSION_LABELS freezes v4 domain labels;
-MLS_ADMISSION_PLAINTEXT_BYTES=16384, MLS_ADMISSION_CIPHERTEXT_CHARACTERS=21936.
-Do not turn root/keeper signatures or decoder handles into admission authority.
-Actual owners need purpose-specific vault proof, fresh authenticated conditional
-box/Link keeper witness, current consent/custody/clock, durable global counter
-and one-shot operation storage, VMLS policy and exact-group Welcome adoption.
-No transport, storage, browser join or automatic retry is implemented here.
+- CHANGELOG.md - behaviour changes, including how to handle `RestampedCredentialExpiryError`
+- docs/ - wire profiles per feature (member epoch catch-up, seal keys, scheduled rekey, room destruct, live persistent admission, MLS admission v4, persistent invitation evidence)

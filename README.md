@@ -13,10 +13,12 @@ vectors (see EXTRACTION.md). Framework-free: owns no storage, UI, relay
 defaults or identity keys, and no relay I/O of its own - callers inject a
 transport.
 
-**Status:** T1 extraction complete (see EXTRACTION.md). Not yet published to
-npm under this API; pin an immutable Git commit until it is (see Install).
-KithMoot itself has not cut over to this kit yet - it still carries its own
-copy of these modules.
+**Status:** Version 0.12.0 on `main`. Published on npm as
+`@forgesworn/fold-kit`, but `main` can run ahead of the npm `latest` release, so
+compare `npm view @forgesworn/fold-kit version` with this repository's
+`package.json` before relying on an API listed here. KithMoot has cut over to
+this kit and pins an exact npm version; its moved files are re-export shims
+(see EXTRACTION.md).
 
 ## Install
 
@@ -24,14 +26,12 @@ copy of these modules.
 npm install @forgesworn/fold-kit
 ```
 
-Not yet published to npm. Until it is, pin an immutable Git commit:
+To use a change that has not been released, pin an immutable Git commit (a full
+SHA, for example from `git ls-remote https://github.com/forgesworn/fold-kit main`).
+The package's `prepare` script builds `dist/` on install:
 
-```json
-{
-  "dependencies": {
-    "@forgesworn/fold-kit": "github:forgesworn/fold-kit#<commit>"
-  }
-}
+```bash
+npm install "github:forgesworn/fold-kit#<commit>"
 ```
 
 ### Peer dependencies
@@ -46,6 +46,12 @@ Not yet published to npm. Until it is, pin an immutable Git commit:
 }
 ```
 
+Install the peers yourself, keeping `@noble/hashes` on 1.x:
+
+```bash
+npm install "nostr-tools@>=2.24.2 <3" "@noble/hashes@^1.8.0" "@noble/curves@^2.0.1"
+```
+
 Peers, not dependencies, so a consumer such as KithMoot keeps a single copy
 of `nostr-tools` (guarded by its own `overrides` and version-guard test) and
 of the noble libraries, at the same versions KithMoot already pins.
@@ -56,6 +62,61 @@ this kit and KithMoot both import without a `.js` suffix, so 2.x cannot
 satisfy this kit's imports as written.
 
 ESM only (`"type": "module"`). Node.js `>=22.13`.
+
+## Quick start
+
+Derive a room, then publish and load a stored group invitation through a
+`RelayTransport` you supply (this one is an in-memory stub; a real transport
+talks to relays and applies the filters):
+
+```ts
+import {
+  generateRoomSecret,
+  deriveRoom,
+  deriveEpoch,
+  localIdentity,
+  createRoomInvitation,
+  encodePersistentInvitation,
+  requestPersistentRoomAdmission,
+  type RelayTransport,
+} from '@forgesworn/fold-kit'
+import { generateSecretKey, type Event } from 'nostr-tools/pure'
+
+// The person: a local signer. An external one (NIP-07, NIP-46) fits the same seam.
+const me = localIdentity(generateSecretKey())
+
+// The room: one secret opens epoch 0; later epochs come from rekeys.
+const roomSecret = generateRoomSecret()
+const { roomId, roomKey } = deriveRoom(roomSecret)
+const epoch0 = deriveEpoch({ epoch: 0, secret: roomSecret }) // { epoch: 0, id: roomId, key: roomKey }
+
+// A RelayTransport stub: stores events, replays them on subscribe, then signals EOSE.
+const stored: Event[] = []
+const transport: RelayTransport = {
+  async publish(event) { stored.push(event) },
+  subscribe(_filters, onEvent, onEose) {
+    queueMicrotask(() => { for (const event of stored) onEvent(event); onEose?.() })
+    return () => {}
+  },
+  close() {},
+}
+
+// Invitation flow (v3 stored group invitation): the inviter publishes once, and a
+// guest holding the link loads it from the relays with no responder online.
+const { invitation, inviterSk } = createRoomInvitation(true)
+await transport.publish(encodePersistentInvitation({
+  invitation, inviterSk, roomSecret, now: Math.floor(Date.now() / 1000),
+}))
+const admission = await requestPersistentRoomAdmission({ transport, invitation })
+// admission.secret is the room secret: deriveRoom(admission.secret).roomId === roomId
+```
+
+Invitation versions: v1 (`encodeJoinUrl`, the room secret in the link) is
+legacy, and new links go through `createRoomInvitation`. Use
+`createRoomInvitation()` for the v2 live rendezvous, which needs a responder
+online (`hostRoomInvitation` answers, `requestRoomAdmissionCapability` joins),
+or `createRoomInvitation(true)` for the v3 stored group invitation above, which
+needs none.
 
 ## Exports
 
@@ -126,8 +187,8 @@ stays inside the bearer-encrypted request, rather than being published as a
 public account event. Invalid or missing proofs leave a request unverified;
 hosts can still make an explicit decision for anonymous and older clients.
 
-Pass `identity` to `requestRoomAdmissionCapability` (or its secret-only wrapper)
-to create the proof automatically. If `participant` is also supplied, it must
+Pass `identity` to `requestRoomAdmissionCapability` (or `requestRoomAdmission`,
+its secret-only wrapper) to create the proof automatically. If `participant` is also supplied, it must
 match the signer; a signer failure rejects the request without falling back to
 another identity. `signal` cancels signing or waiting. Signing and relay waiting
 share one deadline, capped at the request's 90-second freshness window, and

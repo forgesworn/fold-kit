@@ -39,8 +39,10 @@
     "vectors/invitation-account-vectors.json",
     "vectors/invitation-decline-vectors.json",
     "vectors/mls-admission-v4.json",
-    "docs/mls-admission-v4.md",
-    "docs/persistent-invitation-evidence.md"
+    "vectors/fold-vectors.json",
+    "docs",
+    "EXTRACTION.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
