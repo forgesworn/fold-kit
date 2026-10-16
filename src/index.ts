@@ -195,6 +195,16 @@ export type {
   VerifyAdminsOptions,
 } from './epoch.js'
 
+export {
+  DEFAULT_REPLY_DELAY_MS,
+  REFUSE_AGAIN_AFTER_SECONDS,
+  MAX_REFUSALS_PER_MINUTE,
+  REFUSAL_LIMITER_CAPACITY,
+  RefusalLimiter,
+  replyDelay,
+} from './quiet-reply.js'
+export type { ReplyDelayRange, ReplySchedule, RefusalLimiterOptions } from './quiet-reply.js'
+
 export { EPOCH_COMMIT_PREFIX, epochCommitment, EPOCH_COMMIT_LABELS } from './epoch-commit.js'
 export {
   MEMBER_EPOCH_KINDS,

@@ -5,6 +5,35 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Changed
+
+- `hostRoomEpoch` answers quietly by default: every grant and refusal waits
+  a random `replyDelayMs` (default `[500, 2000]` ms), a participant is sent
+  a `removed` or `closed` refusal at most once per `refuseAgainAfter`
+  (default 3600 s) and `unknown` at most once per `reportUnknownEvery`
+  (60 s), and no more than `maxRefusalsPerMinute` (20) refusals go out in
+  any minute. Grants are never limited. A removed member holding the room
+  key could otherwise ask with fresh requests and time each signed reply.
+  A requester refused inside the window now times out with the plain
+  "not answering" error instead of `EpochRefusedError`. Callers and tests
+  that need the old instant reply pass `replyDelayMs: [0, 0]`.
+
+### Added
+
+- `hostRoomInvitation` options `grantDelayMs` and `coordinate`, off by
+  default: a jittered wait before automatic grants, and a coordinated mode
+  in which delegated devices stand down when another responder's grant to
+  the same requester appears. `random` and `schedule` are injectable on both
+  desks.
+- `RefusalLimiter`, `replyDelay`, `DEFAULT_REPLY_DELAY_MS`,
+  `REFUSE_AGAIN_AFTER_SECONDS`, `MAX_REFUSALS_PER_MINUTE`,
+  `REFUSAL_LIMITER_CAPACITY`, and the `ReplyDelayRange`, `ReplySchedule`
+  and `RefusalLimiterOptions` types. See `docs/quiet-replies.md`.
+
+No event, tag, kind or vector changes.
+
 ## 0.11.0
 
 ### Added

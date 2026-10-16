@@ -522,3 +522,16 @@ holds on conflicting newest equal-time relay lists; its EOSE receipt does not
 establish global absence or current membership. No storage or client effects
 move into the kit. See `docs/persistent-invitation-evidence.md` for the carrier,
 selection, refusal and caller integration boundaries.
+
+## Quiet automatic replies: declared additions to `epoch.ts` and `invitation.ts`
+
+Unreleased. The authority desk waits a random time before every answer and
+rations its refusals, and the temporary-link responder gains an opt-in wait
+and coordinated mode (see `docs/quiet-replies.md`). The shared helpers live
+in `src/quiet-reply.ts`, new and moved from nowhere. No event changes: every
+grant and refusal is encoded as before, so every vector still verifies.
+`hostRoomEpoch` waits by default; `hostRoomInvitation` changes nothing
+unless `grantDelayMs` or `coordinate` is passed. `scripts/diff-source.mjs`
+declares each change in `QUIET_REPLY_CHANGES`, as new text against 0.12.0
+text, applied before every other change set, so the whole-file comparison
+against the pinned commit still holds.

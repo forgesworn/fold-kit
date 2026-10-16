@@ -55,7 +55,9 @@ hand - it prints a notice and exits 0 rather than failing.
   `invitation-relays.ts` (new: the room-relay list rule - see EXTRACTION.md
   "Room relays"), and `epoch-commit.ts`/`member-epoch.ts` (new: member epoch
   catch-up - see EXTRACTION.md "Member epoch catch-up" and
-  `docs/member-epoch-catch-up.md`).
+  `docs/member-epoch-catch-up.md`), and `quiet-reply.ts` (new: reply
+  delays and the refusal limiter - see EXTRACTION.md "Quiet automatic
+  replies" and `docs/quiet-replies.md`).
 - `test/sim-relay.ts` - an in-process relay simulator (`SimRelay`,
   `SimTransport`) used by the invitation, persistent-invitation and epoch
   test suites.

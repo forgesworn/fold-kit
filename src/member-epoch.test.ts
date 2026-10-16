@@ -571,7 +571,7 @@ describe('requestRoomEpoch with members', () => {
     const relay = new SimRelay()
     const chain = buildChain([{}])
     const authorityDesk = hostRoomEpoch({
-      transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => chain.epochs[1]!, removed: () => new Set(), now,
+      transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => chain.epochs[1]!, removed: () => new Set(), now,
     })
     const memberDesk = hostMemberEpochDesk({
       transport: new SimTransport(relay), roomId, authority, deviceSk: memberDeviceSk, roomKey,

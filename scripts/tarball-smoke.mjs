@@ -72,7 +72,7 @@ const expectedMain = ${JSON.stringify([
       'EPOCH_ID_INFO', 'EPOCH_KEY_INFO', 'MAX_EPOCH', 'EPOCH_REQUEST_KEY_INFO', 'generateEpochSecret', 'deriveEpoch',
       'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'HISTORY_WINDOW_SECONDS', 'MAX_HISTORY_EPOCHS', 'epochsInWindow', 'deriveEpochRequestKey', 'epochRequestAdmission',
       'encodeEpochRequest', 'decodeEpochRequest', 'encodeEpochGrant', 'decodeEpochGrant', 'hostRoomEpoch',
-      'EpochRefusedError', 'requestRoomEpoch', 'canonicalAdmins', 'CHANNEL_NAME', 'RESERVED_CHANNELS',
+      'EpochRefusedError', 'requestRoomEpoch', 'DEFAULT_REPLY_DELAY_MS', 'REFUSE_AGAIN_AFTER_SECONDS', 'MAX_REFUSALS_PER_MINUTE', 'REFUSAL_LIMITER_CAPACITY', 'RefusalLimiter', 'replyDelay', 'canonicalAdmins', 'CHANNEL_NAME', 'RESERVED_CHANNELS',
       'canonicalChannels', 'signChannels', 'verifyChannels', 'signAdmins', 'verifyAdmins', 'EPOCH_LABELS',
       'deriveChannel', 'CHANNEL_ID_INFO', 'CHANNEL_KEY_INFO', 'MAX_CHANNEL_NAME_LENGTH', 'CHANNEL_LABELS',
       'deriveScoped', 'SCOPED_LABEL_PATTERN',
