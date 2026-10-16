@@ -177,6 +177,13 @@ suppresses callbacks from outstanding sends. Publication acknowledgement does
 not prove that a guest received the grant or joined; the guest validates its
 grant independently. Observer exceptions do not change the publish outcome.
 
+For a device that answers automatically, `grantDelayMs: [min, max]` waits a
+random time before each grant, and `coordinate: true` lets several delegated
+devices share one link: each waits (default 500 to 2000 ms) and stands down,
+at most once per request, if another responder's grant to the same
+requester appears. Both are off by default, and the wire format is
+unchanged. See `docs/quiet-replies.md`.
+
 An invitation request's `participant` is an unverified account claim.
 Automatic admission of a previously invited account must use
 `verifiedParticipant`, which is present only after a fresh signature check of
@@ -263,6 +270,14 @@ decision completes, so approval cannot extend an expired request's authority.
   catch-up for a device that missed a rekey
 - `hostRoomEpoch`, `requestRoomEpoch`, `EpochRefusedError` - the live
   request/grant desk
+- Quiet replies (`docs/quiet-replies.md`): `hostRoomEpoch` waits a random
+  `replyDelayMs` (default `[500, 2000]`) before any answer, sends a
+  participant a `removed` or `closed` refusal once per `refuseAgainAfter`
+  (default 3600 s) and `unknown` once per `reportUnknownEvery` (60 s), and
+  caps refusals at `maxRefusalsPerMinute` (20). Grants are never limited.
+  `RefusalLimiter`, `replyDelay` and the `DEFAULT_REPLY_DELAY_MS`,
+  `REFUSE_AGAIN_AFTER_SECONDS`, `MAX_REFUSALS_PER_MINUTE` and
+  `REFUSAL_LIMITER_CAPACITY` constants are exported
 - Member epoch catch-up (`docs/member-epoch-catch-up.md`): any current
   member can bring an admitted, non-removed device up to date when the
   authority is offline, and the device checks the answer against the

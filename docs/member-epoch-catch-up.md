@@ -219,6 +219,9 @@ and calls `onUnknown`), and a member desk stays silent. A member letting
 them in makes `known` say yes, and the requester's next ask is granted.
 A room that has never removed anybody behaves exactly as before, and a
 desk given no `known` lets nobody through after a removal.
+The authority sends a participant `unknown` at most once a
+`reportUnknownEvery`, after a random wait, within a cap on refusals a
+minute (see `docs/quiet-replies.md`).
 
 Where a desk learns who is known is the application's business, with two
 sources here: `encodeRekeyEvent({ members })` writes the authority's
