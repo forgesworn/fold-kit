@@ -7,6 +7,16 @@ the one place its behaviour has deliberately diverged.
 
 ## Unreleased
 
+### Fixed
+
+- Live invitation hosts resend the same signed grant on a fresh duplicate
+  request. This repairs a lost ephemeral grant, including when its first
+  publication precedes the guest's subscription. Approval and successful
+  publication observers run once; concurrent retries coalesce. Retry sends
+  retain quiet delays and recheck freshness and authority. The 256-entry
+  decision cache retains pending and declined requests rather than evicting
+  live decisions; close and retirement stop outstanding work.
+
 ### Changed
 
 - `hostRoomEpoch` answers quietly by default: every grant and refusal waits

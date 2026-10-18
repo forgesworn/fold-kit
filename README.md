@@ -175,7 +175,13 @@ or approval of a request which has expired;
 neither success callback runs for that failure. Closing or retiring the host
 suppresses callbacks from outstanding sends. Publication acknowledgement does
 not prove that a guest received the grant or joined; the guest validates its
-grant independently. Observer exceptions do not change the publish outcome.
+grant independently. Observer exceptions do not change the publish outcome. Fresh retries of the same
+signed request resend the exact cached grant after the configured quiet delay;
+overlapping approval, wait and publication work is coalesced. Approval and
+success callbacks each occur at most once per request. Failed sends may recover
+on a later retry. The host retains up to 256 live decisions, including declines;
+at capacity it refuses new work until settled requests expire. Close, retirement,
+request freshness and responder authority still gate every send.
 
 For a device that answers automatically, `grantDelayMs: [min, max]` waits a
 random time before each grant, and `coordinate: true` lets several delegated
