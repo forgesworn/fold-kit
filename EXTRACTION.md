@@ -535,3 +535,15 @@ unless `grantDelayMs` or `coordinate` is passed. `scripts/diff-source.mjs`
 declares each change in `QUIET_REPLY_CHANGES`, as new text against 0.12.0
 text, applied before every other change set, so the whole-file comparison
 against the pinned commit still holds.
+
+## Live invitation grant retry handling
+
+`hostRoomInvitation` now retains a bounded per-request decision and the exact
+signed grant. A fresh duplicate can retry a lost or rejected ephemeral grant
+without another approval, new delegation or repeated success callback. Pending
+approval, quiet waits and publication coalesce duplicates. Every send still
+checks request freshness, current delegated authority and host lifetime. Live
+entries are not evicted to make room; only idle expired entries are pruned.
+This changes local host behaviour, not any encoder or wire format.
+`INVITATION_RETRY_CHANGES` in `scripts/diff-source.mjs` reverses these exact
+hunks before earlier declared changes and the pinned-source comparison.

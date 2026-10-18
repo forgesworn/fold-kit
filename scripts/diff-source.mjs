@@ -528,6 +528,58 @@ const KNOWN_MEMBERS_CHANGES = {
   ],
 }
 
+/** Exact retry-state changes, reversed before earlier invitation changes.
+ * No encoder, kind, tag, derivation label or signed envelope changes. */
+const INVITATION_RETRY_CHANGES = {
+  "src/invitation.ts": [
+    [
+      "  onGrantPublished?: (request: InvitationRequest) => void\n  /** A publication attempt failed, or approval came after request expiry.\n   * A valid retry may recover; no admission callback follows a failed send. */\n  onGrantFailed?: (request: InvitationRequest, error: unknown) => void\n",
+      "  onGrantPublished?: (request: InvitationRequest) => void\n  /** Publication failed, or approval came after the request expired.\n   * No admission callback is made. */\n  onGrantFailed?: (request: InvitationRequest, error: unknown) => void\n",
+      1
+    ],
+    [
+      "  /**\n   * Asked once per fresh signed request, when present. Return true to let the\n   * request in, false to leave it unanswered: there is no refusal on the\n",
+      "  /**\n   * Asked before every grant, when present. Return true to let the\n   * request in, false to leave it unanswered: there is no refusal on the\n",
+      1
+    ],
+    [
+      "  const invitationId = deriveInvitationId(opts.invitation)\n  // Keep each live decision, including refusals and pending approval, until\n  // its authenticated request expires. Evicting a live entry could re-prompt\n  // or mint fresh authority for the same signed request.\n  const requests = new Map<string, { createdAt: number; idle(): boolean; retry(): void }>()\n  const delayRange = opts.grantDelayMs ?? (opts.coordinate ? DEFAULT_REPLY_DELAY_MS : undefined)\n",
+      "  const invitationId = deriveInvitationId(opts.invitation)\n  const answered = new Set<string>()\n  const delayRange = opts.grantDelayMs ?? (opts.coordinate ? DEFAULT_REPLY_DELAY_MS : undefined)\n",
+      1
+    ],
+    [
+      "  const grantSeen = new Set<string>()\n  const bound = (set: Set<string>): void => {\n",
+      "  const grantSeen = new Set<string>()\n  /** Requests this responder has already stood down for once. */\n  const stoodDown = new Set<string>()\n  const bound = (set: Set<string>): void => {\n",
+      1
+    ],
+    [
+      "    waits.clear()\n    requests.clear()\n    grantSeen.clear()\n    unsubRequests()\n",
+      "    waits.clear()\n    unsubRequests()\n",
+      1
+    ],
+    [
+      "      // admitted delegate must not answer the request that admitted itself.\n      if (!request || hexEquals(request.device, responder)) return\n      const existing = requests.get(request.request)\n      if (existing) { existing.retry(); return }\n      const at = now()\n      for (const [id, state] of requests) {\n        if (state.idle() && at - state.createdAt > INVITATION_MAX_AGE_SECONDS) requests.delete(id)\n      }\n      // Saturation refuses new work rather than forgetting a live decision.\n      if (requests.size >= 256) return\n      let approved = !opts.admit\n      let deciding = !approved\n      let busy = false\n      let stoodDown = false\n      let acknowledged = false\n      let grant: Event | undefined\n      const state = { createdAt: event.created_at, idle: () => !deciding && !busy, retry: () => { if (approved && !busy) grantLater() } }\n      requests.set(request.request, state)\n      grantSeen.delete(normaliseHex(request.device))\n      const current = (): boolean => !closed && requests.get(request.request) === state\n      const fresh = (): boolean => {\n        if (!current()) return false\n        if (!decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })) {\n          try { opts.onGrantFailed?.(request, new Error('the invitation request expired before admission')) } catch { /* Observer only. */ }\n          return false\n        }\n        // Reusing a signed grant must not extend the responder's authority.\n        const authority = verifyInvitationDelegation(opts.invitation, delegation, now())\n        if (authority === null || !hexEquals(authority, responder)) { close(); return false }\n        return true\n      }\n      const grantNow = (): void => {\n        if (!fresh()) { busy = false; return }\n        try {\n          grant ??= encodeInvitationGrant({\n            invitation: opts.invitation,\n",
+      "      // admitted delegate must not answer the request that admitted itself.\n      if (!request || hexEquals(request.device, responder) || answered.has(request.request)) return\n      answered.add(request.request)\n      // A long-running public room must not grow this replay guard without\n      // bound. Duplicate requests are harmless after eviction: they only\n      // cause the same encrypted grant to be sent again.\n      if (answered.size > 256) answered.delete(answered.values().next().value!)\n      grantSeen.delete(normaliseHex(request.device))\n      const grantNow = (): void => {\n        if (closed) return\n        if (!decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })) {\n          try { opts.onGrantFailed?.(request, new Error('the invitation request expired before admission')) } catch { /* Observer only. */ }\n          return\n        }\n        let grant: Event\n        try {\n          grant = encodeInvitationGrant({\n            invitation: opts.invitation,\n",
+      1
+    ],
+    [
+      "        }\n        // The first ephemeral grant may precede the guest's subscription.\n        // A retry sends this exact envelope, never new delegation or approval.\n        Promise.resolve()\n          .then(async () => {\n            if (!fresh()) return\n            await opts.transport.publish(grant!)\n            if (!current() || acknowledged) return\n            acknowledged = true\n            // Observer acknowledgement is once per request, not per retry.\n            try { opts.onGrantPublished?.(request) } catch { /* Observer only. */ }\n            try { opts.onAdmitted?.(request.device) } catch { /* Observer only. */ }\n          })\n          .catch(error => {\n            if (current()) {\n              try { opts.onGrantFailed?.(request, error) } catch { /* Observer only. */ }\n            }\n          })\n          .finally(() => { busy = false })\n      }\n      const grantAfterWait = (): void => {\n        if (!fresh()) { busy = false; return }\n        if (opts.coordinate && grantSeen.has(normaliseHex(request.device)) && !stoodDown) {\n          // Stand down at most once. The retry retains the original approval.\n          stoodDown = true\n          busy = false\n          return\n        }\n        grantNow()\n",
+      "        }\n        // The decision to approve and the publication of its grant are\n        // separate states. A rejected send must never look like admission.\n        Promise.resolve()\n          .then(() => { if (!closed) return opts.transport.publish(grant) })\n          .then(() => {\n            if (closed) return\n            // One observer throwing must not change the publish outcome or\n            // prevent an independent observer from hearing it.\n            try { opts.onGrantPublished?.(request) } catch { /* Observer only. */ }\n            try { opts.onAdmitted?.(request.device) } catch { /* Observer only. */ }\n          }, error => {\n            if (!closed) opts.onGrantFailed?.(request, error)\n          })\n          .catch(() => { /* A failure observer cannot escape the relay loop. */ })\n      }\n      const grantAfterWait = (): void => {\n        if (closed) return\n        if (opts.coordinate && grantSeen.has(normaliseHex(request.device)) && !stoodDown.has(request.request)) {\n          // Somebody else answered. Forget the request, so that if their\n          // grant was false the requester's retry is answered after all.\n          stoodDown.add(request.request)\n          bound(stoodDown)\n          answered.delete(request.request)\n          return\n        }\n        stoodDown.delete(request.request)\n        grantNow()\n",
+      1
+    ],
+    [
+      "      const grantLater = (): void => {\n        if (!current() || busy) return\n        busy = true\n        const delay = delayRange ? replyDelay(delayRange, random) : 0\n        if (delay === 0) { grantAfterWait(); return }\n        if (waits.size >= 256) { busy = false; return }\n        let cancel = (): void => {}\n",
+      "      const grantLater = (): void => {\n        if (closed) return\n        const delay = delayRange ? replyDelay(delayRange, random) : 0\n        if (delay === 0) { grantAfterWait(); return }\n        // Bounded, as the epoch desk's queue is: a request turned away while\n        // it is full is forgotten, and answered when it is retried.\n        if (waits.size >= 256) { answered.delete(request.request); return }\n        let cancel = (): void => {}\n",
+      1
+    ],
+    [
+      "      }\n      if (approved) { grantLater(); return }\n      // Pending and declined decisions stay cached. Duplicates cannot ask\n      // again, race approval, or publish before the original decision.\n      Promise.resolve()\n        .then(() => current() ? opts.admit!(request) : false)\n        .then((yes) => { deciding = false; if (yes && current()) { approved = true; grantLater() } })\n        .catch(() => { deciding = false })\n    },\n",
+      "      }\n      // A request stood down for was approved already: not asked again.\n      if (!opts.admit || stoodDown.has(request.request)) { grantLater(); return }\n      // A host that asks first answers later, if at all. Never awaited in\n      // the relay callback, and a hook that throws declines.\n      Promise.resolve()\n        .then(() => opts.admit!(request))\n        .then((yes) => { if (yes) grantLater() })\n        .catch(() => {})\n    },\n",
+      1
+    ]
+  ]
+}
+
 /**
  * Quiet automatic replies (unreleased, see EXTRACTION.md "Quiet automatic
  * replies"): the authority desk waits a random `replyDelayMs` before any
@@ -589,7 +641,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

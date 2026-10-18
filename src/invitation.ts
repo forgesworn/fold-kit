@@ -496,8 +496,8 @@ export interface HostRoomInvitationOptions {
   onAdmitted?: (device: string) => void
   /** The same publication acknowledgement, correlated to the request. */
   onGrantPublished?: (request: InvitationRequest) => void
-  /** Publication failed, or approval came after the request expired.
-   * No admission callback is made. */
+  /** A publication attempt failed, or approval came after request expiry.
+   * A valid retry may recover; no admission callback follows a failed send. */
   onGrantFailed?: (request: InvitationRequest, error: unknown) => void
   /** Called when the creator's durable retirement tombstone is heard. */
   onRetired?: () => void
@@ -505,7 +505,7 @@ export interface HostRoomInvitationOptions {
    *  moves. Omit to say nothing, which a joiner treats as unknown. */
   epoch?: () => number
   /**
-   * Asked before every grant, when present. Return true to let the
+   * Asked once per fresh signed request, when present. Return true to let the
    * request in, false to leave it unanswered: there is no refusal on the
    * wire, so a declined person sees the room not answer, which is the same
    * as nobody being home. A request is asked about once, whatever its
@@ -629,7 +629,10 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
   }
   const responder = getPublicKey(opts.inviterSk)
   const invitationId = deriveInvitationId(opts.invitation)
-  const answered = new Set<string>()
+  // Keep each live decision, including refusals and pending approval, until
+  // its authenticated request expires. Evicting a live entry could re-prompt
+  // or mint fresh authority for the same signed request.
+  const requests = new Map<string, { createdAt: number; idle(): boolean; retry(): void }>()
   const delayRange = opts.grantDelayMs ?? (opts.coordinate ? DEFAULT_REPLY_DELAY_MS : undefined)
   const random = opts.random ?? Math.random
   const schedule = opts.schedule ?? defaultReplySchedule
@@ -638,8 +641,6 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
   /** Requesting devices another responder's grant was seen for since their
    *  request reached this one. Only with `coordinate`. */
   const grantSeen = new Set<string>()
-  /** Requests this responder has already stood down for once. */
-  const stoodDown = new Set<string>()
   const bound = (set: Set<string>): void => {
     if (set.size > 256) set.delete(set.values().next().value!)
   }
@@ -652,6 +653,8 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
     closed = true
     for (const cancel of waits) cancel()
     waits.clear()
+    requests.clear()
+    grantSeen.clear()
     unsubRequests()
     unsubRetirement()
     unsubGrants()
@@ -693,22 +696,40 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
       const request = decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })
       // Some relays incorrectly retain and replay ephemeral requests. A newly
       // admitted delegate must not answer the request that admitted itself.
-      if (!request || hexEquals(request.device, responder) || answered.has(request.request)) return
-      answered.add(request.request)
-      // A long-running public room must not grow this replay guard without
-      // bound. Duplicate requests are harmless after eviction: they only
-      // cause the same encrypted grant to be sent again.
-      if (answered.size > 256) answered.delete(answered.values().next().value!)
+      if (!request || hexEquals(request.device, responder)) return
+      const existing = requests.get(request.request)
+      if (existing) { existing.retry(); return }
+      const at = now()
+      for (const [id, state] of requests) {
+        if (state.idle() && at - state.createdAt > INVITATION_MAX_AGE_SECONDS) requests.delete(id)
+      }
+      // Saturation refuses new work rather than forgetting a live decision.
+      if (requests.size >= 256) return
+      let approved = !opts.admit
+      let deciding = !approved
+      let busy = false
+      let stoodDown = false
+      let acknowledged = false
+      let grant: Event | undefined
+      const state = { createdAt: event.created_at, idle: () => !deciding && !busy, retry: () => { if (approved && !busy) grantLater() } }
+      requests.set(request.request, state)
       grantSeen.delete(normaliseHex(request.device))
-      const grantNow = (): void => {
-        if (closed) return
+      const current = (): boolean => !closed && requests.get(request.request) === state
+      const fresh = (): boolean => {
+        if (!current()) return false
         if (!decodeInvitationRequest(event, { invitation: opts.invitation, now: now() })) {
           try { opts.onGrantFailed?.(request, new Error('the invitation request expired before admission')) } catch { /* Observer only. */ }
-          return
+          return false
         }
-        let grant: Event
+        // Reusing a signed grant must not extend the responder's authority.
+        const authority = verifyInvitationDelegation(opts.invitation, delegation, now())
+        if (authority === null || !hexEquals(authority, responder)) { close(); return false }
+        return true
+      }
+      const grantNow = (): void => {
+        if (!fresh()) { busy = false; return }
         try {
-          grant = encodeInvitationGrant({
+          grant ??= encodeInvitationGrant({
             invitation: opts.invitation,
             inviterSk: opts.inviterSk,
             requester: request.device,
@@ -724,54 +745,53 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
           close()
           return
         }
-        // The decision to approve and the publication of its grant are
-        // separate states. A rejected send must never look like admission.
+        // The first ephemeral grant may precede the guest's subscription.
+        // A retry sends this exact envelope, never new delegation or approval.
         Promise.resolve()
-          .then(() => { if (!closed) return opts.transport.publish(grant) })
-          .then(() => {
-            if (closed) return
-            // One observer throwing must not change the publish outcome or
-            // prevent an independent observer from hearing it.
+          .then(async () => {
+            if (!fresh()) return
+            await opts.transport.publish(grant!)
+            if (!current() || acknowledged) return
+            acknowledged = true
+            // Observer acknowledgement is once per request, not per retry.
             try { opts.onGrantPublished?.(request) } catch { /* Observer only. */ }
             try { opts.onAdmitted?.(request.device) } catch { /* Observer only. */ }
-          }, error => {
-            if (!closed) opts.onGrantFailed?.(request, error)
           })
-          .catch(() => { /* A failure observer cannot escape the relay loop. */ })
+          .catch(error => {
+            if (current()) {
+              try { opts.onGrantFailed?.(request, error) } catch { /* Observer only. */ }
+            }
+          })
+          .finally(() => { busy = false })
       }
       const grantAfterWait = (): void => {
-        if (closed) return
-        if (opts.coordinate && grantSeen.has(normaliseHex(request.device)) && !stoodDown.has(request.request)) {
-          // Somebody else answered. Forget the request, so that if their
-          // grant was false the requester's retry is answered after all.
-          stoodDown.add(request.request)
-          bound(stoodDown)
-          answered.delete(request.request)
+        if (!fresh()) { busy = false; return }
+        if (opts.coordinate && grantSeen.has(normaliseHex(request.device)) && !stoodDown) {
+          // Stand down at most once. The retry retains the original approval.
+          stoodDown = true
+          busy = false
           return
         }
-        stoodDown.delete(request.request)
         grantNow()
       }
       const grantLater = (): void => {
-        if (closed) return
+        if (!current() || busy) return
+        busy = true
         const delay = delayRange ? replyDelay(delayRange, random) : 0
         if (delay === 0) { grantAfterWait(); return }
-        // Bounded, as the epoch desk's queue is: a request turned away while
-        // it is full is forgotten, and answered when it is retried.
-        if (waits.size >= 256) { answered.delete(request.request); return }
+        if (waits.size >= 256) { busy = false; return }
         let cancel = (): void => {}
         let done = false
         cancel = schedule(() => { done = true; waits.delete(cancel); grantAfterWait() }, delay)
         if (!done) waits.add(cancel)
       }
-      // A request stood down for was approved already: not asked again.
-      if (!opts.admit || stoodDown.has(request.request)) { grantLater(); return }
-      // A host that asks first answers later, if at all. Never awaited in
-      // the relay callback, and a hook that throws declines.
+      if (approved) { grantLater(); return }
+      // Pending and declined decisions stay cached. Duplicates cannot ask
+      // again, race approval, or publish before the original decision.
       Promise.resolve()
-        .then(() => opts.admit!(request))
-        .then((yes) => { if (yes) grantLater() })
-        .catch(() => {})
+        .then(() => current() ? opts.admit!(request) : false)
+        .then((yes) => { deciding = false; if (yes && current()) { approved = true; grantLater() } })
+        .catch(() => { deciding = false })
     },
   )
   return { close }
