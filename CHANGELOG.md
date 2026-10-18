@@ -5,7 +5,7 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
-## Unreleased
+## 0.12.0
 
 ### Fixed
 
@@ -42,7 +42,10 @@ the one place its behaviour has deliberately diverged.
   `REFUSAL_LIMITER_CAPACITY`, and the `ReplyDelayRange`, `ReplySchedule`
   and `RefusalLimiterOptions` types. See `docs/quiet-replies.md`.
 
-No event, tag, kind or vector changes.
+The retry repair and quiet-reply controls leave existing events, tags, kinds
+and vectors unchanged. Consumers upgrading from npm 0.10.0 also receive the
+account-signed invitation proofs and bounded request lifecycle described under
+0.11.0 below; 0.11.0 was not published to npm.
 
 ## 0.11.0
 
