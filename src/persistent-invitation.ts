@@ -10,6 +10,7 @@ import { verifyEventUncached } from './verify.js'
 import { isRoomEnds, requireRoomEnds } from './expiration.js'
 import { isInvitationRelays, requireInvitationRelays } from './invitation-relays.js'
 import { isInvitationStorage, requireInvitationStorage } from './invitation-storage.js'
+import { requireEvidenceCarrierLimits } from './evidence-carrier.js'
 import type { RelayTransport } from './transport.js'
 
 /** Durable membership is distinct from temporary permission to admit others.
@@ -73,14 +74,14 @@ export function encodePersistentInvitation(opts: {
   const ends = opts.endsAt === undefined ? undefined : requireRoomEnds(opts.endsAt, opts.now)
   const relays = opts.relays === undefined ? undefined : requireInvitationRelays(opts.relays)
   const storage = opts.storage === undefined ? undefined : requireInvitationStorage(opts.storage)
-  return finalizeEvent({
+  return requireEvidenceCarrierLimits(finalizeEvent({
     kind: KINDS.GROUP_INVITATION,
     created_at: opts.now,
     tags: ends === undefined ? [['d', deriveInvitationId(opts.invitation)]] : [['d', deriveInvitationId(opts.invitation)], ['expiration', String(ends)]],
     content: nip44.v2.encrypt(JSON.stringify({
       v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(opts.destruct ? { destruct: true } : {}), ...(relays === undefined ? {} : { relays }), ...(storage === undefined ? {} : { storage }),
     }), welcomeKey(opts.invitation)),
-  }, opts.inviterSk)
+  }, opts.inviterSk), 'group invitation')
 }
 
 export function decodePersistentInvitation(event: Event, invitation: RoomInvitation): PersistentRoomAdmission | null {

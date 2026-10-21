@@ -33,6 +33,9 @@ if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !
 // messages) add 3.8 KiB minified / 1.4 KiB gzip to index and 1.7 KiB / 0.6 KiB
 // to evidence, without a dependency: index measured at 74.3 KiB / 22.2 KiB
 // gzip, evidence at 16.4 KiB / 6.0 KiB gzip.
+// The evidence query's separate delivery and signature bounds, and the
+// over-limit check, add 0.6 KiB / 0.3 KiB gzip to evidence: measured at
+// 17.0 KiB / 6.3 KiB gzip.
 const BUDGETS_KB = {
   index: { minified: 76, gzip: 23 },
   lane: { minified: 1.2, gzip: 0.7 },
@@ -41,7 +44,7 @@ const BUDGETS_KB = {
   mls: { minified: 14, gzip: 6 },
   // Optional evidence entry measured at 13.8 KiB / 5.2 KiB gzip.
   // Existing entry budgets remain unchanged.
-  evidence: { minified: 17, gzip: 6.5 },
+  evidence: { minified: 18, gzip: 7 },
 }
 
 let failed = false

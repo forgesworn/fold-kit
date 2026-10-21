@@ -57,6 +57,54 @@ the one place its behaviour has deliberately diverged.
 - `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
   writes. Off by default; off, every grant is byte-identical to 0.13.0's.
 
+### Fixed
+
+- `requestPersistentRoomAdmissionEvidence` no longer fails a room on repeats,
+  strangers or junk. It charged every delivered event, before de-duplicating
+  and before checking the author, kind and `d` tag, against the 64 retained
+  events and 256 KiB, and one malformed or oversized event failed the whole
+  query. A room on four relays whose keeper had republished 17 times failed to
+  load, and any relay could fail a query with one oversized event or 64 events
+  of another author. Now a delivery is only counted against a new bound,
+  `MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES` (512, which bounds parse
+  work). An event that is malformed, or out of scope (not the inviter, not
+  kind 1463 or 1461, not exactly one `d` tag naming the invitation), is dropped
+  without crypto, as is an exact repeat or another carrier under an id already
+  held (the held event was verified, so its signed fields are the same).
+  Signature checks have their own bound,
+  `MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS` (128: 64 retained events
+  plus 64 in-scope events that fail). Those are checks charged, not Schnorr
+  verifications: a retained retirement is verified twice and the finished query
+  revalidates what it kept, so a query that succeeds can do up to 128 + 64,
+  while a hostile relay can cause at most 128. Nothing is truncated: a 65th
+  unique valid authority event, 256 KiB of retained carriers, more than 512
+  deliveries or more than 128 signature checks still fail the query.
+- An in-scope event over the evidence size limits (16,384 bytes, 64 tags, eight
+  strings in a tag) can never be retained, so it is checked rather than
+  dropped unseen: one hash and one signature check, charged to the same bound
+  of 128. If the authority signed it, the query fails with `invitation evidence
+  query refused an event signed by the authority that exceeds the evidence size
+  limits`, because it may be a retirement or a newer list the query cannot
+  hold. If it only claims the authority's key it is dropped, and a repeat costs
+  nothing. Before this fix such an event also failed the query, as any
+  oversized event did; failing only for the authority's own is the change.
+- Error messages. Gone from this query: `conflicting duplicate invitation event
+  identity` (a second carrier under a held id is now dropped, since the held
+  one was verified), and the carrier errors `oversized evidence event`,
+  `invalid or oversized evidence event`, `invalid or oversized evidence tag`,
+  `invalid evidence field`, `invalid evidence record` and the like (a malformed
+  delivery is now dropped). New: `invitation evidence query capacity exceeded:
+  too many deliveries`, `...: too many signature checks` and the size-limit
+  refusal above. Unchanged: `invitation evidence query capacity exceeded` for a
+  retained-event or retained-byte overflow. The revalidators still throw the
+  carrier errors, and the evidence format and its limits are unchanged, so
+  stored evidence revalidates exactly as before.
+- `encodePersistentInvitation` throws when the event it would sign exceeds
+  those size limits (only possible with very long relay URLs: 27,813 bytes at
+  eight 2,048-character relays), so the authority cannot sign what the strict
+  reader must refuse. `encodeInvitationRetirement` is unchanged: its body and
+  tags are fixed and small, so it cannot exceed them.
+
 ## 0.13.0
 
 ### Added

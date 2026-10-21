@@ -2,7 +2,7 @@ import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import { base64urlnopad } from '@scure/base'
 import { nip44 } from 'nostr-tools'
-import { verifiedSymbol, type Event } from 'nostr-tools/pure'
+import { getEventHash, verifiedSymbol, type Event } from 'nostr-tools/pure'
 import { deriveInvitationId, roomInvitation, decodeInvitationRetirementNotice, type RoomInvitation } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS, type PersistentRoomAdmission } from './persistent-invitation.js'
 import { isRoomEnds } from './expiration.js'
@@ -11,11 +11,31 @@ import { isInvitationStorage } from './invitation-storage.js'
 import { deriveRoom } from './room.js'
 import { KINDS } from './kinds.js'
 import { verifyEventUncached } from './verify.js'
+import { MAX_PERSISTENT_INVITATION_EVENT_BYTES, MAX_EVIDENCE_CARRIER_TAGS, MAX_EVIDENCE_CARRIER_TAG_STRINGS } from './evidence-carrier.js'
 import type { RelayTransport } from './transport.js'
 
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS = 64
-export const MAX_PERSISTENT_INVITATION_EVENT_BYTES = 16_384
+export { MAX_PERSISTENT_INVITATION_EVENT_BYTES }
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES = 262_144
+/** Raw deliveries one query reads, counted before anything is parsed: every
+ * relay's copy of every event, repeats, other authors and junk alike. It bounds
+ * parse work only. It is eight times the retained-event limit, so 64 events
+ * from each of eight relays still fit. Past it the query fails closed, because
+ * an event that could matter may be among those it did not read. */
+export const MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES = 512
+/** Signature checks one query is charged. Only an event that is in scope and
+ * not already held or refused costs one, so a repeat costs none. It is twice
+ * the retained-event limit: room for 64 retained events and 64 more in-scope
+ * events that fail (forged, over the evidence size limits, or signed but not a
+ * supported body). Beyond it the query fails closed rather than skip an
+ * unchecked event.
+ *
+ * It bounds checks, not Schnorr verifications. A retained retirement is
+ * verified twice (its scope check, then the retirement decoder), and the
+ * finished query revalidates every retained event, so the worst case is
+ * 128 + 64 verifications on a query that succeeds. A forgery fails at its
+ * first verification, so a hostile relay can cause at most 128. */
+export const MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS = 128
 
 /** Protected, local observation metadata. EOSE is NOT evidence of relay
  * completeness, current membership or global absence of retirement.
@@ -86,8 +106,9 @@ const utf8 = new TextEncoder()
 const hex32 = /^[0-9a-f]{64}$/
 const hex64 = /^[0-9a-f]{128}$/
 
-/** JSON string byte cost including escaping, without serialising content. */
-function jsonStringBytes(value: string): number {
+/** JSON string byte cost including escaping, without serialising content.
+ * `limited` throws past the per-event ceiling; unlimited only measures. */
+function jsonStringBytes(value: string, limited = true): number {
   let bytes = 2
   for (let i = 0; i < value.length; i++) {
     const c = value.charCodeAt(i)
@@ -98,7 +119,7 @@ function jsonStringBytes(value: string): number {
     else if (c >= 0xd800 && c <= 0xdbff && value.charCodeAt(i + 1) >= 0xdc00 && value.charCodeAt(i + 1) <= 0xdfff) { bytes += 4; i++ }
     else if (c >= 0xd800 && c <= 0xdfff) bytes += 6
     else bytes += 3
-    if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized evidence event')
+    if (limited && bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized evidence event')
   }
   return bytes
 }
@@ -127,32 +148,43 @@ function dataArray(raw: unknown, limit: number): unknown[] {
 }
 
 /** Fresh carrier copy, with no trusted verification-cache symbol. Bounds
- * precede copying or serialising potentially large strings/tag arrays. */
-function carrier(raw: unknown): { event: Event; canonical: string; bytes: number } {
+ * precede copying or serialising potentially large strings/tag arrays.
+ *
+ * `tolerant` lifts only the size ceilings (bytes, tag count, tag width): every
+ * plain-data, prototype, type and hex refusal stays. The copy of an event that
+ * exceeds a ceiling comes back with `over` set and no canonical form, because
+ * it can never be retained as evidence. The query uses that to check whether
+ * the authority signed it. */
+function carrier(raw: unknown, tolerant = false): { event: Event; canonical: string; bytes: number; over: boolean } {
+  let over = false
+  const exceed = (message: string): void => { if (!tolerant) throw new Error(message); over = true }
   const d = dataRecord(raw, fields, verifiedSymbol)
   if (Object.keys(d).length !== fields.length || typeof d.id !== 'string' || !hex32.test(d.id) ||
       typeof d.pubkey !== 'string' || !hex32.test(d.pubkey) || typeof d.sig !== 'string' || !hex64.test(d.sig) ||
       !Number.isSafeInteger(d.created_at) || (d.created_at as number) < 0 || !Number.isSafeInteger(d.kind) || (d.kind as number) < 0 ||
-      typeof d.content !== 'string' || d.content.length > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('invalid or oversized evidence event')
+      typeof d.content !== 'string') throw new Error('invalid or oversized evidence event')
+  if (d.content.length > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('invalid or oversized evidence event')
   let bytes = '{"id":,"pubkey":,"created_at":,"kind":,"tags":,"content":,"sig":}'.length +
-    String(d.created_at).length + String(d.kind).length + jsonStringBytes(d.id) + jsonStringBytes(d.pubkey) + jsonStringBytes(d.sig) + jsonStringBytes(d.content)
-  if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized evidence event')
-  const outer = dataArray(d.tags, 64)
+    String(d.created_at).length + String(d.kind).length + jsonStringBytes(d.id) + jsonStringBytes(d.pubkey) + jsonStringBytes(d.sig) + jsonStringBytes(d.content, !tolerant)
+  if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('oversized evidence event')
+  const outer = dataArray(d.tags, tolerant ? Infinity : MAX_EVIDENCE_CARRIER_TAGS)
+  if (outer.length > MAX_EVIDENCE_CARRIER_TAGS) over = true
   bytes += 2 + Math.max(0, outer.length - 1)
   const tags = outer.map(tag => {
-    const inner = dataArray(tag, 8)
+    const inner = dataArray(tag, tolerant ? Infinity : MAX_EVIDENCE_CARRIER_TAG_STRINGS)
+    if (inner.length > MAX_EVIDENCE_CARRIER_TAG_STRINGS) over = true
     bytes += 2 + Math.max(0, inner.length - 1)
     return inner.map(value => {
-      if (typeof value !== 'string' || value.length > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('invalid or oversized evidence tag')
-      bytes += jsonStringBytes(value)
-      if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized evidence event')
+      if (typeof value !== 'string') throw new Error('invalid or oversized evidence tag')
+      if (value.length > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('invalid or oversized evidence tag')
+      bytes += jsonStringBytes(value, !tolerant)
+      if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('oversized evidence event')
       return value
     })
   })
-  if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) throw new Error('oversized evidence event')
+  if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('oversized evidence event')
   const event: Event = { id: d.id, pubkey: d.pubkey, created_at: d.created_at as number, kind: d.kind as number, tags, content: d.content, sig: d.sig }
-  const canonical = JSON.stringify(event)
-  return { event, canonical, bytes }
+  return { event, canonical: over ? '' : JSON.stringify(event), bytes, over }
 }
 
 function copyInvitation(invitation: RoomInvitation): RoomInvitation {
@@ -166,10 +198,16 @@ function roomId(secret: Uint8Array): string {
   return room.roomId
 }
 
+/** The cheap, unsigned part of scope: the authority, a source kind and exactly
+ * one two-element `d` tag naming this invitation. No crypto. */
+function inAuthorityScope(event: Event, inviter: string, invitationId: string): boolean {
+  if (event.pubkey !== inviter || (event.kind !== KINDS.GROUP_INVITATION && event.kind !== KINDS.INVITATION_RETIREMENT)) return false
+  const d = event.tags.filter(tag => tag[0] === 'd')
+  return d.length === 1 && d[0]!.length === 2 && d[0]![1] === invitationId
+}
+
 function signedScope(event: Event, invitation: RoomInvitation): boolean {
-  return event.pubkey === invitation.inviter && (event.kind === KINDS.GROUP_INVITATION || event.kind === KINDS.INVITATION_RETIREMENT) &&
-    event.tags.filter(tag => tag[0] === 'd').length === 1 && event.tags.find(tag => tag[0] === 'd')?.length === 2 &&
-    event.tags.find(tag => tag[0] === 'd')?.[1] === deriveInvitationId(invitation) && verifyEventUncached(event)
+  return inAuthorityScope(event, invitation.inviter, deriveInvitationId(invitation)) && verifyEventUncached(event)
 }
 
 /** Strict evidence path accepts exactly the bodies/tags of supported writers;
@@ -355,23 +393,45 @@ export async function requestPersistentRoomAdmissionEvidence(opts: {
       opts.signal?.addEventListener('abort', abort, { once: true })
       if (opts.signal?.aborted) { abort(); return }
       try {
-        unsub = opts.transport.subscribe([{ kinds: [KINDS.GROUP_INVITATION, KINDS.INVITATION_RETIREMENT], authors: [invitation.inviter], '#d': [deriveInvitationId(invitation)] }], event => {
+        const invitationId = deriveInvitationId(invitation)
+        // Canonical forms that were checked and refused, so a repeat of one costs no crypto.
+        const refused = new Set<string>()
+        let verifications = 0
+        unsub = opts.transport.subscribe([{ kinds: [KINDS.GROUP_INVITATION, KINDS.INVITATION_RETIREMENT], authors: [invitation.inviter], '#d': [invitationId] }], event => {
           if (settled) return
           try {
-            // Charge invalid candidates and duplicates before carrier/crypto.
-            if (received >= MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS) throw new Error('invitation evidence query capacity exceeded')
+            // Every delivery is charged first and bounds parse work. Retained
+            // events, retained bytes and signature checks have their own limits.
+            if (received >= MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES) throw new Error('invitation evidence query capacity exceeded: too many deliveries')
             received++
-            const c = carrier(event)
-            if (bytes + c.bytes > MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES) throw new Error('invitation evidence query capacity exceeded')
-            bytes += c.bytes
-            const prior = events.get(c.event.id)
-            if (prior !== undefined) {
-              if (prior !== c.canonical) throw new Error('conflicting duplicate invitation event identity')
+            let c: ReturnType<typeof carrier>
+            try { c = carrier(event, true) } catch { return } // malformed beyond size: not evidence, not a failure
+            if (!inAuthorityScope(c.event, invitation.inviter, invitationId)) return
+            // An id already held was verified, so any other carrier with that id
+            // has the same signed fields and nothing new to say. A carrier that
+            // only claims it cannot verify. Dropping it loses no signed event.
+            // An over-limit carrier is remembered by its computed hash and signature,
+            // never by the id it claims: a tampered copy that claims a real event's
+            // id and signature has a different hash, so it cannot mask the real one.
+            const overKey = c.over ? `${getEventHash(c.event)}:${c.event.sig}` : ''
+            if (events.has(c.event.id) || refused.has(c.over ? overKey : c.canonical)) return
+            if (verifications >= MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS) throw new Error('invitation evidence query capacity exceeded: too many signature checks')
+            verifications++
+            if (c.over) {
+              // Over the size limits, so it can never be retained. If the authority
+              // signed it, it may be a retirement or a newer list that this query
+              // cannot hold: fail closed rather than select without it. An event
+              // that only claims the authority's key is dropped.
+              if (verifyEventUncached(c.event)) throw new Error('invitation evidence query refused an event signed by the authority that exceeds the evidence size limits')
+              refused.add(overKey)
               return
             }
             const decoded = decodeEvidenceEvent(c.event, invitation)
-            if (!decoded) return
+            if (!decoded) { refused.add(c.canonical); return }
             if (decoded !== 'retired') decoded.secret.fill(0)
+            // A valid authority event that no longer fits fails the query: never evict or truncate.
+            if (events.size >= MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS || bytes + c.bytes > MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES) throw new Error('invitation evidence query capacity exceeded')
+            bytes += c.bytes
             events.set(c.event.id, c.canonical)
           } catch (error) { finish(error) }
         }, () => finish())
