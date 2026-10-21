@@ -13,7 +13,7 @@ vectors (see EXTRACTION.md). Framework-free: owns no storage, UI, relay
 defaults or identity keys, and no relay I/O of its own - callers inject a
 transport.
 
-**Status:** Version 0.12.0 on `main`. Published on npm as
+**Status:** Version 0.13.0 on `main`. Published on npm as
 `@forgesworn/fold-kit`, but `main` can run ahead of the npm `latest` release, so
 compare `npm view @forgesworn/fold-kit version` with this repository's
 `package.json` before relying on an API listed here. KithMoot has cut over to

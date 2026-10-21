@@ -10,7 +10,7 @@ ESM-only, Node.js 22.13+. Four entry points: `@forgesworn/fold-kit` (circle prim
 npm install @forgesworn/fold-kit
 ```
 
-This file describes `main` (version 0.12.0), which can run ahead of the npm `latest` release; compare `npm view @forgesworn/fold-kit version` with the version of the API you need. To use an unreleased change, pin an immutable Git commit (a full SHA, for example from `git ls-remote https://github.com/forgesworn/fold-kit main`); the `prepare` script builds `dist/` on install:
+This file describes `main` (version 0.13.0), which can run ahead of the npm `latest` release; compare `npm view @forgesworn/fold-kit version` with the version of the API you need. To use an unreleased change, pin an immutable Git commit (a full SHA, for example from `git ls-remote https://github.com/forgesworn/fold-kit main`); the `prepare` script builds `dist/` on install:
 
 ```bash
 npm install "github:forgesworn/fold-kit#<commit>"

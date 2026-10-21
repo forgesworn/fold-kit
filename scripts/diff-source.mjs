@@ -619,7 +619,7 @@ const QUIET_REPLY_CHANGES = {
 }
 
 /**
- * One-time senders (unreleased, see docs/seal-key.md "One-time senders"):
+ * One-time senders (0.13.0, see docs/seal-key.md "One-time senders"):
  * `encodeRekeyEvent` and `encodeEpochGrant` take `oneTimeSender`, which seals
  * the copies from a fresh key named in a `from` tag, and both readers open a
  * copy from the key `sealSender` names. Omitted, every event is
