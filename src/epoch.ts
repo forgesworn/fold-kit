@@ -927,6 +927,10 @@ export interface HostRoomEpochOptions {
   onRefused?: (request: EpochRequest, why: EpochRefusal) => void
   /** A conference room's end: every grant carries it as an expiration. */
   expiresAt?: number
+  /** Seal every grant from a one-time key (`EncodeEpochGrantOptions.oneTimeSender`).
+   *  Off by default; turn it on only once every client reads one-time
+   *  senders (fold-kit 0.13.0 and the clients built on it). */
+  oneTimeSender?: boolean
   /** Seconds before the same participant is sent a `removed` or `closed`
    *  refusal again. Default 3600 (`REFUSE_AGAIN_AFTER_SECONDS`). A request
    *  inside it is not answered, so the asker times out instead. */
@@ -1091,6 +1095,7 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
                 refused,
                 credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
                 expiresAt: opts.expiresAt,
+                ...(opts.oneTimeSender ? { oneTimeSender: true } : {}),
               })
             } else {
               const epoch = opts.current()
@@ -1106,6 +1111,7 @@ export function hostRoomEpoch(opts: HostRoomEpochOptions): { close(): void } {
                 ...(opts.past ? { passed: passedFor(opts.past, epoch.epoch, now()) } : {}),
                 credential: sealCredential(request, read.credential, opts.credentialFor, roomId, now()),
                 expiresAt: opts.expiresAt,
+                ...(opts.oneTimeSender ? { oneTimeSender: true } : {}),
               })
             }
           } catch {

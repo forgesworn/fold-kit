@@ -121,8 +121,8 @@ it costs the epoch. So `oneTimeSender` stays off in every writer until readers
 have shipped on every client and had a release in the field. Off, every
 event is byte-identical to before.
 
-`hostRoomEpoch` has no switch for it yet; adding one is part of turning
-writers on, alongside the keeper's own rekeys.
+`hostRoomEpoch` takes `oneTimeSender` too and passes it to every grant it
+writes; it is off by default, like the encoders.
 
 ## Vectors
 
