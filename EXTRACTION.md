@@ -330,6 +330,24 @@ declares each added line in `ROOM_RELAY_CHANGES` as 0.4.0 text against
 0.3.0 text, applied before `CONFERENCE_CHANGES`, so the whole-file
 comparison against the pinned commit still holds.
 
+## Room storage nodes: declared additions to `persistent-invitation.ts`
+
+0.14.0 adds the room's group storage nodes to the group invitation body,
+after `relays`: the base URLs of the nodes a room keeps its files on, so a
+client uploads there and never to a public server. The rule (0 to 8
+canonical node URLs on distinct hosts, defined by a grammar rather than by
+what a URL parser prints) lives in a new module, `src/invitation-storage.ts`,
+which moved from nowhere. With no `storage` the body, and the whole event, is
+byte-identical to 0.13.0's (`vectors/storage-vectors.json`, vector
+`storage-absent`, pins two events recorded from 0.13.0's own encoder). The
+admission gains `storage` and `storageAt`; the strict evidence path
+(`src/persistent-invitation-evidence.ts`, not a moved module) allows the key
+and merges it as it merges `relays`, holding a same-second disagreement as
+`conflicting-storage`. `scripts/diff-source.mjs` declares each added line in
+`STORAGE_CHANGES` as 0.14.0 text against 0.13.0 text, applied before every
+other change set, so the whole-file comparison against the pinned commit
+still holds.
+
 ## Member epoch catch-up: declared additions to `epoch.ts`
 
 Unreleased. Any current member can now hand an admitted, non-removed device

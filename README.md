@@ -13,7 +13,7 @@ vectors (see EXTRACTION.md). Framework-free: owns no storage, UI, relay
 defaults or identity keys, and no relay I/O of its own - callers inject a
 transport.
 
-**Status:** Version 0.13.0 on `main`. Published on npm as
+**Status:** Version 0.14.0 on `main`. Published on npm as
 `@forgesworn/fold-kit`, but `main` can run ahead of the npm `latest` release, so
 compare `npm view @forgesworn/fold-kit version` with this repository's
 `package.json` before relying on an API listed here. KithMoot has cut over to
@@ -250,6 +250,25 @@ decision completes, so approval cannot extend an expired request's authority.
   `requestPersistentRoomAdmission` keeps the relays of the newest signed
   copy that names any. `isInvitationRelays`, `requireInvitationRelays` and
   `MAX_INVITATION_RELAYS` are the rule
+- Room storage nodes: pass `storage` (zero to eight canonical node base URLs
+  on distinct hosts, e.g. `https://grove.example.net` or
+  `http://127.0.0.1:8080`) and the encrypted body carries them last, after
+  `relays`, so a room that keeps its files on its own computers says where.
+  An entry is only a base URL; the grammar (no trailing slash, no default
+  port, `http` only on this machine or an onion address) is in
+  `src/invitation-storage.ts` and pinned by vectors, not by what a URL parser
+  prints. `[]` says the authority withdrew every node; a body with no
+  `storage` says nothing about nodes, and is byte-identical to 0.13.0's. The
+  decoder returns `storage` and `storageAt` (the `created_at` of the copy
+  whose list stood) and refuses the whole envelope on a malformed list.
+  `requestPersistentRoomAdmission` and the strict evidence path keep the list
+  of the newest signed copy that names any, independently of the relays; the
+  strict path holds a same-second disagreement as `conflicting-storage`.
+  `storageNodeFromBase(text)` canonicalises an operator's URL and gives its
+  `server`; `isStorageNodeBase`, `isInvitationStorage`,
+  `requireInvitationStorage`, `MAX_INVITATION_STORAGE_NODES` and
+  `MAX_STORAGE_NODE_URL_LENGTH` are the rule. Vectors:
+  `vectors/storage-vectors.json`
 - Self-destructing rooms (`docs/room-destruct.md`): pass `destruct: true`
   and the encrypted body carries it after `ends` (no end needed: the room
   then self-destructs when its authority closes it). The decoder returns
@@ -391,6 +410,7 @@ npm run typecheck    # type-check src/ and test/ (matching KithMoot, vectors/ is
 npm run vectors      # run only the vector-verification suites
 npm run diff-source  # compare moved modules against the pinned source commit (needs FOLD_KIT_SOURCE_DIR)
 npm run generate-fold # regenerate vectors/fold-vectors.json (needs a prior build)
+npm run generate-storage # regenerate vectors/storage-vectors.json (needs a prior build)
 npm run bundle-check # esbuild browser bundle check (needs a prior build)
 npm run check        # typecheck + test + diff-source
 ```

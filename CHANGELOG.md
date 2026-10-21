@@ -5,10 +5,44 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
-## Unreleased
+## 0.14.0
 
 ### Added
 
+- Room storage nodes: the group storage nodes a room keeps its files on,
+  carried in its signed group invitation (kind 1463) so a client uploads to
+  the group's own computers and never to a public server.
+  `encodePersistentInvitation` takes an optional `storage`: zero to eight
+  canonical node base URLs on distinct hosts, else it throws. The encrypted v3
+  body carries them last, after `relays` (key order `v, room, secret, ends,
+  destruct, relays, storage`; the version stays 3, so every lenient reader,
+  including shipped Android, ignores the key). `[]` says the room's authority
+  withdrew every node; a body without the key says nothing about nodes.
+  With no `storage`, the event is byte-identical to 0.13.0's.
+- An entry is a base URL and nothing else. Canonical is a grammar, pinned by
+  `vectors/storage-vectors.json`: `https`, or `http` only for `localhost`, a
+  `127.x.y.z` address or an onion v3 host; lower-case host; no default port,
+  trailing slash, user info, query or fragment; at most 256 characters; a host
+  ending in a number must be four plain decimal octets. New exports:
+  `storageNodeFromBase` (an operator's URL to `{ base, server }`),
+  `isStorageNodeBase`, `isInvitationStorage`, `requireInvitationStorage`,
+  `MAX_INVITATION_STORAGE_NODES` (8), `MAX_STORAGE_NODE_URL_LENGTH` (256) and
+  the `StorageNode` type.
+- `decodePersistentInvitation` returns `storage` and `storageAt` (the
+  `created_at` of the copy whose list stood; a client uses it as the record's
+  version), and returns null for the whole envelope on a malformed list.
+  `requestPersistentRoomAdmission` keeps the list of the newest signed copy
+  that names any, `[]` included; a copy without the key says nothing, and on
+  equal timestamps the first heard stays. Relays and storage merge
+  independently.
+- The strict evidence path (`persistent-invitation-evidence`) accepts the new
+  key and merges it the same way. Two newest copies of one second that
+  disagree hold with the new reason `conflicting-storage`, and
+  `PersistentInvitationContributors` gains `storage`. Note for readers still
+  on 0.13.0: that strict path refuses a body key it does not know and skips
+  the copy, so a room whose only copy carries `storage` reads as unavailable to
+  it; publish a plain copy first (the vector `storage-strict-old-reader`).
+- `vectors/storage-vectors.json` (`npm run generate-storage`).
 - `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
   writes. Off by default; off, every grant is byte-identical to 0.13.0's.
 
