@@ -2,14 +2,20 @@
  * A room's own storage nodes, carried in its signed group invitation (kind 1463).
  *
  * A room that keeps its files on its own computers lists their base URLs
- * here, so a client uploads to those and never to a public server. The list is
- * signed by the room's authority and rides in the encrypted body, after
- * `relays`; a body without it says nothing about storage.
+ * here, so a client can upload to the group's own nodes instead of a public
+ * server. The list is signed by the room's authority and rides in the
+ * encrypted body, after `relays`; a body without it says nothing about
+ * storage.
  *
  * An entry is one string, a node's canonical base URL, and nothing else: the
  * `server` a token names is its host, and scopes, ceilings and expiry belong
  * to the grant. Canonical is defined by this grammar, not by what a URL parser
- * prints, so a port written in another language gets the same answers:
+ * prints, and the wire answer is the grammar's alone: no URL parser is
+ * consulted when a list is read or written, so a port written in another
+ * language gets the same answer from the same bytes. (`new URL` is used only
+ * to read an operator's text in `storageNodeFromBase`, whose output must
+ * itself pass the grammar.) A client that cannot parse a listed host when it
+ * makes a request skips that node.
  *
  *     entry   = scheme "://" host [ ":" port ] *( "/" segment )
  *     scheme  = "https" / "http"
@@ -96,13 +102,11 @@ export function isStorageNodeBase(value: unknown): value is string {
     if (!isCanonicalPort(port)) return false
     if ((scheme === 'https' && port === '443') || (scheme === 'http' && port === '80')) return false
   }
-  // Belt to the grammar's braces: a WHATWG parser must read the entry the same way.
-  try {
-    const u = new URL(value)
-    return `${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname}` === value
-  } catch {
-    return false
-  }
+  // The grammar alone decides. No URL parser is consulted, so every client
+  // gets the same answer from the same bytes (a parser's answer differs between
+  // runtimes, for `xn--` labels among others). A client that cannot parse a
+  // listed host when it makes a request skips that node.
+  return true
 }
 
 /** True for a list the invitation may carry (0 to 8 canonical entries, one per host), including []. Never throws. */

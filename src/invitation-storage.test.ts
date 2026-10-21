@@ -32,6 +32,28 @@ describe('storage node base URLs', () => {
     expect(isStorageNodeBase(value)).toBe(false)
   })
 
+  it('the grammar alone decides: under Node every accepted entry also round-trips unchanged through `new URL`', () => {
+    // A cross-check, not a rule: the wire answer never consults a URL parser,
+    // but today's Node must agree with the grammar on every accepted case.
+    for (const [entry] of ACCEPTS) {
+      const u = new URL(entry)
+      expect(`${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname}`).toBe(entry)
+    }
+  })
+
+  it('does not consult a URL parser to decide', () => {
+    const real = globalThis.URL
+    let calls = 0
+    globalThis.URL = class extends real { constructor(...args: ConstructorParameters<typeof URL>) { calls++; super(...args) } } as typeof URL
+    try {
+      for (const [entry] of ACCEPTS) expect(isStorageNodeBase(entry)).toBe(true)
+      for (const [, entry] of REFUSALS) expect(isStorageNodeBase(entry)).toBe(false)
+      expect(isInvitationStorage(['https://xn--a.example.net'])).toBe(true)
+      expect(() => requireInvitationStorage(['https://xn--a.example.net'])).not.toThrow()
+      expect(calls).toBe(0)
+    } finally { globalThis.URL = real }
+  })
+
   it('agrees with the grammar for every accepted row and no refused row', () => {
     for (const [entry] of ACCEPTS) expect(isStorageNodeBase(entry)).toBe(true)
     for (const [, entry] of REFUSALS) expect(isStorageNodeBase(entry)).toBe(false)
@@ -69,6 +91,7 @@ describe('the storage list', () => {
     ['nine entries', Array.from({ length: 9 }, (_, i) => `https://node${i}.example.net`), /at most 8 storage nodes/],
     ['two ports on one host', ['https://example.net', 'https://example.net:8443'], /share a host name: example\.net/],
     ['the same entry twice', ['https://example.net', 'https://example.net'], /share a host name: example\.net/],
+    ['one host under two schemes', ['http://localhost:3000', 'https://localhost'], /share a host name: localhost/],
     ['a hole', [, 'https://example.net'] as unknown[], null],
   ])('refuses %s', (_label, value, message) => {
     expect(isInvitationStorage(value)).toBe(false)
