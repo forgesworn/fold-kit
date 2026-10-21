@@ -175,7 +175,15 @@ describe('storage-vectors', () => {
       expect(storageNodeFromBase(c.entry)).toEqual({ base: c.entry, server: c.server })
       expect(admission(decodePersistentInvitation(c.event, invitationOf(i)))).toEqual(v.expected.admission[c.entry])
       expect(v.expected.admission[c.entry]?.storage).toEqual([c.entry])
+      // The grammar decides, not a parser; but today's Node must agree on each accepted case.
+      const u = new URL(c.entry)
+      expect(`${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname}`).toBe(c.entry)
     }
+    const servers = Object.fromEntries(i.cases.map((c: Any) => [c.entry, c.server]))
+    expect(servers['https://xn--bcher-kva.example']).toBe('xn--bcher-kva.example')
+    expect(servers['https://xn--a.example.net']).toBe('xn--a.example.net')
+    expect(servers['https://0x.example.net']).toBe('0x.example.net')
+    expect(servers['https://example.net/WB']).toBe('example.net')
   })
 
   it('storage-entry-refusals: each is rebuilt exactly and refused outright', () => {
@@ -212,6 +220,8 @@ describe('storage-vectors', () => {
       expect(v.expected.oldReader[c.label]).toMatchObject({ persistent: true, epoch: 0 })
     }
     expect(i.cases.some((c: Any) => Array.isArray(c.storage) && c.storage.length === 9)).toBe(true)
+    expect(i.cases.some((c: Any) => JSON.stringify(c.storage) === JSON.stringify(['http://localhost:3000', 'https://localhost']))).toBe(true)
+    expect(v.expected.encoder['one host under two schemes']).toBe('storage nodes must not share a host name: localhost')
     expect(i.eight.storage).toHaveLength(8)
     expect(encoded(i, i.eight, { storage: i.eight.storage })).toEqual(i.eight.event)
     expect(admission(decodePersistentInvitation(i.eight.event, invitationOf(i)))?.storage).toEqual(i.eight.storage)

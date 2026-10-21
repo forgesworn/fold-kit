@@ -263,6 +263,10 @@ const ACCEPTS = [
   'https://example.net:65535',
   'http://127.255.255.254',
   'https://example.net/a.b/c_d/e~f/...',
+  'https://0x.example.net',
+  'https://example.net/WB',
+  'https://xn--bcher-kva.example',
+  'https://xn--a.example.net',
 ]
 const acceptCases = ACCEPTS.map((entry, i) => {
   const node = storageNodeFromBase(entry)
@@ -293,6 +297,9 @@ const REFUSALS = [
   ['an octet with a leading zero', 'http://127.000.0.1'],
   ['an octet over 255', 'https://192.0.2.256'],
   ['a numeric last label with three octets', 'https://example.net.1'],
+  ['a hex last label with no digits after 0x', 'https://example.0x'],
+  ['a hex last label that is not an octet', 'https://a.b.c.0x1'],
+  ['a single numeric label', 'https://4294967295'],
   ['a percent-encoded path', 'https://example.net/a%2Fb'],
   ['a dot segment', 'https://example.net/a/./b'],
   ['a dot-dot segment', 'https://example.net/a/../b'],
@@ -305,6 +312,10 @@ const REFUSALS = [
   ['an underscore in the host', 'https://gro_ve.example.net'],
   ['a 64 character label', `https://${'a'.repeat(64)}.example.net`],
   ['257 characters', `https://example.net/${'a'.repeat(MAX_STORAGE_NODE_URL_LENGTH + 1 - 'https://example.net/'.length)}`],
+  ['a trailing line end after the host', 'https://grove.example.net\n'],
+  ['a trailing line end after the path', 'https://example.net/wb\n'],
+  ['a leading space', ' https://grove.example.net'],
+  ['a trailing space', 'https://grove.example.net '],
   ['an empty string', ''],
   ['no scheme', 'example.net'],
 ]
@@ -324,6 +335,7 @@ const LIST_REFUSALS = [
   ['nine entries', Array.from({ length: 9 }, (_, i) => `https://node${i}.example.net`)],
   ['two ports on one host', ['https://example.net', 'https://example.net:8443']],
   ['the same entry twice', ['https://example.net', 'https://example.net']],
+  ['one host under two schemes', ['http://localhost:3000', 'https://localhost']],
 ]
 const listCases = LIST_REFUSALS.map(([label, storage], i) => ({ label, storage, ...handBuilt(`list-refusal-${i}`, invitationBody({ storage })) }))
 
