@@ -5,14 +5,14 @@ import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils'
 import { schnorr } from '@noble/curves/secp256k1.js'
 import { base64urlnopad } from '@scure/base'
 import { nip44 } from 'nostr-tools'
-import { finalizeEvent, getPublicKey, type Event } from 'nostr-tools/pure'
+import { finalizeEvent, generateSecretKey, getPublicKey, type Event } from 'nostr-tools/pure'
 import { hexEquals, normaliseHex } from './hex.js'
 import { KINDS } from './kinds.js'
 import { deriveRoom } from './room.js'
 import { verifyDeviceCredential } from './credential.js'
 import { evaluateAccess } from './access.js'
 import { verifyEventUncached } from './verify.js'
-import { newerCredential, openSealed, sealTo } from './seal.js'
+import { SENDER_TAG, newerCredential, openSealed, sealSender, sealTo } from './seal.js'
 import { withExpiration } from './expiration.js'
 import { epochCommitment } from './epoch-commit.js'
 import type { RelayTransport } from './transport.js'
@@ -234,6 +234,13 @@ export interface EncodeRekeyOptions {
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
   expiresAt?: number
+  /** Seal the copies from a one-time key, named in a `from` tag and
+   *  discarded once they are sealed, instead of from the authority's key.
+   *  Readers from fold-kit 0.13.0 open either; an older reader opens no copy
+   *  from a one-time key, so turn this on only once readers have shipped
+   *  (docs/seal-key.md, "One-time senders"). Omitted, the event is
+   *  byte-identical to before. */
+  oneTimeSender?: boolean
 }
 
 /** A rekey recipient: a device, and the newest credential the sender holds
@@ -249,6 +256,14 @@ function memberListOf(members: readonly string[], removed: readonly string[]): s
   return [...out].sort()
 }
 
+/** The key a rekey or grant seals from: the authority's own, or, with
+ *  `oneTimeSender`, a fresh one named in a `from` tag and zeroed once used. */
+function oneTimeSenderOf(opts: { authoritySk: Uint8Array; oneTimeSender?: boolean }): { sk: Uint8Array; tags: string[][]; discard: () => void } {
+  if (!opts.oneTimeSender) return { sk: opts.authoritySk, tags: [], discard: () => {} }
+  const sk = generateSecretKey()
+  return { sk, tags: [[SENDER_TAG, getPublicKey(sk)]], discard: () => sk.fill(0) }
+}
+
 /** Announce the next epoch. See the module comment for what this is. */
 export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
   require32(opts.authoritySk, 'authority secret key')
@@ -262,10 +277,15 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
   const keys: Record<string, string> = {}
   const sealed: SealedSecret = { v: 1, secret: base64urlnopad.encode(opts.next.secret) }
   const plaintext = JSON.stringify(sealed)
-  for (const raw of opts.closed ? [] : opts.recipients) {
-    const recipient = typeof raw === 'string' ? { device: raw } : raw
-    const device = requireHex32(recipient.device, 'recipient device')
-    keys[device] = sealTo(plaintext, opts.authoritySk, device, recipient.credential)
+  const sender = oneTimeSenderOf(opts)
+  try {
+    for (const raw of opts.closed ? [] : opts.recipients) {
+      const recipient = typeof raw === 'string' ? { device: raw } : raw
+      const device = requireHex32(recipient.device, 'recipient device')
+      keys[device] = sealTo(plaintext, sender.sk, device, recipient.credential)
+    }
+  } finally {
+    sender.discard()
   }
   const body: RekeyBody = {
     v: 1,
@@ -286,6 +306,7 @@ export function encodeRekeyEvent(opts: EncodeRekeyOptions): Event {
       tags: withExpiration([
         ['d', roomId],
         ['epoch', String(epoch)],
+        ...sender.tags,
       ], opts.expiresAt),
       content: nip44.v2.encrypt(JSON.stringify(body), opts.current.key),
     },
@@ -385,13 +406,14 @@ export function decodeRekeyEvent(event: Event, opts: DecodeRekeyOptions): RekeyN
     if (members) notice.members = members
     const device = getPublicKey(opts.deviceSk)
     const mine = Object.entries(body.keys).find(([to]) => hexEquals(to, device))?.[1]
-    if (typeof mine === 'string') {
+    const sender = sealSender(event)
+    if (typeof mine === 'string' && sender !== null) {
       // A copy none of this device's keys opens is no copy: sealed to a
       // seal key it has since erased, or one it never had. The rest of the
       // rekey still says who was removed, so it is read without the secret,
       // and the device asks for the epoch.
       try {
-        const sealed = JSON.parse(openSealed(mine, event.pubkey, opts.deviceSk, opts.sealSks)) as Partial<SealedSecret>
+        const sealed = JSON.parse(openSealed(mine, sender, opts.deviceSk, opts.sealSks)) as Partial<SealedSecret>
         if (sealed.v === 1 && typeof sealed.secret === 'string') {
           const secret = base64urlnopad.decode(sealed.secret)
           if (secret.length === 32) notice.secret = secret
@@ -690,6 +712,13 @@ export interface EncodeEpochGrantOptions {
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
   expiresAt?: number
+  /** Seal the copies from a one-time key, named in a `from` tag and
+   *  discarded once they are sealed, instead of from the authority's key.
+   *  Readers from fold-kit 0.13.0 open either; an older reader opens no copy
+   *  from a one-time key, so turn this on only once readers have shipped
+   *  (docs/seal-key.md, "One-time senders"). Omitted, the event is
+   *  byte-identical to before. */
+  oneTimeSender?: boolean
 }
 
 function passedListOf(passed: readonly LeftEpoch[], granted: number): PassedEpochBody[] {
@@ -754,6 +783,13 @@ export function encodeEpochGrant(opts: EncodeEpochGrantOptions): Event {
     if (opts.members !== undefined) body.members = memberListOf(opts.members, body.removed)
     if (opts.passed !== undefined && opts.passed.length > 0) body.passed = passedListOf(opts.passed, body.epoch)
   }
+  const sender = oneTimeSenderOf(opts)
+  let content: string
+  try {
+    content = sealTo(JSON.stringify(body), sender.sk, device, opts.credential)
+  } finally {
+    sender.discard()
+  }
   return finalizeEvent(
     {
       kind: KINDS.EPOCH_GRANT,
@@ -761,8 +797,9 @@ export function encodeEpochGrant(opts: EncodeEpochGrantOptions): Event {
       tags: withExpiration([
         ['d', roomId],
         ['p', device],
+        ...sender.tags,
       ], opts.expiresAt),
-      content: sealTo(JSON.stringify(body), opts.authoritySk, device, opts.credential),
+      content,
     },
     opts.authoritySk,
   )
@@ -810,7 +847,9 @@ export function decodeEpochGrant(event: Event, opts: DecodeEpochGrantOptions): E
     const device = getPublicKey(opts.deviceSk)
     const addressed = event.tags.find((t) => t[0] === 'p')?.[1]
     if (addressed === undefined || !hexEquals(addressed, device)) return null
-    const body = JSON.parse(openSealed(event.content, event.pubkey, opts.deviceSk, opts.sealSks)) as Partial<EpochGrantBody>
+    const sender = sealSender(event)
+    if (sender === null) return null
+    const body = JSON.parse(openSealed(event.content, sender, opts.deviceSk, opts.sealSks)) as Partial<EpochGrantBody>
     if (body.v !== 1 || typeof body.request !== 'string' || !hexEquals(body.request, opts.request)) return null
     if (body.refused === 'removed' || body.refused === 'closed' || body.refused === 'unknown') return { refused: body.refused }
     if (!Number.isSafeInteger(body.epoch) || (body.epoch as number) < 0 || (body.epoch as number) > MAX_EPOCH) return null

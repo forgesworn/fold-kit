@@ -5,6 +5,20 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- One-time senders for rekeys (1462) and authority grants (20469):
+  `oneTimeSender` on `encodeRekeyEvent` and `encodeEpochGrant` seals every
+  copy from a fresh key named in a `from` tag, so a later copy of the
+  authority's key no longer opens past copies. Off by default; off, events
+  are byte-identical to 0.12.0. Readers (`decodeRekeyEvent`,
+  `decodeEpochGrant`) open either form now, through the new `sealSender`
+  (also exported, with `SENDER_TAG`). Turn writers on only once these readers
+  have shipped everywhere. See docs/seal-key.md, "One-time senders"; vectors
+  in `seal-vectors.json`.
+
 ## 0.12.0
 
 ### Fixed

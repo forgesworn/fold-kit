@@ -310,6 +310,11 @@ decision completes, so approval cannot extend an expired request's authority.
   `sealSks` on the readers; `credentialFor` on both desks;
   `credentialSeal`, `sealTarget`, `sealTo`, `openSealed`, `newerCredential`,
   `sealCredential`. Vectors: `vectors/seal-vectors.json`
+- One-time senders (`docs/seal-key.md`, "One-time senders"):
+  `oneTimeSender` on `encodeRekeyEvent` and `encodeEpochGrant` seals every
+  copy from a fresh key named in a `from` tag, so a later copy of the
+  authority's key opens no past copy; readers use `sealSender`. Off by
+  default until every client's readers have shipped.
 - Scheduled rekeys and the history window (`docs/scheduled-rekey.md`):
   `encodeRekeyEvent({ scheduled: true })` marks a turn of the key that
   removes nobody, read back as `RekeyNotice.scheduled` and

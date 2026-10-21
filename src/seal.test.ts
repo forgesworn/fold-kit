@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure'
+import { nip44 } from 'nostr-tools'
 import { SimRelay, SimTransport } from '../test/sim-relay.js'
 import { createDeviceCredential } from './credential.js'
 import { localIdentity } from './identity.js'
@@ -279,5 +280,61 @@ describe('healing at the desks', () => {
     })
     expect(grant.epoch).toEqual(epoch)
     desk.close()
+  })
+})
+
+describe('one-time senders', () => {
+  const room = deriveRoom(generateSecretKey())
+  const authoritySk = generateSecretKey()
+  const authority = getPublicKey(authoritySk)
+  const deviceSk = generateSecretKey()
+  const device = getPublicKey(deviceSk)
+  const e0 = deriveEpoch({ epoch: 0, secret: generateSecretKey() })
+  const next: RoomEpoch = { epoch: 1, secret: generateEpochSecret() }
+
+  it('sealSender is the signer with no from tag, the tag with one, null otherwise', async () => {
+    const { sealSender } = await import('./seal.js')
+    const one = getPublicKey(generateSecretKey())
+    expect(sealSender({ pubkey: authority.toUpperCase(), tags: [] })).toBe(authority)
+    expect(sealSender({ pubkey: authority, tags: [['from', one.toUpperCase()]] })).toBe(one)
+    expect(sealSender({ pubkey: authority, tags: [['from', one], ['from', one]] })).toBeNull()
+    expect(sealSender({ pubkey: authority, tags: [['from', '0'.repeat(63) + '5']] })).toBeNull()
+    expect(sealSender({ pubkey: authority, tags: [['from', 'zz']] })).toBeNull()
+    expect(sealSender({ pubkey: authority, tags: [['from']] })).toBeNull()
+  })
+
+  it('a rekey from a one-time key opens for the device, never zeroes the authority key, and uses a fresh key each time', () => {
+    const before = authoritySk.slice()
+    const a = encodeRekeyEvent({ roomId: room.roomId, authoritySk, current: e0, next, recipients: [device], removed: [], now: 1_800_000_000, oneTimeSender: true })
+    const b = encodeRekeyEvent({ roomId: room.roomId, authoritySk, current: e0, next, recipients: [device], removed: [], now: 1_800_000_000, oneTimeSender: true })
+    expect(authoritySk).toEqual(before)
+    expect(a.pubkey).toBe(authority)
+    const fromA = a.tags.find((t) => t[0] === 'from')![1]
+    const fromB = b.tags.find((t) => t[0] === 'from')![1]
+    expect(fromA).not.toBe(fromB)
+    expect(fromA).not.toBe(authority)
+    const notice = decodeRekeyEvent(a, { roomId: room.roomId, authority, current: e0, deviceSk })
+    expect(notice?.secret).toEqual(next.secret)
+    // Off by default: no from tag, and the authority key still seals.
+    const plainRekey = encodeRekeyEvent({ roomId: room.roomId, authoritySk, current: e0, next, recipients: [device], removed: [], now: 1_800_000_000 })
+    expect(plainRekey.tags.some((t) => t[0] === 'from')).toBe(false)
+    expect(authoritySk).toEqual(before)
+  })
+
+  it('a from tag on a rekey not signed by the authority is never read', () => {
+    const forger = generateSecretKey()
+    const forged = encodeRekeyEvent({ roomId: room.roomId, authoritySk: forger, current: e0, next, recipients: [device], removed: [], now: 1_800_000_000, oneTimeSender: true })
+    expect(decodeRekeyEvent(forged, { roomId: room.roomId, authority, current: e0, deviceSk })).toBeNull()
+  })
+
+  it('a grant from a one-time key opens for the device and not for an old reader that assumes the signer', () => {
+    const before = authoritySk.slice()
+    const request = 'ab'.repeat(32)
+    const grant = encodeEpochGrant({ roomId: room.roomId, authoritySk, device, request, now: 1_800_000_000, epoch: next, removed: [], oneTimeSender: true })
+    expect(authoritySk).toEqual(before)
+    expect(grant.tags.map((t) => t[0])).toEqual(['d', 'p', 'from'])
+    const read = decodeEpochGrant(grant, { roomId: room.roomId, authority, deviceSk, request, now: 1_800_000_000 })
+    expect(read && 'epoch' in read && read.epoch.epoch).toBe(1)
+    expect(() => nip44.v2.decrypt(grant.content, nip44.v2.utils.getConversationKey(deviceSk, authority))).toThrow()
   })
 })
