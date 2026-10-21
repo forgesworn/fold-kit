@@ -536,6 +536,23 @@ describe('bounded persistent invitation evidence', () => {
     })
   })
 
+  describe('the encoder refuses what the strict reader must refuse', () => {
+    const relays = (length: number) => Array.from({ length: 8 }, (_, i) => `wss://r${i}.example.net/${'a'.repeat(length)}`)
+    it('throws for eight long relays, naming the limit', () => {
+      const f = fixture()
+      expect(() => f.invite({ relays: relays(1_500) })).toThrow(/over the 16384 a strict reader accepts/)
+    })
+    it('still signs the largest list that fits, and the query retains it', async () => {
+      const f = fixture()
+      let low = 0, high = 1_500
+      while (low + 1 < high) { const mid = (low + high) >> 1; try { f.invite({ relays: relays(mid) }); low = mid } catch { high = mid } }
+      const event = f.invite({ relays: relays(low) })
+      expect(new TextEncoder().encode(JSON.stringify(event)).length).toBeLessThanOrEqual(16_384)
+      expect(() => f.invite({ relays: relays(high) })).toThrow('strict reader')
+      expect((await query({ transport: replay([event]).transport, invitation: f.host.invitation })).outcome.status).toBe('admitted')
+    })
+  })
+
   it('refuses UTF-8 and JSON escaping overflow before canonical serialisation or reload parsing', async () => {
     const f = fixture(), event = f.invite()
     for (const text of ['界'.repeat(6_000), String.fromCharCode(0xd800).repeat(3_000), '\u0000'.repeat(3_000)]) {

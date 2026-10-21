@@ -89,8 +89,10 @@ What is delivered is then sorted cheaply, before any signature check:
 An in-scope, well-formed, validly signed authority event is never dropped, and
 neither is an over-limit one: each is retained or fails the query. What the
 query drops is what cannot be an authority event (malformed, out of scope,
-unsigned by the authority) or repeats what it already holds. The failures
-above reject with `PersistentInvitationEvidenceQueryError`.
+unsigned by the authority) or repeats what it already holds.
+`encodePersistentInvitation` refuses to sign an event over the size limits, so
+only another writer can produce one. The failures above reject with
+`PersistentInvitationEvidenceQueryError`.
 
 Evidence records, carrier strings and ID arrays are frozen owned copies.
 String memory is not claimed securely erased. Each admitted result has a fresh

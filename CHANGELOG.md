@@ -99,6 +99,11 @@ the one place its behaviour has deliberately diverged.
   retained-event or retained-byte overflow. The revalidators still throw the
   carrier errors, and the evidence format and its limits are unchanged, so
   stored evidence revalidates exactly as before.
+- `encodePersistentInvitation` throws when the event it would sign exceeds
+  those size limits (only possible with very long relay URLs: 27,813 bytes at
+  eight 2,048-character relays), so the authority cannot sign what the strict
+  reader must refuse. `encodeInvitationRetirement` is unchanged: its body and
+  tags are fixed and small, so it cannot exceed them.
 
 ## 0.13.0
 
