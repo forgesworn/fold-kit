@@ -64,23 +64,33 @@ each of eight relays still fit.
 
 What is delivered is then sorted cheaply, before any signature check:
 
-- A malformed or oversized carrier, an event not by the inviter, not kind 1463
+- A malformed carrier (not plain data, a wrong type, bad hex), an event not by the inviter, not kind 1463
   or 1461, or without exactly one `d` tag naming the invitation, is dropped.
   It is not evidence and it does not fail the query.
 - An exact repeat, another carrier under an id already held, and a carrier
   already checked and refused, are dropped. A held id was verified, so a second
   carrier with it has the same signed fields.
-- Anything else costs one signature check. A query makes at most 128
-  (`MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS`): room for 64 retained
+- An event in scope but over the carrier size limits (16,384 bytes, 64 tags,
+  eight strings in a tag) can never be retained. It is hashed and verified once,
+  charged to the signature bound below. If the authority signed it, the query
+  fails, because it may be a retirement or a newer list that no evidence can
+  hold. If not, it is dropped, and a repeat of it costs nothing.
+- Anything else in scope costs one signature check. A query is charged at most
+  128 (`MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS`): room for 64 retained
   events and 64 more in-scope events that fail, forged or not a supported body.
-  The 129th is never checked and the query fails.
+  The 129th is never checked and the query fails. The bound counts checks, not
+  Schnorr verifications. A retained retirement is verified twice, and the
+  finished query revalidates every event it kept, so a query that succeeds can
+  do up to 128 + 64 verifications. A forgery fails at its first, so a hostile
+  relay can cause at most 128.
 - A checked, valid authority event is retained. If that would be a 65th event
   or pass 262,144 bytes, the query fails. Nothing is evicted or truncated.
 
-An in-scope, well-formed, validly signed authority event is never dropped. The
-failures above are failures, not omissions, and they reject with
-`PersistentInvitationEvidenceQueryError`. The one carrier that cannot be kept
-is a signed event over the per-event limits above, which no evidence can hold.
+An in-scope, well-formed, validly signed authority event is never dropped, and
+neither is an over-limit one: each is retained or fails the query. What the
+query drops is what cannot be an authority event (malformed, out of scope,
+unsigned by the authority) or repeats what it already holds. The failures
+above reject with `PersistentInvitationEvidenceQueryError`.
 
 Evidence records, carrier strings and ID arrays are frozen owned copies.
 String memory is not claimed securely erased. Each admitted result has a fresh

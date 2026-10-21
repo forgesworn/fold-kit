@@ -11,6 +11,7 @@ import { nip44 } from 'nostr-tools'
 import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
+import * as roomModule from './room.js'
 
 const now = 1_800_000_000
 function fixture() {
@@ -293,12 +294,15 @@ describe('bounded persistent invitation evidence', () => {
   it('charges every delivery before parsing or crypto and never inspects delivery 513', async () => {
     const f = fixture(), event = f.invite()
     const invalid = { ...event, sig: '0'.repeat(128) }
-    const untouched = Object.create({ unexpectedPrototype: true })
+    let touched = 0
+    const untouched = new Proxy({}, { get() { touched++; return undefined }, getPrototypeOf() { touched++; return null }, ownKeys() { touched++; return [] },
+      getOwnPropertyDescriptor() { touched++; return undefined }, has() { touched++; return false } })
     const spy = vi.spyOn(verifier, 'verifyEventUncached')
     try {
       const error = await query({ transport: replay([...Array(MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES).fill(invalid), untouched]).transport, invitation: f.host.invitation }).catch(e => e)
       expect(error.message).toContain('capacity')
       expect(error.message).toContain('deliveries')
+      expect(touched).toBe(0)
       expect(error.observation.completion).toBe('incomplete')
       expect(error.observation.events).toEqual([])
       // One refused carrier repeated 512 times is checked once.
@@ -434,6 +438,87 @@ describe('bounded persistent invitation evidence', () => {
       expect(error.observation.events.length).toBeLessThan(events.length)
     })
 
+    describe('events over the evidence size limits', () => {
+      /** Signed by the authority with a body and tags the strict carrier refuses. */
+      const signed = (f: ReturnType<typeof fixture>, kind: 'invitation' | 'retirement', fault: 'bytes' | 'tags' | 'width', at = now + 5) => {
+        const base = kind === 'invitation' ? f.invite({ now: at }) : encodeInvitationRetirement({ ...f.host, now: at })
+        const relays = Array.from({ length: 8 }, (_, i) => `wss://r${i}.example.net/${'a'.repeat(1_500)}`)
+        let content = base.content, tags = base.tags
+        if (fault === 'bytes') content = kind === 'invitation' ? nip44.v2.encrypt(JSON.stringify({ v: 3, relays }), hkdf(sha256, f.host.invitation.bearer, undefined, PERSISTENT_INVITATION_LABELS[0], 32)) : JSON.stringify({ v: 1, note: 'x'.repeat(17_000) })
+        if (fault === 'tags') tags = [...tags, ...Array.from({ length: 65 }, (_, i) => ['t', String(i)])]
+        if (fault === 'width') tags = [...tags, ['t', '1', '2', '3', '4', '5', '6', '7', '8']]
+        return finalizeEvent({ kind: base.kind, created_at: at, tags, content }, f.host.inviterSk)
+      }
+      const old = (f: ReturnType<typeof fixture>) => f.invite({ now, relays: ['wss://old.example/'] })
+
+      it.each([['invitation', 'bytes'], ['invitation', 'tags'], ['invitation', 'width'], ['retirement', 'bytes'], ['retirement', 'tags'], ['retirement', 'width']] as const)(
+        'a validly signed over-limit %s (%s) fails the query rather than being skipped', async (kind, fault) => {
+          const f = fixture(), over = signed(f, kind, fault)
+          expect(JSON.stringify(over).length > 16_384 || over.tags.length > 64 || over.tags.some(t => t.length > 8)).toBe(true)
+          for (const order of [[old(f), over], [over, old(f)]]) {
+            const error = await query({ transport: replay(order).transport, invitation: f.host.invitation }).catch(e => e)
+            expect(error).toBeInstanceOf(PersistentInvitationEvidenceQueryError)
+            expect(error.message).toBe('invitation evidence query refused an event signed by the authority that exceeds the evidence size limits')
+            expect(error.observation.completion).toBe('incomplete')
+          }
+        })
+
+      it('a forged over-limit event claiming the authority is dropped and costs one check, however often repeated', async () => {
+        const f = fixture(), real = f.invite(), forged = { ...signed(f, 'invitation', 'bytes'), sig: '0'.repeat(128) }, spy = vi.spyOn(verifier, 'verifyEventUncached')
+        try {
+          const result = await query({ transport: replay([forged, forged, { ...forged }, real, forged]).transport, invitation: f.host.invitation })
+          expect(result.outcome.status).toBe('admitted')
+          expect(result.evidence.eventIds).toEqual([real.id])
+          expect(spy).toHaveBeenCalledTimes(3) // forged once, real once, revalidation once
+        } finally { spy.mockRestore() }
+      })
+
+      it('an over-limit event that is out of scope costs no check', async () => {
+        const f = fixture(), real = f.invite(), spy = vi.spyOn(verifier, 'verifyEventUncached')
+        const stranger = finalizeEvent({ kind: 1463, created_at: now, tags: [['d', deriveInvitationId(f.host.invitation)]], content: 'x'.repeat(17_000) }, generateSecretKey())
+        const wrongKind = finalizeEvent({ kind: 1, created_at: now, tags: [['d', deriveInvitationId(f.host.invitation)]], content: 'x'.repeat(17_000) }, f.host.inviterSk)
+        try {
+          expect((await query({ transport: replay([stranger, wrongKind, real]).transport, invitation: f.host.invitation })).outcome.status).toBe('admitted')
+          expect(spy).toHaveBeenCalledTimes(2)
+        } finally { spy.mockRestore() }
+      })
+
+      it('malformed beyond size (a getter, a bad hex id) is still dropped without crypto', async () => {
+        const f = fixture(), real = f.invite(), spy = vi.spyOn(verifier, 'verifyEventUncached'), over = signed(f, 'invitation', 'bytes')
+        try {
+          const result = await query({ transport: replay([{ ...over, id: 'zz' }, Object.defineProperty({ ...over }, 'content', { get: () => 'x' }), { ...over, extra: 1 } as Event, real]).transport, invitation: f.host.invitation })
+          expect(result.outcome.status).toBe('admitted')
+          expect(spy).toHaveBeenCalledTimes(2)
+        } finally { spy.mockRestore() }
+      })
+
+      it('a stream of forged over-limit events is held to the signature-check bound', async () => {
+        const f = fixture(), real = f.invite(), base = signed(f, 'invitation', 'bytes')
+        const forged = Array.from({ length: MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS + 1 }, (_, i) => ({ ...base, created_at: now + i, sig: i.toString(16).padStart(128, '0') }))
+        const spy = vi.spyOn(verifier, 'verifyEventUncached')
+        try {
+          const error = await query({ transport: replay([...forged, real]).transport, invitation: f.host.invitation }).catch(e => e)
+          expect(error.message).toContain('signature checks')
+          expect(spy).toHaveBeenCalledTimes(MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS)
+          spy.mockClear()
+          const ok = await query({ transport: replay([...forged.slice(0, MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS - 1), real]).transport, invitation: f.host.invitation })
+          expect(ok.outcome.status).toBe('admitted')
+        } finally { spy.mockRestore() }
+      })
+    })
+
+    it('erases the decoded secret of every checked event, including the one refused for capacity', async () => {
+      const f = fixture(), copies = Array.from({ length: MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS + 1 }, (_, i) => f.invite({ now: now + i }))
+      const derive = vi.spyOn(roomModule, 'deriveRoom')
+      try {
+        const error = await query({ transport: replay(copies).transport, invitation: f.host.invitation }).catch(e => e)
+        expect(error.message).toBe('invitation evidence query capacity exceeded')
+        const secrets = derive.mock.calls.map(call => call[0] as Uint8Array)
+        expect(secrets.length).toBe(MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS + 1)
+        for (const secret of secrets) expect(secret.every(b => b === 0)).toBe(true)
+      } finally { derive.mockRestore() }
+    })
+
     it('evidence produced by the unchanged format revalidates identically', async () => {
       const f = fixture(), a = f.invite({ now, relays: ['wss://a.example/'] }), b = f.invite({ now: now + 1, endsAt: now + 100 })
       const result = await query({ transport: replay([a, b, a, ...foreign(f, 3)]).transport, invitation: f.host.invitation })
@@ -464,7 +549,15 @@ describe('bounded persistent invitation evidence', () => {
       // Dropped as an oversized carrier, not retained, and not a failure.
       expect(result.evidence.events).toEqual([])
     }
-    expect((await query({ transport: replay([{ ...event, tags: [['d', '界'.repeat(6_000)]] }]).transport, invitation: f.host.invitation })).evidence.events).toEqual([])
+    // A correct d tag beside an oversized second tag: in scope, over the size limit, forged.
+    // It is dropped for that reason (one check charged), never serialised, never retained.
+    const spy = vi.spyOn(verifier, 'verifyEventUncached'), stringify = vi.spyOn(JSON, 'stringify')
+    try {
+      const big = { ...event, tags: [event.tags[0]!, ['x', '界'.repeat(6_000)]] }
+      expect((await query({ transport: replay([big]).transport, invitation: f.host.invitation })).evidence.events).toEqual([])
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(stringify.mock.calls.some(call => call[0] === big || (call[0] as Event)?.tags === big.tags)).toBe(false)
+    } finally { spy.mockRestore(); stringify.mockRestore() }
     const accepted = await query({ transport: replay([event]).transport, invitation: f.host.invitation })
     const parse = vi.spyOn(JSON, 'parse')
     try {
@@ -492,7 +585,9 @@ describe('bounded persistent invitation evidence', () => {
       const accepted = await query({ transport: replay([candidate(low)]).transport, invitation: f.host.invitation })
       expect(accepted.outcome).toMatchObject({ status: 'held', reason: 'retired' })
       expect(new TextEncoder().encode(accepted.evidence.events[0]!).length).toBeLessThanOrEqual(16_384)
-      expect((await query({ transport: replay([candidate(high)]).transport, invitation: f.host.invitation })).evidence.events).toEqual([])
+      // One increment over the limit, validly signed by the authority: it can never be
+      // retained, so the query refuses rather than select without it.
+      await expect(query({ transport: replay([candidate(high)]).transport, invitation: f.host.invitation })).rejects.toThrow('exceeds the evidence size limits')
     }
   })
 
