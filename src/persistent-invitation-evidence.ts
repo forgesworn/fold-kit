@@ -11,10 +11,11 @@ import { isInvitationStorage } from './invitation-storage.js'
 import { deriveRoom } from './room.js'
 import { KINDS } from './kinds.js'
 import { verifyEventUncached } from './verify.js'
+import { MAX_PERSISTENT_INVITATION_EVENT_BYTES, MAX_EVIDENCE_CARRIER_TAGS, MAX_EVIDENCE_CARRIER_TAG_STRINGS } from './evidence-carrier.js'
 import type { RelayTransport } from './transport.js'
 
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS = 64
-export const MAX_PERSISTENT_INVITATION_EVENT_BYTES = 16_384
+export { MAX_PERSISTENT_INVITATION_EVENT_BYTES }
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES = 262_144
 /** Raw deliveries one query reads, counted before anything is parsed: every
  * relay's copy of every event, repeats, other authors and junk alike. It bounds
@@ -166,12 +167,12 @@ function carrier(raw: unknown, tolerant = false): { event: Event; canonical: str
   let bytes = '{"id":,"pubkey":,"created_at":,"kind":,"tags":,"content":,"sig":}'.length +
     String(d.created_at).length + String(d.kind).length + jsonStringBytes(d.id) + jsonStringBytes(d.pubkey) + jsonStringBytes(d.sig) + jsonStringBytes(d.content, !tolerant)
   if (bytes > MAX_PERSISTENT_INVITATION_EVENT_BYTES) exceed('oversized evidence event')
-  const outer = dataArray(d.tags, tolerant ? Infinity : 64)
-  if (outer.length > 64) over = true
+  const outer = dataArray(d.tags, tolerant ? Infinity : MAX_EVIDENCE_CARRIER_TAGS)
+  if (outer.length > MAX_EVIDENCE_CARRIER_TAGS) over = true
   bytes += 2 + Math.max(0, outer.length - 1)
   const tags = outer.map(tag => {
-    const inner = dataArray(tag, tolerant ? Infinity : 8)
-    if (inner.length > 8) over = true
+    const inner = dataArray(tag, tolerant ? Infinity : MAX_EVIDENCE_CARRIER_TAG_STRINGS)
+    if (inner.length > MAX_EVIDENCE_CARRIER_TAG_STRINGS) over = true
     bytes += 2 + Math.max(0, inner.length - 1)
     return inner.map(value => {
       if (typeof value !== 'string') throw new Error('invalid or oversized evidence tag')

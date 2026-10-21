@@ -657,6 +657,21 @@ const ONE_TIME_SENDER_CHANGES = {
 }
 
 /**
+ * The group invitation encoder refuses to sign an event over the strict
+ * evidence carrier's limits (16,384 bytes, 64 tags, eight strings a tag), so
+ * the authority never signs what the evidence reader must refuse. Declared as
+ * the newer text -> the older text and applied first, before every other
+ * change set.
+ */
+const EVIDENCE_CARRIER_CHANGES = {
+  "src/persistent-invitation.ts": [
+    ["\nimport { requireEvidenceCarrierLimits } from './evidence-carrier.js'", "", 1],
+    ["  return requireEvidenceCarrierLimits(finalizeEvent({\n    kind: KINDS.GROUP_INVITATION,", "  return finalizeEvent({\n    kind: KINDS.GROUP_INVITATION,", 1],
+    ["  }, opts.inviterSk), 'group invitation')\n}", "  }, opts.inviterSk)\n}", 1],
+  ],
+}
+
+/**
  * Room storage nodes (0.14.0, see EXTRACTION.md "Room storage nodes"): the
  * room's group storage nodes in the group invitation body, after `relays`, and
  * `storageAt` on the admission. With no `storage` the body is byte-identical to
@@ -700,7 +715,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(STORAGE_CHANGES[`src/${f}`] ?? []), ...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(EVIDENCE_CARRIER_CHANGES[`src/${f}`] ?? []), ...(STORAGE_CHANGES[`src/${f}`] ?? []), ...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 
