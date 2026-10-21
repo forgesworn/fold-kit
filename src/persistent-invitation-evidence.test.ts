@@ -59,7 +59,7 @@ describe('bounded persistent invitation evidence', () => {
     expect(result.outcome.status).toBe('admitted')
     if (result.outcome.status !== 'admitted') throw new Error('held')
     expect(result.outcome.admission).toEqual({ secret: f.secret, persistent: true, epoch: 0, relays: ['wss://fixed.example/'] })
-    expect(result.outcome.contributors).toEqual({ room: [event.id], ends: [], destruct: [], relays: [event.id], storage: [] })
+    expect(result.outcome.contributors).toEqual({ room: [event.id], ends: [], destruct: [], relays: [event.id] })
     expect(Object.isFrozen(result.evidence)).toBe(true)
     expect(Object.isFrozen(result.evidence.events)).toBe(true)
     expect(r.stop).toHaveBeenCalledTimes(1)
@@ -100,6 +100,23 @@ describe('bounded persistent invitation evidence', () => {
   })
 
   describe('storage nodes', () => {
+    it('leave contributors exactly as 0.13.0 wrote them when no copy names storage', async () => {
+      // A proof stored under 0.13.0 holds `contributors` as JSON and is compared
+      // with what a re-query selects, key for key, so no `storage` key may appear.
+      const f = fixture(), old = f.invite({ endsAt: now + 100, destruct: true, relays: ['wss://old.example/'] }), latest = f.invite({ now: now + 1, relays: ['wss://new.example/'] })
+      const result = await query({ transport: replay([old, latest]).transport, invitation: f.host.invitation })
+      if (result.outcome.status !== 'admitted') throw new Error('held')
+      const shape013 = { room: [old.id, latest.id].sort(), ends: [old.id], destruct: [old.id], relays: [latest.id] }
+      expect(result.outcome.contributors).toEqual(shape013)
+      expect(JSON.stringify(result.outcome.contributors)).toBe(JSON.stringify(shape013))
+      expect(Object.keys(result.outcome.contributors)).toEqual(['room', 'ends', 'destruct', 'relays'])
+      expect(result.outcome.admission).not.toHaveProperty('storage')
+      expect(result.outcome.admission).not.toHaveProperty('storageAt')
+      // The same through a revalidation of the retained evidence.
+      const again = validate({ evidence: result.evidence, invitation: f.host.invitation })
+      expect(JSON.stringify(again.outcome)).toBe(JSON.stringify(result.outcome))
+    })
+
     const A = ['https://a.example.net'], B = ['https://b.example.net', 'https://c.example.org:8443/wb']
 
     it('are accepted by the strict path, with their version and contributor', async () => {

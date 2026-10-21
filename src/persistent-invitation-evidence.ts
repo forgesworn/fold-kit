@@ -34,7 +34,9 @@ export interface PersistentInvitationContributors {
   readonly ends: readonly string[]
   readonly destruct: readonly string[]
   readonly relays: readonly string[]
-  readonly storage: readonly string[]
+  /** The copies whose list stood. Present exactly when a copy names storage,
+   *  so a room with none has the same contributors as 0.13.0 wrote. */
+  readonly storage?: readonly string[]
 }
 
 export type PersistentInvitationEvidenceOutcome = {
@@ -313,7 +315,7 @@ export function revalidatePersistentInvitationEvidence(opts: {
     const contributors = Object.freeze({ room: Object.freeze(decoded.map(d => d.event.id)),
       ends: Object.freeze(ends.filter(d => d.admission.endsAt === endsAt).map(d => d.event.id)),
       destruct: Object.freeze(destruct.map(d => d.event.id)), relays: Object.freeze(winners.map(d => d.event.id)),
-      storage: Object.freeze(storageWinners.map(d => d.event.id)) })
+      ...(storageWinners.length ? { storage: Object.freeze(storageWinners.map(d => d.event.id)) } : {}) })
     return Object.freeze({ evidence, outcome: Object.freeze({ status: 'admitted', admission, contributors }) })
   } finally {
     for (const d of decoded) d.admission.secret.fill(0)
