@@ -409,13 +409,13 @@ describe('bounded persistent invitation evidence', () => {
       expect(error.message).toBe('invitation evidence query capacity exceeded: too many deliveries')
       expect(error.observation.completion).toBe('incomplete')
       expect(error.observation.eventIds).toEqual([event.id])
-    })
+    }, 30_000) // signs about 512 foreign events, which is slow on a loaded machine
 
     it('exactly the delivery bound is accepted', async () => {
       const f = fixture(), event = f.invite()
       const result = await query({ transport: replay([...foreign(f, MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES - 1), event]).transport, invitation: f.host.invitation })
       expect(result.outcome.status).toBe('admitted')
-    })
+    }, 30_000) // signs about 512 foreign events, which is slow on a loaded machine
 
     it('a 65th unique valid authority event still fails closed, however many repeats and strangers surround it', async () => {
       const f = fixture(), copies = Array.from({ length: MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS + 1 }, (_, i) => f.invite({ now: now + i }))
