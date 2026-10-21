@@ -11,7 +11,7 @@ the one place its behaviour has deliberately diverged.
 
 - Room storage nodes: the group storage nodes a room keeps its files on,
   carried in its signed group invitation (kind 1463) so a client uploads to
-  the group's own computers and never to a public server.
+  the group's own nodes instead of a public server.
   `encodePersistentInvitation` takes an optional `storage`: zero to eight
   canonical node base URLs on distinct hosts, else it throws. The encrypted v3
   body carries them last, after `relays` (key order `v, room, secret, ends,
@@ -23,7 +23,9 @@ the one place its behaviour has deliberately diverged.
   `vectors/storage-vectors.json`: `https`, or `http` only for `localhost`, a
   `127.x.y.z` address or an onion v3 host; lower-case host; no default port,
   trailing slash, user info, query or fragment; at most 256 characters; a host
-  ending in a number must be four plain decimal octets. New exports:
+  ending in a number must be four plain decimal octets. The grammar alone
+  decides on the wire: no URL parser is consulted, so every client gets the
+  same answer, `xn--` labels included (valid Punycode or not). New exports:
   `storageNodeFromBase` (an operator's URL to `{ base, server }`),
   `isStorageNodeBase`, `isInvitationStorage`, `requireInvitationStorage`,
   `MAX_INVITATION_STORAGE_NODES` (8), `MAX_STORAGE_NODE_URL_LENGTH` (256) and
@@ -38,10 +40,18 @@ the one place its behaviour has deliberately diverged.
 - The strict evidence path (`persistent-invitation-evidence`) accepts the new
   key and merges it the same way. Two newest copies of one second that
   disagree hold with the new reason `conflicting-storage`, and
-  `PersistentInvitationContributors` gains `storage`. Note for readers still
-  on 0.13.0: that strict path refuses a body key it does not know and skips
-  the copy, so a room whose only copy carries `storage` reads as unavailable to
-  it; publish a plain copy first (the vector `storage-strict-old-reader`).
+  `PersistentInvitationContributors` gains an optional `storage`, present
+  exactly when a copy names storage, so a room with none has contributors
+  byte-identical to 0.13.0's and a stored proof still reads back unchanged.
+  Compatibility with 0.13.0 strict readers is only partial. A live query on
+  0.13.0 skips a copy it does not know, so with a plain copy beside it the room
+  still admits (the vector `storage-strict-old-reader`), and with only a
+  storage copy it reads as unavailable. But evidence that 0.14.0 retained
+  holds every valid copy, the storage copy included, and 0.13.0's
+  `revalidatePersistentInvitationEvidence` throws on a carrier it cannot read,
+  plain copy or not. So evidence stored by 0.14.0 cannot be read by 0.13.0: a
+  stale tab, a cached older bundle or a rollback meets it. Keep older readers
+  off evidence a newer version stored, or isolate each read failure.
 - `vectors/storage-vectors.json` (`npm run generate-storage`).
 - `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
   writes. Off by default; off, every grant is byte-identical to 0.13.0's.

@@ -256,8 +256,8 @@ decision completes, so approval cannot extend an expired request's authority.
   `relays`, so a room that keeps its files on its own computers says where.
   An entry is only a base URL; the grammar (no trailing slash, no default
   port, `http` only on this machine or an onion address) is in
-  `src/invitation-storage.ts` and pinned by vectors, not by what a URL parser
-  prints. `[]` says the authority withdrew every node; a body with no
+  `src/invitation-storage.ts` and pinned by vectors; no URL parser is
+  consulted, so every client gets the same answer. `[]` says the authority withdrew every node; a body with no
   `storage` says nothing about nodes, and is byte-identical to 0.13.0's. The
   decoder returns `storage` and `storageAt` (the `created_at` of the copy
   whose list stood) and refuses the whole envelope on a malformed list.

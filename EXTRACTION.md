@@ -334,16 +334,18 @@ comparison against the pinned commit still holds.
 
 0.14.0 adds the room's group storage nodes to the group invitation body,
 after `relays`: the base URLs of the nodes a room keeps its files on, so a
-client uploads there and never to a public server. The rule (0 to 8
-canonical node URLs on distinct hosts, defined by a grammar rather than by
-what a URL parser prints) lives in a new module, `src/invitation-storage.ts`,
+client can upload to the group's own nodes instead of a public server. The
+rule (0 to 8 canonical node URLs on distinct hosts, defined by a grammar
+rather than by what a URL parser prints, and decided by the grammar alone on
+the wire) lives in a new module, `src/invitation-storage.ts`,
 which moved from nowhere. With no `storage` the body, and the whole event, is
 byte-identical to 0.13.0's (`vectors/storage-vectors.json`, vector
 `storage-absent`, pins two events recorded from 0.13.0's own encoder). The
 admission gains `storage` and `storageAt`; the strict evidence path
 (`src/persistent-invitation-evidence.ts`, not a moved module) allows the key
 and merges it as it merges `relays`, holding a same-second disagreement as
-`conflicting-storage`. `scripts/diff-source.mjs` declares each added line in
+`conflicting-storage`; its `contributors.storage` is present only when a copy
+names storage, so contributors without one match 0.13.0's byte for byte. `scripts/diff-source.mjs` declares each added line in
 `STORAGE_CHANGES` as 0.14.0 text against 0.13.0 text, applied before every
 other change set, so the whole-file comparison against the pinned commit
 still holds.
