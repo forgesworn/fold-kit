@@ -134,7 +134,7 @@ export function requireInvitationStorage(nodes: readonly string[]): string[] {
 }
 
 function shorten(text: string): string {
-  return text.length > 60 ? `${text.slice(0, 59)}…` : text
+  return text.length > 60 ? `${text.slice(0, 57)}...` : text
 }
 
 /**
@@ -144,17 +144,18 @@ function shorten(text: string): string {
  * refuse onion hosts: a keeper that cannot reach one says so itself.
  */
 export function storageNodeFromBase(text: string): StorageNode {
+  const shown = shorten(String(text))
   const typed = String(text).trim()
   let url: URL
-  try { url = new URL(typed) } catch { throw new Error(`group node ${shorten(typed)}: not a URL`) }
+  try { url = new URL(typed) } catch { throw new Error(`group node ${shown}: not a URL`) }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error(`group node ${shorten(typed)}: only http and https nodes are supported in this version`)
+    throw new Error(`group node ${shown}: only http and https nodes are supported in this version`)
   }
   // Read the pieces from the text as written, not from what the parser made of
   // them: it would quietly mend `127.1`, `0x7f.0.0.1`, a dot segment or a
   // percent-escape, and every one of those is refused here.
   const m = /^(https?):\/\/([^/?#]*)([^?#]*)([?#].*)?$/i.exec(typed)
-  if (!m) throw new Error(`group node ${shorten(typed)}: not a URL`)
+  if (!m) throw new Error(`group node ${shown}: not a URL`)
   const scheme = m[1]!.toLowerCase()
   const authority = m[2]!
   if (authority.includes('@')) throw new Error('group node: a URL with a user name or password is refused')
@@ -162,27 +163,30 @@ export function storageNodeFromBase(text: string): StorageNode {
   const colon = authority.lastIndexOf(':')
   const bracketed = authority.startsWith('[')
   const rawHost = colon === -1 || bracketed ? authority : authority.slice(0, colon)
-  const port = colon === -1 || bracketed ? undefined : authority.slice(colon + 1)
+  const portText = colon === -1 || bracketed ? undefined : authority.slice(colon + 1)
   // Lower-case ASCII only: a non-ASCII letter must not fold into a legal host.
   const hostText = rawHost.replace(/[A-Z]/g, c => c.toLowerCase())
   if (!isCanonicalHost(hostText)) {
-    throw new Error(`group node ${shorten(typed)}: the host name must be lower-case letters, digits, hyphens and dots (no IPv6 literal, no trailing dot)`)
+    throw new Error(`group node ${shown}: the host name must be lower-case letters, digits, hyphens and dots (no IPv6 literal, no trailing dot)`)
   }
   if (scheme === 'http' && !isPlainHttpHost(hostText)) {
     throw new Error(`group node ${hostText}: plain http is only for a node on this machine (localhost or 127.x); use https so grants and revocations cannot be read or answered by somebody on the way`)
   }
+  // A URL parser reads an empty port as the default and `08080` as 8080, so
+  // an operator's URL is mended the same way; only a port of 0 is newly refused.
+  const port = portText === undefined || portText === '' ? undefined : portText.replace(/^0+(?=[0-9])/, '')
   if (port !== undefined && !isCanonicalPort(port)) {
-    throw new Error(`group node ${shorten(typed)}: the port must be a number from 1 to 65535, written without a leading zero`)
+    throw new Error(`group node ${shown}: the port must be a number from 1 to 65535`)
   }
   const path = m[3]!.replace(/\/+$/, '')
   if (!isCanonicalPath(path)) {
-    throw new Error(`group node ${shorten(typed)}: the path may hold only letters, digits and . _ ~ - between slashes`)
+    throw new Error(`group node ${shown}: the path may hold only letters, digits and . _ ~ - between slashes`)
   }
   const isDefaultPort = port !== undefined && ((scheme === 'https' && port === '443') || (scheme === 'http' && port === '80'))
   const base = `${scheme}://${hostText}${port === undefined || isDefaultPort ? '' : `:${port}`}${path}`
   if (base.length > MAX_STORAGE_NODE_URL_LENGTH) {
-    throw new Error(`group node ${shorten(typed)}: the URL is longer than ${MAX_STORAGE_NODE_URL_LENGTH} characters`)
+    throw new Error(`group node ${shown}: the URL is longer than ${MAX_STORAGE_NODE_URL_LENGTH} characters`)
   }
-  if (!isStorageNodeBase(base)) throw new Error(`group node ${shorten(typed)}: not a canonical node URL`)
+  if (!isStorageNodeBase(base)) throw new Error(`group node ${shown}: not a canonical node URL`)
   return { base, server: hostText }
 }

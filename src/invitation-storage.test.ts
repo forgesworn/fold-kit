@@ -83,6 +83,10 @@ describe('storageNodeFromBase', () => {
     expect(storageNodeFromBase('  https://example.net/wb//  ')).toEqual({ base: 'https://example.net/wb', server: 'example.net' })
     expect(storageNodeFromBase('http://LOCALHOST:80')).toEqual({ base: 'http://localhost', server: 'localhost' })
     expect(storageNodeFromBase('https://example.net:8443/')).toEqual({ base: 'https://example.net:8443', server: 'example.net' })
+    // A URL parser mends these, so an operator's URL is mended too; the wire form still refuses them.
+    expect(storageNodeFromBase('https://example.net:08080')).toEqual({ base: 'https://example.net:8080', server: 'example.net' })
+    expect(storageNodeFromBase('https://example.net:')).toEqual({ base: 'https://example.net', server: 'example.net' })
+    expect(storageNodeFromBase('https://example.net:00443')).toEqual({ base: 'https://example.net', server: 'example.net' })
   })
 
   it('does not refuse an onion host (the keeper does)', () => {
@@ -108,14 +112,15 @@ describe('storageNodeFromBase', () => {
     ['https://example.net/a%20b', 'group node https://example.net/a%20b: the path may hold only letters, digits and . _ ~ - between slashes'],
     ['https://example.net/a/../b', 'group node https://example.net/a/../b: the path may hold only letters, digits and . _ ~ - between slashes'],
     ['https://example.net/a//b', 'group node https://example.net/a//b: the path may hold only letters, digits and . _ ~ - between slashes'],
-    ['https://example.net:08080', 'group node https://example.net:08080: the port must be a number from 1 to 65535, written without a leading zero'],
+    ['https://example.net:0', 'group node https://example.net:0: the port must be a number from 1 to 65535'],
+    ['https://example.net:000', 'group node https://example.net:000: the port must be a number from 1 to 65535'],
   ])('refuses %s with an operator message', (text, message) => {
     expect(() => storageNodeFromBase(text)).toThrow(new Error(message))
   })
 
   it('refuses a URL over 256 characters once canonical, shortening the text it quotes to 60', () => {
     const text = `https://example.net/${'a'.repeat(240)}`
-    expect(() => storageNodeFromBase(text)).toThrow(`group node ${text.slice(0, 59)}…: the URL is longer than 256 characters`)
+    expect(() => storageNodeFromBase(text)).toThrow(`group node ${text.slice(0, 57)}...: the URL is longer than 256 characters`)
     // Trailing slashes do not count: this one is 256 once canonical.
     expect(storageNodeFromBase(`https://example.net/${'a'.repeat(236)}///`).base).toHaveLength(256)
   })
