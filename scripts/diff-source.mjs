@@ -656,6 +656,27 @@ const ONE_TIME_SENDER_CHANGES = {
   ],
 }
 
+/**
+ * Room storage nodes (0.14.0, see EXTRACTION.md "Room storage nodes"): the
+ * room's group storage nodes in the group invitation body, after `relays`, and
+ * `storageAt` on the admission. With no `storage` the body is byte-identical to
+ * 0.13.0's. Declared as 0.14.0 text -> 0.13.0 text and applied first, before
+ * every other change set.
+ */
+const STORAGE_CHANGES = {
+  "src/persistent-invitation.ts": [
+    ["\nimport { isInvitationStorage, requireInvitationStorage } from './invitation-storage.js'", "", 1],
+    ["\n  /** The room's group storage nodes, as its authority last signed them; `[]`\n   *  when it withdrew them all. Absent from an invitation written before\n   *  0.14.0, or when no copy names them. */\n  storage?: string[]\n  /** The `created_at` of the copy whose `storage` stood: present exactly when\n   *  `storage` is. A client uses it as the record's version. */\n  storageAt?: number", "", 1],
+    ["\n  /** The room's group storage nodes: zero to eight canonical node base URLs,\n   *  one per host (see `isInvitationStorage`), else it throws. `[]` says the\n   *  authority withdrew every node. Written after `relays`. Omitted, the body\n   *  is byte-identical to 0.13.0's. */\n  storage?: readonly string[]", "", 1],
+    ["\n  const storage = opts.storage === undefined ? undefined : requireInvitationStorage(opts.storage)", "", 1],
+    [" ...(relays === undefined ? {} : { relays }), ...(storage === undefined ? {} : { storage }),", " ...(relays === undefined ? {} : { relays }),", 1],
+    ["    // The same for the room's storage nodes: `[]` is valid (withdrawn), a\n    // malformed list refuses the envelope.\n    if (body.storage !== undefined && !isInvitationStorage(body.storage)) return null\n", "", 1],
+    ["    if (body.storage !== undefined) { admission.storage = [...body.storage]; admission.storageAt = event.created_at }\n", "", 1],
+    ["    let storageAt = -1\n", "", 1],
+    ["        // The storage nodes merge the same way, independently of the relays:\n        // the newest copy that names them stands, `[]` included; a copy that\n        // names none says nothing, so the keeper's plain copy never erases\n        // the list; on equal timestamps the first heard stays.\n        if (decoded.storage !== undefined && event.created_at > storageAt) storageAt = event.created_at\n        else if (admission?.storage !== undefined) { decoded.storage = admission.storage; decoded.storageAt = admission.storageAt }\n", "", 1],
+  ],
+}
+
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
   for (const [kit, source, count] of changes) {
@@ -679,7 +700,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(STORAGE_CHANGES[`src/${f}`] ?? []), ...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

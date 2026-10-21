@@ -5,10 +5,55 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
-## Unreleased
+## 0.14.0
 
 ### Added
 
+- Room storage nodes: the group storage nodes a room keeps its files on,
+  carried in its signed group invitation (kind 1463) so a client uploads to
+  the group's own nodes instead of a public server.
+  `encodePersistentInvitation` takes an optional `storage`: zero to eight
+  canonical node base URLs on distinct hosts, else it throws. The encrypted v3
+  body carries them last, after `relays` (key order `v, room, secret, ends,
+  destruct, relays, storage`; the version stays 3, so every lenient reader,
+  including shipped Android, ignores the key). `[]` says the room's authority
+  withdrew every node; a body without the key says nothing about nodes.
+  With no `storage`, the event is byte-identical to 0.13.0's.
+- An entry is a base URL and nothing else. Canonical is a grammar, pinned by
+  `vectors/storage-vectors.json`: `https`, or `http` only for `localhost`, a
+  `127.x.y.z` address or an onion v3 host; lower-case host; no default port,
+  trailing slash, user info, query or fragment; at most 256 characters; a host
+  ending in a number must be four plain decimal octets. The grammar alone
+  decides on the wire: no URL parser is consulted, so every client gets the
+  same answer, `xn--` labels included (valid Punycode or not). New exports:
+  `storageNodeFromBase` (an operator's URL to `{ base, server }`),
+  `storageNodeServer` (the `server` of a canonical base, by grammar alone, for
+  a client that must not need a URL parser), `isStorageNodeBase`, `isInvitationStorage`, `requireInvitationStorage`,
+  `MAX_INVITATION_STORAGE_NODES` (8), `MAX_STORAGE_NODE_URL_LENGTH` (256) and
+  the `StorageNode` type.
+- `decodePersistentInvitation` returns `storage` and `storageAt` (the
+  `created_at` of the copy whose list stood; a client uses it as the record's
+  version), and returns null for the whole envelope on a malformed list.
+  `requestPersistentRoomAdmission` keeps the list of the newest signed copy
+  that names any, `[]` included; a copy without the key says nothing, and on
+  equal timestamps the first heard stays. Relays and storage merge
+  independently.
+- The strict evidence path (`persistent-invitation-evidence`) accepts the new
+  key and merges it the same way. Two newest copies of one second that
+  disagree hold with the new reason `conflicting-storage`, and
+  `PersistentInvitationContributors` gains an optional `storage`, present
+  exactly when a copy names storage, so a room with none has contributors
+  byte-identical to 0.13.0's and a stored proof still reads back unchanged.
+  Compatibility with 0.13.0 strict readers is only partial. A live query on
+  0.13.0 skips a copy it does not know, so with a plain copy beside it the room
+  still admits (the vector `storage-strict-old-reader`), and with only a
+  storage copy it reads as unavailable. But evidence that 0.14.0 retained
+  holds every valid copy, the storage copy included, and 0.13.0's
+  `revalidatePersistentInvitationEvidence` throws on a carrier it cannot read,
+  plain copy or not. So evidence stored by 0.14.0 cannot be read by 0.13.0: a
+  stale tab, a cached older bundle or a rollback meets it. Keep older readers
+  off evidence a newer version stored, or isolate each read failure.
+- `vectors/storage-vectors.json` (`npm run generate-storage`).
 - `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
   writes. Off by default; off, every grant is byte-identical to 0.13.0's.
 

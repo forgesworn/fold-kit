@@ -129,6 +129,16 @@ export type { PersistentRoomAdmission } from './persistent-invitation.js'
 
 export { withExpiration, isRoomEnds, requireRoomEnds, MAX_ROOM_ENDS_SECONDS } from './expiration.js'
 export { isInvitationRelays, requireInvitationRelays, MAX_INVITATION_RELAYS } from './invitation-relays.js'
+export {
+  isStorageNodeBase,
+  storageNodeFromBase,
+  storageNodeServer,
+  isInvitationStorage,
+  requireInvitationStorage,
+  MAX_INVITATION_STORAGE_NODES,
+  MAX_STORAGE_NODE_URL_LENGTH,
+} from './invitation-storage.js'
+export type { StorageNode } from './invitation-storage.js'
 
 export {
   MAX_ROOM_LINK_FRAGMENT_LENGTH,

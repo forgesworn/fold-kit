@@ -23,6 +23,7 @@ npm run vectors         # run only the vector-verification suites
 npm run diff-source      # compare moved modules against the pinned source commit
 npm run generate-fold    # regenerate vectors/fold-vectors.json (T3.1/T3.3/#205 vectors; needs a prior build)
 npm run generate-member-epoch  # regenerate vectors/member-epoch-vectors.json (needs a prior build)
+npm run generate-storage  # regenerate vectors/storage-vectors.json (needs a prior build)
 npm run bundle-check     # esbuild browser bundle check (needs a prior build)
 npm run tarball-smoke    # npm pack, install into a scratch dir, import every export
 npm run check            # typecheck + test + diff-source
@@ -53,7 +54,9 @@ hand - it prints a notice and exits 0 rather than failing.
   rooms", which also covers the declared additions it brought to
   `invitation.ts`, `persistent-invitation.ts` and `epoch.ts`), and
   `invitation-relays.ts` (new: the room-relay list rule - see EXTRACTION.md
-  "Room relays"), and `epoch-commit.ts`/`member-epoch.ts` (new: member epoch
+  "Room relays"), and `invitation-storage.ts` (new: the room storage-node
+  grammar and list rule - see EXTRACTION.md "Room storage nodes"), and
+  `epoch-commit.ts`/`member-epoch.ts` (new: member epoch
   catch-up - see EXTRACTION.md "Member epoch catch-up" and
   `docs/member-epoch-catch-up.md`), and `quiet-reply.ts` (new: reply
   delays and the refusal limiter - see EXTRACTION.md "Quiet automatic
@@ -139,7 +142,7 @@ derivation, lane).
 ## Release Notes
 
 Pre-1.0. Published on npm as `@forgesworn/fold-kit` with trusted publishing.
-`main` is at 0.13.0 and can run ahead of the npm `latest` release (0.10.0 when
+`main` is at 0.14.0 and can run ahead of the npm `latest` release (0.10.0 when
 checked on 2026-10-16; `0.0.0-seed.0` remains under the `seed` dist-tag). A
 consumer who needs an unreleased change pins an immutable Git commit (see
 README "Install").
