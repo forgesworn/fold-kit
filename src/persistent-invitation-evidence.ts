@@ -7,6 +7,7 @@ import { deriveInvitationId, roomInvitation, decodeInvitationRetirementNotice, t
 import { PERSISTENT_INVITATION_LABELS, type PersistentRoomAdmission } from './persistent-invitation.js'
 import { isRoomEnds } from './expiration.js'
 import { isInvitationRelays } from './invitation-relays.js'
+import { isInvitationStorage } from './invitation-storage.js'
 import { deriveRoom } from './room.js'
 import { KINDS } from './kinds.js'
 import { verifyEventUncached } from './verify.js'
@@ -33,6 +34,7 @@ export interface PersistentInvitationContributors {
   readonly ends: readonly string[]
   readonly destruct: readonly string[]
   readonly relays: readonly string[]
+  readonly storage: readonly string[]
 }
 
 export type PersistentInvitationEvidenceOutcome = {
@@ -42,7 +44,7 @@ export type PersistentInvitationEvidenceOutcome = {
   readonly contributors: PersistentInvitationContributors
 } | {
   readonly status: 'held'
-  readonly reason: 'unavailable' | 'retired' | 'conflicting-rooms' | 'conflicting-relays' | 'wrong-room'
+  readonly reason: 'unavailable' | 'retired' | 'conflicting-rooms' | 'conflicting-relays' | 'conflicting-storage' | 'wrong-room'
   readonly retirementEventIds: readonly string[]
 }
 
@@ -180,17 +182,19 @@ function decodeEvidenceEvent(event: Event, invitation: RoomInvitation): Persiste
   const key = hkdf(sha256, invitation.bearer, undefined, PERSISTENT_INVITATION_LABELS[0], 32)
   try {
     const plaintext = nip44.v2.decrypt(event.content, key)
-    const body = dataRecord(JSON.parse(plaintext), ['v', 'room', 'secret', 'ends', 'destruct', 'relays'])
+    const body = dataRecord(JSON.parse(plaintext), ['v', 'room', 'secret', 'ends', 'destruct', 'relays', 'storage'])
     if (body.v !== 3 || typeof body.secret !== 'string' || (body.ends !== undefined && !isRoomEnds(body.ends)) ||
-        (body.destruct !== undefined && body.destruct !== true) || (body.relays !== undefined && !isInvitationRelays(body.relays))) return null
+        (body.destruct !== undefined && body.destruct !== true) || (body.relays !== undefined && !isInvitationRelays(body.relays)) ||
+        (body.storage !== undefined && !isInvitationStorage(body.storage))) return null
     secret = base64urlnopad.decode(body.secret)
     if (secret.length !== 32 || body.room !== roomId(secret)) return null
     const decoded: PersistentRoomAdmission = { secret, persistent: true, epoch: 0,
       ...(body.ends === undefined ? {} : { endsAt: body.ends as number }), ...(body.destruct ? { destruct: true as const } : {}),
-      ...(body.relays === undefined ? {} : { relays: [...body.relays as string[]] }) }
+      ...(body.relays === undefined ? {} : { relays: [...body.relays as string[]] }),
+      ...(body.storage === undefined ? {} : { storage: [...body.storage as string[]], storageAt: event.created_at }) }
     const expected = JSON.stringify({ v: 3, room: body.room, secret: base64urlnopad.encode(secret),
       ...(decoded.endsAt === undefined ? {} : { ends: decoded.endsAt }), ...(decoded.destruct ? { destruct: true } : {}),
-      ...(decoded.relays === undefined ? {} : { relays: decoded.relays }) })
+      ...(decoded.relays === undefined ? {} : { relays: decoded.relays }), ...(decoded.storage === undefined ? {} : { storage: decoded.storage }) })
     const tags = decoded.endsAt === undefined ? [['d', deriveInvitationId(invitation)]] : [['d', deriveInvitationId(invitation)], ['expiration', String(decoded.endsAt)]]
     accepted = plaintext === expected && JSON.stringify(event.tags) === JSON.stringify(tags)
     return accepted ? decoded : null
@@ -297,12 +301,19 @@ export function revalidatePersistentInvitationEvidence(opts: {
     const winners = relayEvents.filter(d => d.event.created_at === newest)
     if (new Set(winners.map(d => JSON.stringify(d.admission.relays))).size > 1) return held('conflicting-relays')
     const relays = winners[0]?.admission.relays
+    const storageEvents = decoded.filter(d => d.admission.storage !== undefined)
+    const newestStorage = storageEvents.length ? Math.max(...storageEvents.map(d => d.event.created_at)) : undefined
+    const storageWinners = storageEvents.filter(d => d.event.created_at === newestStorage)
+    if (new Set(storageWinners.map(d => JSON.stringify(d.admission.storage))).size > 1) return held('conflicting-storage')
+    const storage = storageWinners[0]?.admission.storage
     const admission: PersistentRoomAdmission = { secret: first.slice(), persistent: true, epoch: 0,
       ...(endsAt === undefined ? {} : { endsAt }), ...(destruct.length ? { destruct: true as const } : {}),
-      ...(relays === undefined ? {} : { relays: [...relays] }) }
+      ...(relays === undefined ? {} : { relays: [...relays] }),
+      ...(storage === undefined ? {} : { storage: [...storage], storageAt: newestStorage! }) }
     const contributors = Object.freeze({ room: Object.freeze(decoded.map(d => d.event.id)),
       ends: Object.freeze(ends.filter(d => d.admission.endsAt === endsAt).map(d => d.event.id)),
-      destruct: Object.freeze(destruct.map(d => d.event.id)), relays: Object.freeze(winners.map(d => d.event.id)) })
+      destruct: Object.freeze(destruct.map(d => d.event.id)), relays: Object.freeze(winners.map(d => d.event.id)),
+      storage: Object.freeze(storageWinners.map(d => d.event.id)) })
     return Object.freeze({ evidence, outcome: Object.freeze({ status: 'admitted', admission, contributors }) })
   } finally {
     for (const d of decoded) d.admission.secret.fill(0)

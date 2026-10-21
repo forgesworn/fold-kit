@@ -9,6 +9,7 @@ import { deriveRoom } from './room.js'
 import { verifyEventUncached } from './verify.js'
 import { isRoomEnds, requireRoomEnds } from './expiration.js'
 import { isInvitationRelays, requireInvitationRelays } from './invitation-relays.js'
+import { isInvitationStorage, requireInvitationStorage } from './invitation-storage.js'
 import type { RelayTransport } from './transport.js'
 
 /** Durable membership is distinct from temporary permission to admit others.
@@ -26,6 +27,13 @@ export interface PersistentRoomAdmission {
   /** The room self-destructs: when it ends, every device deletes what it
    *  wrote and forgets the room. Absent for a room that simply ends. */
   destruct?: true
+  /** The room's group storage nodes, as its authority last signed them; `[]`
+   *  when it withdrew them all. Absent from an invitation written before
+   *  0.14.0, or when no copy names them. */
+  storage?: string[]
+  /** The `created_at` of the copy whose `storage` stood: present exactly when
+   *  `storage` is. A client uses it as the record's version. */
+  storageAt?: number
 }
 
 function welcomeKey(invitation: RoomInvitation): Uint8Array {
@@ -50,6 +58,11 @@ export function encodePersistentInvitation(opts: {
    *  form (see `isInvitationRelays`), else it throws. Omitted, the body is
    *  byte-identical to 0.3.0's. */
   relays?: readonly string[]
+  /** The room's group storage nodes: zero to eight canonical node base URLs,
+   *  one per host (see `isInvitationStorage`), else it throws. `[]` says the
+   *  authority withdrew every node. Written after `relays`. Omitted, the body
+   *  is byte-identical to 0.13.0's. */
+  storage?: readonly string[]
   /** The room self-destructs when it ends, by its time or by its authority
    *  closing it. Written inside the encrypted body only, never as a tag.
    *  Omitted or false, the event is byte-identical to 0.8.0's. */
@@ -59,12 +72,13 @@ export function encodePersistentInvitation(opts: {
   const room = deriveRoom(opts.roomSecret).roomId
   const ends = opts.endsAt === undefined ? undefined : requireRoomEnds(opts.endsAt, opts.now)
   const relays = opts.relays === undefined ? undefined : requireInvitationRelays(opts.relays)
+  const storage = opts.storage === undefined ? undefined : requireInvitationStorage(opts.storage)
   return finalizeEvent({
     kind: KINDS.GROUP_INVITATION,
     created_at: opts.now,
     tags: ends === undefined ? [['d', deriveInvitationId(opts.invitation)]] : [['d', deriveInvitationId(opts.invitation)], ['expiration', String(ends)]],
     content: nip44.v2.encrypt(JSON.stringify({
-      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(opts.destruct ? { destruct: true } : {}), ...(relays === undefined ? {} : { relays }),
+      v: 3, room, secret: base64urlnopad.encode(opts.roomSecret), ...(ends === undefined ? {} : { ends }), ...(opts.destruct ? { destruct: true } : {}), ...(relays === undefined ? {} : { relays }), ...(storage === undefined ? {} : { storage }),
     }), welcomeKey(opts.invitation)),
   }, opts.inviterSk)
 }
@@ -89,11 +103,15 @@ export function decodePersistentInvitation(event: Event, invitation: RoomInvitat
     // The room's relays, when the body names them, must be a list the encoder
     // would write; a malformed one refuses the envelope rather than half of it.
     if (body.relays !== undefined && !isInvitationRelays(body.relays)) return null
+    // The same for the room's storage nodes: `[]` is valid (withdrawn), a
+    // malformed list refuses the envelope.
+    if (body.storage !== undefined && !isInvitationStorage(body.storage)) return null
     // Self-destruct is `true` or absent; anything else is a malformed
     // envelope, refused as a malformed end is.
     if (body.destruct !== undefined && body.destruct !== true) return null
     const admission: PersistentRoomAdmission = ends === undefined ? { secret, persistent: true, epoch: 0 } : { secret, persistent: true, epoch: 0, endsAt: ends }
     if (body.relays !== undefined) admission.relays = [...body.relays]
+    if (body.storage !== undefined) { admission.storage = [...body.storage]; admission.storageAt = event.created_at }
     if (body.destruct === true) admission.destruct = true
     return admission
   } catch { return null }
@@ -114,6 +132,7 @@ export function requestPersistentRoomAdmission(opts: {
     let settled = false
     let admission: PersistentRoomAdmission | undefined
     let relaysAt = -1
+    let storageAt = -1
     let unsub = () => {}
     const timer = setTimeout(() => finish(new Error('the group invitation could not be loaded from its relays')), opts.timeoutMs ?? 15_000)
     function finish(error?: Error): void {
@@ -152,6 +171,12 @@ export function requestPersistentRoomAdmission(opts: {
         // says nothing about them, and on equal timestamps the first heard stays.
         if (decoded.relays !== undefined && event.created_at > relaysAt) relaysAt = event.created_at
         else if (admission?.relays !== undefined) decoded.relays = admission.relays
+        // The storage nodes merge the same way, independently of the relays:
+        // the newest copy that names them stands, `[]` included; a copy that
+        // names none says nothing, so the keeper's plain copy never erases
+        // the list; on equal timestamps the first heard stays.
+        if (decoded.storage !== undefined && event.created_at > storageAt) storageAt = event.created_at
+        else if (admission?.storage !== undefined) { decoded.storage = admission.storage; decoded.storageAt = admission.storageAt }
         admission = decoded
       }, () => {
         if (admission) finish()

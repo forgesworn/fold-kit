@@ -29,15 +29,19 @@ if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !
 // Quiet automatic replies (reply delays, the refusal limiter and the
 // coordinated invitation responder) add 2,242 bytes minified / 845 bytes
 // gzip, without a dependency: index measured at 69.6 KiB / 20.4 KiB gzip.
+// Room storage nodes (the node URL grammar and list rule, with operator
+// messages) add 3.8 KiB minified / 1.4 KiB gzip to index and 1.7 KiB / 0.6 KiB
+// to evidence, without a dependency: index measured at 74.3 KiB / 22.2 KiB
+// gzip, evidence at 16.4 KiB / 6.0 KiB gzip.
 const BUDGETS_KB = {
-  index: { minified: 71, gzip: 21 },
+  index: { minified: 76, gzip: 23 },
   lane: { minified: 1.2, gzip: 0.7 },
   // Separate opt-in v4 codec measured at 12.8 KiB / 5.1 KiB gzip.
   // Existing index/lane budgets stay unchanged.
   mls: { minified: 14, gzip: 6 },
   // Optional evidence entry measured at 13.8 KiB / 5.2 KiB gzip.
   // Existing entry budgets remain unchanged.
-  evidence: { minified: 15, gzip: 6 },
+  evidence: { minified: 17, gzip: 6.5 },
 }
 
 let failed = false

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { finalizeEvent, generateSecretKey, verifiedSymbol, type Event } from 'nostr-tools/pure'
 import { createRoomInvitation, deriveInvitationId, encodeInvitationRetirement } from './invitation.js'
 import { encodePersistentInvitation, requestPersistentRoomAdmission } from './persistent-invitation.js'
-import { requestPersistentRoomAdmissionEvidence as query, revalidatePersistentInvitationEvidence as validate,
+import { requestPersistentRoomAdmissionEvidence as query, revalidatePersistentInvitationEvidence as validate, revalidatePersistentInvitationSource as revalidateSource,
   PersistentInvitationEvidenceQueryError, MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS } from './persistent-invitation-evidence.js'
 import type { RelayTransport } from './transport.js'
 import * as verifier from './verify.js'
@@ -28,7 +28,7 @@ function replay(events: Event[], eose = true) {
 }
 
 describe('bounded persistent invitation evidence', () => {
-  it.each(['extra', 'duplicate', 'bad-version', 'wrong-room', 'short-secret', 'bad-end', 'false-destruct', 'bad-relays', 'extra-tag', 'missing-expiration'])('independently refuses malformed signed group evidence: %s', async fault => {
+  it.each(['extra', 'duplicate', 'bad-version', 'wrong-room', 'short-secret', 'bad-end', 'false-destruct', 'bad-relays', 'bad-storage', 'duplicate-storage-host', 'extra-tag', 'missing-expiration'])('independently refuses malformed signed group evidence: %s', async fault => {
     const f = fixture(), event = f.invite({ endsAt: now + 100 })
     const key = hkdf(sha256, f.host.invitation.bearer, undefined, PERSISTENT_INVITATION_LABELS[0], 32)
     try {
@@ -40,6 +40,8 @@ describe('bounded persistent invitation evidence', () => {
       if (fault === 'bad-end') body.ends = 'tomorrow'
       if (fault === 'false-destruct') body.destruct = false
       if (fault === 'bad-relays') body.relays = ['http://unsafe.example/']
+      if (fault === 'bad-storage') body.storage = ['http://unsafe.example']
+      if (fault === 'duplicate-storage-host') body.storage = ['https://node.example.net', 'https://node.example.net:8443']
       const plaintext = fault === 'duplicate' ? JSON.stringify(body).replace('"v":3', '"v":3,"v":3') : JSON.stringify(body)
       const tags = fault === 'extra-tag' ? [...event.tags, ['extra', 'tag']] : fault === 'missing-expiration' ? [event.tags[0]!] : event.tags
       const bad = finalizeEvent({ ...event, tags, content: nip44.v2.encrypt(plaintext, key) }, f.host.inviterSk)
@@ -57,7 +59,7 @@ describe('bounded persistent invitation evidence', () => {
     expect(result.outcome.status).toBe('admitted')
     if (result.outcome.status !== 'admitted') throw new Error('held')
     expect(result.outcome.admission).toEqual({ secret: f.secret, persistent: true, epoch: 0, relays: ['wss://fixed.example/'] })
-    expect(result.outcome.contributors).toEqual({ room: [event.id], ends: [], destruct: [], relays: [event.id] })
+    expect(result.outcome.contributors).toEqual({ room: [event.id], ends: [], destruct: [], relays: [event.id], storage: [] })
     expect(Object.isFrozen(result.evidence)).toBe(true)
     expect(Object.isFrozen(result.evidence.events)).toBe(true)
     expect(r.stop).toHaveBeenCalledTimes(1)
@@ -95,6 +97,99 @@ describe('bounded persistent invitation evidence', () => {
       const legacy = await requestPersistentRoomAdmission({ transport: replay(events).transport, invitation: f.host.invitation })
       expect(legacy.relays).toEqual(events[0] === a ? ['wss://a.example/'] : ['wss://b.example/'])
     }
+  })
+
+  describe('storage nodes', () => {
+    const A = ['https://a.example.net'], B = ['https://b.example.net', 'https://c.example.org:8443/wb']
+
+    it('are accepted by the strict path, with their version and contributor', async () => {
+      const f = fixture(), event = f.invite({ relays: ['wss://fixed.example/'], storage: B })
+      const result = await query({ transport: replay([event]).transport, invitation: f.host.invitation })
+      expect(result.outcome.status).toBe('admitted')
+      if (result.outcome.status !== 'admitted') throw new Error('held')
+      expect(result.outcome.admission).toEqual({ secret: f.secret, persistent: true, epoch: 0, relays: ['wss://fixed.example/'], storage: B, storageAt: now })
+      expect(result.outcome.contributors).toEqual({ room: [event.id], ends: [], destruct: [], relays: [event.id], storage: [event.id] })
+      expect(validate({ evidence: result.evidence, invitation: f.host.invitation }).outcome).toEqual(result.outcome)
+      // An empty list is a list: the authority withdrew every node.
+      const withdrawn = await query({ transport: replay([f.invite({ storage: [] })]).transport, invitation: f.host.invitation })
+      expect(withdrawn.outcome).toMatchObject({ status: 'admitted', admission: { storage: [], storageAt: now } })
+    })
+
+    it('are carried through a retained single source with their version', () => {
+      const f = fixture(), event = f.invite({ endsAt: now + 100, storage: A })
+      const source = revalidateSource({ event, invitation: f.host.invitation, expectedRoomSecret: f.secret })
+      expect(source.admission).toMatchObject({ endsAt: now + 100, storage: A, storageAt: now })
+      expect(revalidateSource({ event: source.event, invitation: f.host.invitation, expectedRoomSecret: f.secret }).admission.storage).toEqual(A)
+    })
+
+    it('are re-serialised in the fixed key order, so a reordered body is refused', async () => {
+      const f = fixture(), event = f.invite({ relays: ['wss://fixed.example/'], storage: A })
+      const key = hkdf(sha256, f.host.invitation.bearer, undefined, PERSISTENT_INVITATION_LABELS[0], 32)
+      try {
+        const body = JSON.parse(nip44.v2.decrypt(event.content, key))
+        const { storage, relays, ...rest } = body
+        const bad = finalizeEvent({ ...event, content: nip44.v2.encrypt(JSON.stringify({ ...rest, storage, relays }), key) }, f.host.inviterSk)
+        const result = await query({ transport: replay([bad]).transport, invitation: f.host.invitation })
+        expect(result.outcome).toMatchObject({ status: 'held', reason: 'unavailable' })
+      } finally { key.fill(0) }
+    })
+
+    it('a plain copy and a copy with nodes admit with the nodes, naming only the copy that carried them', async () => {
+      const f = fixture(), plain = f.invite({ now: now - 1 }), listed = f.invite({ storage: A })
+      for (const events of [[plain, listed], [listed, plain]]) {
+        const result = await query({ transport: replay(events).transport, invitation: f.host.invitation })
+        expect(result.outcome.status).toBe('admitted')
+        if (result.outcome.status !== 'admitted') throw new Error('held')
+        expect(result.outcome.admission.storage).toEqual(A)
+        expect(result.outcome.admission.storageAt).toBe(now)
+        expect(result.outcome.contributors.storage).toEqual([listed.id])
+        expect(result.outcome.contributors.room).toHaveLength(2)
+      }
+      // A plain copy newer than the list leaves it standing, as for the relays.
+      const later = f.invite({ now: now + 5 })
+      const result = await query({ transport: replay([listed, later]).transport, invitation: f.host.invitation })
+      expect(result.outcome).toMatchObject({ status: 'admitted', admission: { storage: A, storageAt: now } })
+    })
+
+    it('the newest copy that names them stands, `[]` included, and they merge apart from the relays', async () => {
+      const f = fixture()
+      const old = f.invite({ relays: ['wss://old.example/'], storage: A })
+      const withRelays = f.invite({ now: now + 1, relays: ['wss://new.example/'] })
+      const newer = f.invite({ now: now + 2, storage: B })
+      const empty = f.invite({ now: now + 3, storage: [] })
+      for (const events of [[old, withRelays, newer], [newer, withRelays, old]]) {
+        const result = await query({ transport: replay(events).transport, invitation: f.host.invitation })
+        if (result.outcome.status !== 'admitted') throw new Error('held')
+        expect(result.outcome.admission).toMatchObject({ relays: ['wss://new.example/'], storage: B, storageAt: now + 2 })
+        expect(result.outcome.contributors.relays).toEqual([withRelays.id])
+        expect(result.outcome.contributors.storage).toEqual([newer.id])
+      }
+      for (const events of [[old, newer, empty], [empty, newer, old]]) {
+        const result = await query({ transport: replay(events).transport, invitation: f.host.invitation })
+        expect(result.outcome).toMatchObject({ status: 'admitted', admission: { storage: [], storageAt: now + 3 } })
+      }
+    })
+
+    it('holds equal-time newest differing lists deterministically; the legacy request keeps the first heard', async () => {
+      const f = fixture(), a = f.invite({ storage: A }), b = f.invite({ storage: B })
+      for (const events of [[a, b], [b, a]]) {
+        const result = await query({ transport: replay(events).transport, invitation: f.host.invitation })
+        expect(result.outcome).toEqual({ status: 'held', reason: 'conflicting-storage', retirementEventIds: [] })
+        expect(result.evidence.events).toHaveLength(2)
+        const legacy = await requestPersistentRoomAdmission({ transport: replay(events).transport, invitation: f.host.invitation })
+        expect(legacy.storage).toEqual(events[0] === a ? A : B)
+      }
+      // `[]` against a list in one second is a disagreement too.
+      const empty = f.invite({ storage: [] })
+      expect((await query({ transport: replay([a, empty]).transport, invitation: f.host.invitation })).outcome).toMatchObject({ status: 'held', reason: 'conflicting-storage' })
+    })
+
+    it('accepts same-time identical lists, and a strictly newer list supersedes a tie', async () => {
+      const f = fixture(), a = f.invite({ storage: A }), twin = f.invite({ storage: A, destruct: true }), other = f.invite({ storage: B }), next = f.invite({ now: now + 1, storage: ['https://next.example.net'] })
+      for (const events of [[a, twin], [a, other, next], [next, other, a]]) {
+        expect((await query({ transport: replay(events).transport, invitation: f.host.invitation })).outcome.status).toBe('admitted')
+      }
+    })
   })
 
   it('accepts same-time identical lists and allows a strictly newer list to supersede an old tie', async () => {
