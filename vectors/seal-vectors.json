@@ -623,6 +623,310 @@
           },
           "thief": null
         }
+      },
+      {
+        "name": "rekey-one-time-sender",
+        "kind": "positive",
+        "note": "rekey-seal's rekey with `oneTimeSender`: tags d, epoch, then [\"from\", x-only pubkey of a key made for this rekey alone], still signed by the authority, so the tag is the authority's word. Every copy is sealed from that one-time key to the recipient's seal key (or device key), and the one-time secret is discarded, so whoever later takes the authority's key cannot recompute the copies (`authorityOpens` false). A reader opens its copy with the key the single `from` tag names (`sealSender`), and with the signer when there is none, which is every earlier rekey. `randomHex`: the 48-byte seed for the one-time key (`senderSkHex`), one seal nonce per recipient in order, the body nonce, the signature aux-rand. A reader older than this opens no copy, reads the rekey without a secret and asks for the epoch.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "authoritySkHex": "bb058b43370d37b7ed3f09e3a36a6ffcc88a8dad56c5ee204b1715240a1466e0",
+          "previousKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "next": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "recipients": [
+            {
+              "device": "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b",
+              "credential": {
+                "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+                "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+                "created_at": 1800000000,
+                "kind": 20460,
+                "tags": [
+                  [
+                    "d",
+                    "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+                  ],
+                  [
+                    "device",
+                    "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+                  ],
+                  [
+                    "expiration",
+                    "1800043200"
+                  ],
+                  [
+                    "seal",
+                    "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+                  ]
+                ],
+                "content": "",
+                "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+              }
+            },
+            "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e"
+          ],
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "bareDeviceSkHex": "32796464cb7434a5d397f03cce5055df28f9be8d15ce4bf14760d764bbd2e156",
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "copiedSealSkHex": "22b29538be86feaf0dbe57fcd046cc95ca39082e813d450d8d9d653a2434a374",
+          "createdAt": 1800000000,
+          "event": {
+            "id": "3f38d5f8a93cb0818f9a62fccc8ba59b44ebc413c1369205447f840e46bfb474",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "epoch",
+                "1"
+              ],
+              [
+                "from",
+                "02f71d0f7235cbe6e623bc1542539c9db10601a3a892af483783614c00c7fd99"
+              ]
+            ],
+            "content": "AmcNeMrs/5cl6E/Z1PoCcQXOxzckQIRSjE9XOZJKvrsqFN0ZfMu/0hPX0dWFqdgAWRDZ5/K+9O3ajNsKlDmnx5zcAtlrzeJUTDGtN6YrwcorfL6NRMeSz9bnic0jAGAxo+Zj5n0FUV9qOzAkjKktseXy6y2oQeQ3gN2uPW1GXSOcaH++d3YwmiND6c48I8SlsNB5wRVawNb5Dm6UViC4h0wpbBR9sLqA08+p8IMFx2HxmENDbNNMfeQVcMhNGZ+XobZcsH4Zd0JNVxRVUGF0TOYCfaOQFAzO3LxfXI9tcC9vaisCA/DbGoGiz5nqOwU4xnsF5RgdX6yX+xIQXSzCtne69p/tdjePhsL8WmlENE131aSBdY/L7bUAumu+FJxfVJBzNCz+y/o0noBLirOrUuUIqWxFnQ/zoWsE+gYCU9Um9LvtbhK+m1+COhl6K09ruh/qlcZBn7OEciUywGZSkRadpm4kktc5cCfGbdrlkfVPwgrJiRVYLkIC+O+N+xqx037XLOtI3wC460QDnaoii207OrsdGip8F5K1sZ8ZV/Mc+gNmcCKAZJEGaoyowPvP4cYXMyos7j3MCZ0lpwi1E8jwyXYJZK17JKXmykEpBywPpYLSgBQR9C9yJ6oCfaVsxkOBVgbEiPKpA+hGngsiDmGBoy41VdgpA9ZCBTIH5W8B2z1xqCk+dHVkczJqYNpM+Dad0Xagq42rnK1kLff2bFsIKxly3ak1uFRYBCQbS74BEo2kbczOAn1XLfPYMLiEiMCdjXgILzVgqe4TVjue9Nv7Zak5iheUPqLVZfxTbuQUWIWrLakQWSVHfQ8c+/L98/5M9TsgYSIV5BS5JCABvbCVe4RHeq4ibECcsf41I2qPUeCSXxHuTvJ26L/T3ONpAEzXRw2+8tJNaK3Plczm5f9TfYPL3yuZGcplKsgPwogm0us=",
+            "sig": "a6e036a4b6ac94703f747337bf28c308a295fcfc2ab3c028d5a35cc50969ba19807a9ba14252ef7782e4b4bfd3395c71986eea1cdcdc36e2fe18a77d9ce1219d"
+          },
+          "randomHex": [
+            "a110c4cffaadabb2fedbf6279627cc857757f036ecaffdcb89452e2eb12acc8349c693f9cce385720b83f75629ae26e6",
+            "6d4bbae698b19d076387d818c6a9b8aaaa23ab42850bb933ab1ab0ab4a36ce91",
+            "a25e6555c2cbbf30733f70ba666453a3712cf5dbefd4c1cea47fa9b70b1b691a",
+            "670d78caecff9725e84fd9d4fa027105cec737244084528c4f5739924abebb2a",
+            "18c1fc0b6372dc662bcafd2d4704e5c1f4bcc9c61b1e129a91dec165a6296212"
+          ],
+          "senderSkHex": "4405467674110e0cb5278a657356cac70724f7442d2dc3ade9e350768088ff67"
+        },
+        "output": {
+          "sealSender": "02f71d0f7235cbe6e623bc1542539c9db10601a3a892af483783614c00c7fd99",
+          "renewedDevice": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "thief": {
+            "epoch": 1
+          },
+          "bareDevice": {
+            "epoch": 1,
+            "secretHex": "cc4e6941abd893daab2fdce0bbb182816b531fbc04b9531fdc5d03fd742fb26b"
+          },
+          "authorityOpens": {
+            "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b": false,
+            "1cddb17ae843752d2469ea50b2a6bd1468edbb75b7913ea58ba7847663cb1b8e": false
+          }
+        }
+      },
+      {
+        "name": "rekey-from-doubled",
+        "kind": "negative",
+        "note": "rekey-one-time-sender's content re-signed by the authority with two `from` tags. Only the authority could sign it, so it is a broken writer, not an attack: `sealSender` is null, the rekey is still read for its epoch and removals, and no copy is opened (no secretHex); the device asks for the epoch.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "previousKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "event": {
+            "id": "fc8be7e8e1965a5888ca5351706456d76c8e548c3fc0a9378e0bb1caf4be23f6",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "epoch",
+                "1"
+              ],
+              [
+                "from",
+                "02f71d0f7235cbe6e623bc1542539c9db10601a3a892af483783614c00c7fd99"
+              ],
+              [
+                "from",
+                "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533"
+              ]
+            ],
+            "content": "AmcNeMrs/5cl6E/Z1PoCcQXOxzckQIRSjE9XOZJKvrsqFN0ZfMu/0hPX0dWFqdgAWRDZ5/K+9O3ajNsKlDmnx5zcAtlrzeJUTDGtN6YrwcorfL6NRMeSz9bnic0jAGAxo+Zj5n0FUV9qOzAkjKktseXy6y2oQeQ3gN2uPW1GXSOcaH++d3YwmiND6c48I8SlsNB5wRVawNb5Dm6UViC4h0wpbBR9sLqA08+p8IMFx2HxmENDbNNMfeQVcMhNGZ+XobZcsH4Zd0JNVxRVUGF0TOYCfaOQFAzO3LxfXI9tcC9vaisCA/DbGoGiz5nqOwU4xnsF5RgdX6yX+xIQXSzCtne69p/tdjePhsL8WmlENE131aSBdY/L7bUAumu+FJxfVJBzNCz+y/o0noBLirOrUuUIqWxFnQ/zoWsE+gYCU9Um9LvtbhK+m1+COhl6K09ruh/qlcZBn7OEciUywGZSkRadpm4kktc5cCfGbdrlkfVPwgrJiRVYLkIC+O+N+xqx037XLOtI3wC460QDnaoii207OrsdGip8F5K1sZ8ZV/Mc+gNmcCKAZJEGaoyowPvP4cYXMyos7j3MCZ0lpwi1E8jwyXYJZK17JKXmykEpBywPpYLSgBQR9C9yJ6oCfaVsxkOBVgbEiPKpA+hGngsiDmGBoy41VdgpA9ZCBTIH5W8B2z1xqCk+dHVkczJqYNpM+Dad0Xagq42rnK1kLff2bFsIKxly3ak1uFRYBCQbS74BEo2kbczOAn1XLfPYMLiEiMCdjXgILzVgqe4TVjue9Nv7Zak5iheUPqLVZfxTbuQUWIWrLakQWSVHfQ8c+/L98/5M9TsgYSIV5BS5JCABvbCVe4RHeq4ibECcsf41I2qPUeCSXxHuTvJ26L/T3ONpAEzXRw2+8tJNaK3Plczm5f9TfYPL3yuZGcplKsgPwogm0us=",
+            "sig": "6f034c009f3eb02e069355d5a065f3aa72d1fe92dd5e6bc1bedbd905dfca08370fdc39b21470341397eafc2a5ad1c977c4658811aab3198937099ce844f0db37"
+          }
+        },
+        "output": {
+          "sealSender": null,
+          "renewedDevice": {
+            "epoch": 1
+          }
+        }
+      },
+      {
+        "name": "rekey-from-off-curve",
+        "kind": "negative",
+        "note": "The same with one `from` tag that is not the x coordinate of any point (x = 5): `sealSender` null, read without a secret.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "previousKeyHex": "09126b23a6148694280325e5a433c1badbc853026c8e71c0833ffd4bd0ea08ab",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "event": {
+            "id": "3d0722b71fa5a04938936d6fd89ba718830a59c89ecb060931f442394e1702ab",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 1462,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "epoch",
+                "1"
+              ],
+              [
+                "from",
+                "0000000000000000000000000000000000000000000000000000000000000005"
+              ]
+            ],
+            "content": "AmcNeMrs/5cl6E/Z1PoCcQXOxzckQIRSjE9XOZJKvrsqFN0ZfMu/0hPX0dWFqdgAWRDZ5/K+9O3ajNsKlDmnx5zcAtlrzeJUTDGtN6YrwcorfL6NRMeSz9bnic0jAGAxo+Zj5n0FUV9qOzAkjKktseXy6y2oQeQ3gN2uPW1GXSOcaH++d3YwmiND6c48I8SlsNB5wRVawNb5Dm6UViC4h0wpbBR9sLqA08+p8IMFx2HxmENDbNNMfeQVcMhNGZ+XobZcsH4Zd0JNVxRVUGF0TOYCfaOQFAzO3LxfXI9tcC9vaisCA/DbGoGiz5nqOwU4xnsF5RgdX6yX+xIQXSzCtne69p/tdjePhsL8WmlENE131aSBdY/L7bUAumu+FJxfVJBzNCz+y/o0noBLirOrUuUIqWxFnQ/zoWsE+gYCU9Um9LvtbhK+m1+COhl6K09ruh/qlcZBn7OEciUywGZSkRadpm4kktc5cCfGbdrlkfVPwgrJiRVYLkIC+O+N+xqx037XLOtI3wC460QDnaoii207OrsdGip8F5K1sZ8ZV/Mc+gNmcCKAZJEGaoyowPvP4cYXMyos7j3MCZ0lpwi1E8jwyXYJZK17JKXmykEpBywPpYLSgBQR9C9yJ6oCfaVsxkOBVgbEiPKpA+hGngsiDmGBoy41VdgpA9ZCBTIH5W8B2z1xqCk+dHVkczJqYNpM+Dad0Xagq42rnK1kLff2bFsIKxly3ak1uFRYBCQbS74BEo2kbczOAn1XLfPYMLiEiMCdjXgILzVgqe4TVjue9Nv7Zak5iheUPqLVZfxTbuQUWIWrLakQWSVHfQ8c+/L98/5M9TsgYSIV5BS5JCABvbCVe4RHeq4ibECcsf41I2qPUeCSXxHuTvJ26L/T3ONpAEzXRw2+8tJNaK3Plczm5f9TfYPL3yuZGcplKsgPwogm0us=",
+            "sig": "eff2cc0225466dd6367fda5509d36fcb17e88b28039148b17870100ebe65b7658b005a18d0563ae01003ff88833d0716d01029b2e1b78456d63e19d27261cb24"
+          }
+        },
+        "output": {
+          "sealSender": null,
+          "renewedDevice": {
+            "epoch": 1
+          }
+        }
+      },
+      {
+        "name": "epoch-grant-one-time-sender",
+        "kind": "positive",
+        "note": "epoch-grant-seal's grant with `oneTimeSender`: tags d, p, then [\"from\", one-time pubkey], signed by the authority, content sealed from the one-time key to the renewed seal key. `randomHex`: the 48-byte seed for the one-time key (`senderSkHex`), body nonce, aux-rand. The renewed device opens it; the thief does not; the authority's key no longer opens it. A reader older than this cannot open it at all, which is why writers wait for readers.",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "authoritySkHex": "bb058b43370d37b7ed3f09e3a36a6ffcc88a8dad56c5ee204b1715240a1466e0",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "now": 1800000000,
+          "request": "ef8f52180b25300214a75780fc12a89cb1d4ee1a88a78b2f8afb92605769e87a",
+          "credential": {
+            "id": "3c3f64a769c826a89f2712ed9898e43afacc5f2784201999e8ca0ed5cdcf3d6c",
+            "pubkey": "3683caad0bf9bb5a653582155c0ba9192fd23d7d6c717a7b0d233c8356a7042f",
+            "created_at": 1800000000,
+            "kind": 20460,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "device",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "expiration",
+                "1800043200"
+              ],
+              [
+                "seal",
+                "63a40c9bc84c065f4aab7e63208ea37c3edcd3ab47a334b157cf000409c7eaaf"
+              ]
+            ],
+            "content": "",
+            "sig": "fdd0c5f23d2f1531594100470d6fe6c87d6c28d2185898b49844b664ffcb65f3c76ce0b9fcef3166708baca068d7f9d2ee74a827f56140b6cef11591ce942049"
+          },
+          "epoch": {
+            "epoch": 2,
+            "secretHex": "1173b8e8457a46fdb6ae949e37aa41ce259534d4bb4f15a5fdb74aefc83344f5"
+          },
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "copiedSealSkHex": "22b29538be86feaf0dbe57fcd046cc95ca39082e813d450d8d9d653a2434a374",
+          "event": {
+            "id": "38ad58597fa0c34a18e3975e755c27523b4c1cdf60d4a49aa89d2817f734dc76",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 20469,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "p",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "from",
+                "0f44811c4dab721de6ee8e8d740b264fe8e106453fca7fe2a4543656cf10bb98"
+              ]
+            ],
+            "content": "Ar+D/3yOjgZRgyeW88MD9C17M37/kTTSSXfT5gTHvH8ecKBRUai4cGo/MMEiMBPN7b/YLj+HKOab20VjFGh1b6+CwWjoruSUpgvxNvZUcKiOF2lmZp6Awd2R46k55IJ8ShyGHQ674wyHyBs7J2GbZeEZZlsAPOztW0iCXEB4RzdUP4HrmyYbhKxY9g+8juxhT91aMIH7bmFN+kOCrOO3W+4gaj73tGRyB6OBvMKledoK1ypL+COkXqj4GzFUcDsG88fFOD6+JMnVoUDNhyobovbxRsj6B5wApTkr6Bj6nAr5+er5RTTEBAwmUuIc/V7qFzK76NUmYGunr6r5bZHaxLld3Q==",
+            "sig": "7992b0b101abb281e45c6066132e571a30ef8b02fcd0eb25f8764cf967c960d89f8d6def75e7bf91cf31d6af1efaa7b9d0171eaeba7482521afe9bc07d1fde17"
+          },
+          "randomHex": [
+            "5ac80b90d9396022bf334b58968aec74e7c8c72a7f62635b91a13924910c605a62efa5fac4e4ce2c169755acc6d1b49c",
+            "bf83ff7c8e8e0651832796f3c303f42d7b337eff9134d24977d3e604c7bc7f1e",
+            "a100e717ef4874d688fb51f37339cc25d5eddb8a17f3c554f939a7d3098ad8fa"
+          ],
+          "senderSkHex": "5b2583975fba6efa84bdfd6fa48d2422e1d31090140b71d4cadc19e4ed5ee25d"
+        },
+        "output": {
+          "sealSender": "0f44811c4dab721de6ee8e8d740b264fe8e106453fca7fe2a4543656cf10bb98",
+          "renewedDevice": {
+            "epoch": 2,
+            "secretHex": "1173b8e8457a46fdb6ae949e37aa41ce259534d4bb4f15a5fdb74aefc83344f5"
+          },
+          "thief": null,
+          "authorityOpens": false
+        }
+      },
+      {
+        "name": "epoch-grant-from-off-curve",
+        "kind": "negative",
+        "note": "epoch-grant-one-time-sender's content re-signed by the authority with a `from` tag off the curve: the grant is refused (null).",
+        "input": {
+          "roomId": "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c",
+          "authority": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+          "deviceSkHex": "678d943bfdab0df34f3945be66ca867a4c15b507d7a9c125651f9018a905f305",
+          "now": 1800000000,
+          "request": "ef8f52180b25300214a75780fc12a89cb1d4ee1a88a78b2f8afb92605769e87a",
+          "renewedSealSkHex": "7729de6b913094fc7fd121d12671448494184b9eff28633869a0c81567291035",
+          "event": {
+            "id": "3185002094d21dd5f585b6e718c8587a5ab494235e73a5351f51ba0648af5db9",
+            "pubkey": "4fca1ba4b39e24ea0acea325af3e6a62315903952c277e197cccfe8f0143c533",
+            "created_at": 1800000000,
+            "kind": 20469,
+            "tags": [
+              [
+                "d",
+                "58c0b5a427b80559f5b67f35e74c686f630259dcdafca2ab03e3b082f4a1740c"
+              ],
+              [
+                "p",
+                "f29e30f72c9aaaa5066aa366afd4f0970e13853d10922cf5ba2ece21dc18ee5b"
+              ],
+              [
+                "from",
+                "0000000000000000000000000000000000000000000000000000000000000005"
+              ]
+            ],
+            "content": "Ar+D/3yOjgZRgyeW88MD9C17M37/kTTSSXfT5gTHvH8ecKBRUai4cGo/MMEiMBPN7b/YLj+HKOab20VjFGh1b6+CwWjoruSUpgvxNvZUcKiOF2lmZp6Awd2R46k55IJ8ShyGHQ674wyHyBs7J2GbZeEZZlsAPOztW0iCXEB4RzdUP4HrmyYbhKxY9g+8juxhT91aMIH7bmFN+kOCrOO3W+4gaj73tGRyB6OBvMKledoK1ypL+COkXqj4GzFUcDsG88fFOD6+JMnVoUDNhyobovbxRsj6B5wApTkr6Bj6nAr5+er5RTTEBAwmUuIc/V7qFzK76NUmYGunr6r5bZHaxLld3Q==",
+            "sig": "ba59c2a57832972de1b73a75724f6636fd2cea73e6a9040e05bc3ea022a10a5260d866d94c49dd16408237ea62a65e9bfb39cf332099a23f560ff7ca463eed02"
+          }
+        },
+        "output": {
+          "renewedDevice": null
+        }
       }
     ]
   }

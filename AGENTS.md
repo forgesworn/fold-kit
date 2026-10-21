@@ -139,7 +139,7 @@ derivation, lane).
 ## Release Notes
 
 Pre-1.0. Published on npm as `@forgesworn/fold-kit` with trusted publishing.
-`main` is at 0.12.0 and can run ahead of the npm `latest` release (0.10.0 when
+`main` is at 0.13.0 and can run ahead of the npm `latest` release (0.10.0 when
 checked on 2026-10-16; `0.0.0-seed.0` remains under the `seed` dist-tag). A
 consumer who needs an unreleased change pins an immutable Git commit (see
 README "Install").

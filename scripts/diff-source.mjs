@@ -618,6 +618,31 @@ const QUIET_REPLY_CHANGES = {
   ],
 }
 
+/**
+ * One-time senders (0.13.0, see docs/seal-key.md "One-time senders"):
+ * `encodeRekeyEvent` and `encodeEpochGrant` take `oneTimeSender`, which seals
+ * the copies from a fresh key named in a `from` tag, and both readers open a
+ * copy from the key `sealSender` names. Omitted, every event is
+ * byte-identical to before. Declared as new text -> previous text, generated
+ * hunk by hunk from the diff with one line of context, and applied before
+ * everything else.
+ */
+const ONE_TIME_SENDER_CHANGES = {
+  "src/epoch.ts": [
+    ["import { nip44 } from 'nostr-tools'\nimport { finalizeEvent, generateSecretKey, getPublicKey, type Event } from 'nostr-tools/pure'\nimport { hexEquals, normaliseHex } from './hex.js'\n", "import { nip44 } from 'nostr-tools'\nimport { finalizeEvent, getPublicKey, type Event } from 'nostr-tools/pure'\nimport { hexEquals, normaliseHex } from './hex.js'\n", 1],
+    ["import { verifyEventUncached } from './verify.js'\nimport { SENDER_TAG, newerCredential, openSealed, sealSender, sealTo } from './seal.js'\nimport { withExpiration } from './expiration.js'\n", "import { verifyEventUncached } from './verify.js'\nimport { newerCredential, openSealed, sealTo } from './seal.js'\nimport { withExpiration } from './expiration.js'\n", 1],
+    ["  expiresAt?: number\n  /** Seal the copies from a one-time key, named in a `from` tag and\n   *  discarded once they are sealed, instead of from the authority's key.\n   *  Readers from fold-kit 0.13.0 open either; an older reader opens no copy\n   *  from a one-time key, so turn this on only once readers have shipped\n   *  (docs/seal-key.md, \"One-time senders\"). Omitted, the event is\n   *  byte-identical to before. */\n  oneTimeSender?: boolean\n}\n", "  expiresAt?: number\n}\n", 2],
+    ["\n/** The key a rekey or grant seals from: the authority's own, or, with\n *  `oneTimeSender`, a fresh one named in a `from` tag and zeroed once used. */\nfunction oneTimeSenderOf(opts: { authoritySk: Uint8Array; oneTimeSender?: boolean }): { sk: Uint8Array; tags: string[][]; discard: () => void } {\n  if (!opts.oneTimeSender) return { sk: opts.authoritySk, tags: [], discard: () => {} }\n  const sk = generateSecretKey()\n  return { sk, tags: [[SENDER_TAG, getPublicKey(sk)]], discard: () => sk.fill(0) }\n}\n\n/** Announce the next epoch. See the module comment for what this is. */\n", "\n/** Announce the next epoch. See the module comment for what this is. */\n", 1],
+    ["  const plaintext = JSON.stringify(sealed)\n  const sender = oneTimeSenderOf(opts)\n  try {\n    for (const raw of opts.closed ? [] : opts.recipients) {\n      const recipient = typeof raw === 'string' ? { device: raw } : raw\n      const device = requireHex32(recipient.device, 'recipient device')\n      keys[device] = sealTo(plaintext, sender.sk, device, recipient.credential)\n    }\n  } finally {\n    sender.discard()\n  }\n", "  const plaintext = JSON.stringify(sealed)\n  for (const raw of opts.closed ? [] : opts.recipients) {\n    const recipient = typeof raw === 'string' ? { device: raw } : raw\n    const device = requireHex32(recipient.device, 'recipient device')\n    keys[device] = sealTo(plaintext, opts.authoritySk, device, recipient.credential)\n  }\n", 1],
+    ["        ['epoch', String(epoch)],\n        ...sender.tags,\n      ], opts.expiresAt),\n", "        ['epoch', String(epoch)],\n      ], opts.expiresAt),\n", 1],
+    ["    const mine = Object.entries(body.keys).find(([to]) => hexEquals(to, device))?.[1]\n    const sender = sealSender(event)\n    if (typeof mine === 'string' && sender !== null) {\n      // A copy none of this device's keys opens is no copy: sealed to a\n", "    const mine = Object.entries(body.keys).find(([to]) => hexEquals(to, device))?.[1]\n    if (typeof mine === 'string') {\n      // A copy none of this device's keys opens is no copy: sealed to a\n", 1],
+    ["      try {\n        const sealed = JSON.parse(openSealed(mine, sender, opts.deviceSk, opts.sealSks)) as Partial<SealedSecret>\n        if (sealed.v === 1 && typeof sealed.secret === 'string') {\n", "      try {\n        const sealed = JSON.parse(openSealed(mine, event.pubkey, opts.deviceSk, opts.sealSks)) as Partial<SealedSecret>\n        if (sealed.v === 1 && typeof sealed.secret === 'string') {\n", 1],
+    ["  }\n  const sender = oneTimeSenderOf(opts)\n  let content: string\n  try {\n    content = sealTo(JSON.stringify(body), sender.sk, device, opts.credential)\n  } finally {\n    sender.discard()\n  }\n  return finalizeEvent(\n", "  }\n  return finalizeEvent(\n", 1],
+    ["        ['p', device],\n        ...sender.tags,\n      ], opts.expiresAt),\n      content,\n    },\n", "        ['p', device],\n      ], opts.expiresAt),\n      content: sealTo(JSON.stringify(body), opts.authoritySk, device, opts.credential),\n    },\n", 1],
+    ["    if (addressed === undefined || !hexEquals(addressed, device)) return null\n    const sender = sealSender(event)\n    if (sender === null) return null\n    const body = JSON.parse(openSealed(event.content, sender, opts.deviceSk, opts.sealSks)) as Partial<EpochGrantBody>\n    if (body.v !== 1 || typeof body.request !== 'string' || !hexEquals(body.request, opts.request)) return null\n", "    if (addressed === undefined || !hexEquals(addressed, device)) return null\n    const body = JSON.parse(openSealed(event.content, event.pubkey, opts.deviceSk, opts.sealSks)) as Partial<EpochGrantBody>\n    if (body.v !== 1 || typeof body.request !== 'string' || !hexEquals(body.request, opts.request)) return null\n", 1],
+  ],
+}
+
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
   for (const [kit, source, count] of changes) {
@@ -641,7 +666,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 

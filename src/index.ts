@@ -21,6 +21,8 @@ export type { CreateCredentialOptions, VerifyResult } from './credential.js'
 
 export {
   SEAL_TAG,
+  SENDER_TAG,
+  sealSender,
   isSealPubkey,
   generateSealKey,
   credentialSeal,

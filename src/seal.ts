@@ -93,6 +93,31 @@ export function sealTarget(device: string, credential?: DeviceCredential): strin
   return credentialSeal(credential) ?? to
 }
 
+/**
+ * The tag on a rekey (kind 1462) or an authority's grant (kind 20469) that
+ * names the one-time key it was sealed from. The event is still signed by
+ * the authority, so the tag is the authority's word; the one-time secret is
+ * discarded once the copies are sealed, so whoever later takes the
+ * authority's key cannot recompute them. Forward secrecy step 1, see
+ * docs/seal-key.md, "One-time senders".
+ */
+export const SENDER_TAG = 'from'
+
+/**
+ * Who sealed the copies in `event`: the key its single `from` tag names, or
+ * its signer when it carries none, which is every rekey and grant written
+ * before one-time senders. Null when the tags are unusable: more than one
+ * `from`, or one that is not a point on the curve. Only the authority could
+ * have signed either, so a reader treats null as a copy it cannot open.
+ */
+export function sealSender(event: { pubkey: string; tags: string[][] }): string | null {
+  const tags = event.tags.filter((t) => t[0] === SENDER_TAG)
+  if (tags.length === 0) return normaliseHex(event.pubkey)
+  if (tags.length > 1) return null
+  const value = tags[0]![1]
+  return isSealPubkey(value) ? normaliseHex(value) : null
+}
+
 /** Seal `plaintext` from `senderSk` to `device`, by `sealTarget`. */
 export function sealTo(plaintext: string, senderSk: Uint8Array, device: string, credential?: DeviceCredential): string {
   return nip44.v2.encrypt(plaintext, nip44.v2.utils.getConversationKey(senderSk, sealTarget(device, credential)))

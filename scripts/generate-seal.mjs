@@ -38,7 +38,9 @@ import {
   decodeEpochGrant,
   encodeMemberEpochGrant,
   decodeMemberEpochGrant,
+  sealSender,
 } from '../dist/index.js'
+import { nip44 } from 'nostr-tools'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const outPath = join(here, '..', 'vectors', 'seal-vectors.json')
@@ -224,6 +226,80 @@ const readMemberGrant = (sealSks) => {
   return g && { epoch: g.epoch.epoch, secretHex: hex(g.epoch.secret) }
 }
 
+// --- One-time senders (forward secrecy step 1) ---------------------------------
+
+// The same rekey and grant, sealed from a one-time key named in a `from` tag.
+// Its 48-byte seed is the first draw, before the seal nonces.
+const rekeyOneTimeSeed = seed48('rekey-one-time/sender')
+const rekeyOneTimeSk = schnorr.utils.randomSecretKey(rekeyOneTimeSeed)
+const rekeyOneTimeDraws = [rekeyOneTimeSeed, r('rekey-one-time/seal-device'), r('rekey-one-time/seal-bare'), r('rekey-one-time/body'), r('rekey-one-time/aux')]
+const rekeyOneTime = plain(
+  withStubbedRandomness(rekeyOneTimeDraws, () =>
+    encodeRekeyEvent({
+      roomId,
+      authoritySk: AUTHORITY_SK,
+      current: e0,
+      next: EPOCH_1,
+      recipients: [{ device: DEVICE, credential: renewed }, BARE_DEVICE],
+      removed: [],
+      now: NOW,
+      oneTimeSender: true,
+    }),
+  ),
+)
+if (sealSender(rekeyOneTime) !== getPublicKey(rekeyOneTimeSk)) throw new Error('rekey-one-time: the from tag is not the recorded one-time key')
+
+const grantOneTimeSeed = seed48('grant-one-time/sender')
+const grantOneTimeSk = schnorr.utils.randomSecretKey(grantOneTimeSeed)
+const grantOneTimeDraws = [grantOneTimeSeed, r('grant-one-time/body'), r('grant-one-time/aux')]
+const epochGrantOneTime = plain(
+  withStubbedRandomness(grantOneTimeDraws, () =>
+    encodeEpochGrant({
+      roomId,
+      authoritySk: AUTHORITY_SK,
+      device: DEVICE,
+      request: request.event.id,
+      now: NOW,
+      epoch: EPOCH_2,
+      removed: [],
+      credential: renewed,
+      oneTimeSender: true,
+    }),
+  ),
+)
+if (sealSender(epochGrantOneTime) !== getPublicKey(grantOneTimeSk)) throw new Error('grant-one-time: the from tag is not the recorded one-time key')
+
+/** Whoever later holds the authority's key: can it open the copy sealed to `sealPub`? */
+const authorityOpens = (ciphertext, sealPub) => {
+  try {
+    nip44.v2.decrypt(ciphertext, nip44.v2.utils.getConversationKey(AUTHORITY_SK, sealPub))
+    return true
+  } catch {
+    return false
+  }
+}
+const rekeyCopyFor = (event, device) => {
+  const body = JSON.parse(nip44.v2.decrypt(event.content, e0.key))
+  return body.keys[device]
+}
+
+/** The one-time rekey re-signed by the authority with other `from` tags. */
+const reTagged = (event, label, fromTags) =>
+  plain(
+    finalizeDeterministic(
+      { kind: event.kind, created_at: event.created_at, tags: [...event.tags.filter((t) => t[0] !== 'from'), ...fromTags], content: event.content },
+      AUTHORITY_SK,
+      r(`${label}/aux`),
+    ),
+  )
+const rekeyFromDoubled = reTagged(rekeyOneTime, 'rekey-from-doubled', [['from', getPublicKey(rekeyOneTimeSk)], ['from', AUTHORITY]])
+const rekeyFromOffCurve = reTagged(rekeyOneTime, 'rekey-from-off-curve', [['from', OFF_CURVE]])
+const grantFromOffCurve = reTagged(epochGrantOneTime, 'grant-from-off-curve', [['from', OFF_CURVE]])
+const readOneTimeGrant = (event, sealSks) => {
+  const g = decodeEpochGrant(event, { roomId, authority: AUTHORITY, deviceSk: DEVICE_SK, sealSks, request: request.event.id, now: NOW })
+  return g && { epoch: g.epoch.epoch, secretHex: hex(g.epoch.secret) }
+}
+
 // --- Vectors -----------------------------------------------------------------
 
 const seal = (c) => {
@@ -317,7 +393,70 @@ const vectors = [
     },
     output: { sealedTo: RENEWED_SEAL, ...healed(readMemberGrant) },
   },
+  {
+    name: 'rekey-one-time-sender',
+    kind: 'positive',
+    note: 'rekey-seal\'s rekey with `oneTimeSender`: tags d, epoch, then ["from", x-only pubkey of a key made for this rekey alone], still signed by the authority, so the tag is the authority\'s word. Every copy is sealed from that one-time key to the recipient\'s seal key (or device key), and the one-time secret is discarded, so whoever later takes the authority\'s key cannot recompute the copies (`authorityOpens` false). A reader opens its copy with the key the single `from` tag names (`sealSender`), and with the signer when there is none, which is every earlier rekey. `randomHex`: the 48-byte seed for the one-time key (`senderSkHex`), one seal nonce per recipient in order, the body nonce, the signature aux-rand. A reader older than this opens no copy, reads the rekey without a secret and asks for the epoch.',
+    input: {
+      roomId, authority: AUTHORITY, authoritySkHex: hex(AUTHORITY_SK), previousKeyHex: hex(e0.key), next: { epoch: 1, secretHex: hex(EPOCH_1.secret) },
+      recipients: [{ device: DEVICE, credential: renewed }, BARE_DEVICE], deviceSkHex: hex(DEVICE_SK), bareDeviceSkHex: hex(BARE_DEVICE_SK),
+      renewedSealSkHex: hex(RENEWED_SEAL_SK), copiedSealSkHex: hex(COPIED_SEAL_SK), createdAt: NOW,
+      event: rekeyOneTime, randomHex: rekeyOneTimeDraws.map(hex), senderSkHex: hex(rekeyOneTimeSk),
+    },
+    output: {
+      sealSender: getPublicKey(rekeyOneTimeSk),
+      ...healed((sks) => readRekey(DEVICE_SK, sks, rekeyOneTime)),
+      bareDevice: readRekey(BARE_DEVICE_SK, [], rekeyOneTime),
+      authorityOpens: { [DEVICE]: authorityOpens(rekeyCopyFor(rekeyOneTime, DEVICE), RENEWED_SEAL), [BARE_DEVICE]: authorityOpens(rekeyCopyFor(rekeyOneTime, BARE_DEVICE), BARE_DEVICE) },
+    },
+  },
+  {
+    name: 'rekey-from-doubled',
+    kind: 'negative',
+    note: 'rekey-one-time-sender\'s content re-signed by the authority with two `from` tags. Only the authority could sign it, so it is a broken writer, not an attack: `sealSender` is null, the rekey is still read for its epoch and removals, and no copy is opened (no secretHex); the device asks for the epoch.',
+    input: { roomId, authority: AUTHORITY, previousKeyHex: hex(e0.key), deviceSkHex: hex(DEVICE_SK), renewedSealSkHex: hex(RENEWED_SEAL_SK), event: rekeyFromDoubled },
+    output: { sealSender: sealSender(rekeyFromDoubled), renewedDevice: readRekey(DEVICE_SK, [RENEWED_SEAL_SK], rekeyFromDoubled) },
+  },
+  {
+    name: 'rekey-from-off-curve',
+    kind: 'negative',
+    note: 'The same with one `from` tag that is not the x coordinate of any point (x = 5): `sealSender` null, read without a secret.',
+    input: { roomId, authority: AUTHORITY, previousKeyHex: hex(e0.key), deviceSkHex: hex(DEVICE_SK), renewedSealSkHex: hex(RENEWED_SEAL_SK), event: rekeyFromOffCurve },
+    output: { sealSender: sealSender(rekeyFromOffCurve), renewedDevice: readRekey(DEVICE_SK, [RENEWED_SEAL_SK], rekeyFromOffCurve) },
+  },
+  {
+    name: 'epoch-grant-one-time-sender',
+    kind: 'positive',
+    note: 'epoch-grant-seal\'s grant with `oneTimeSender`: tags d, p, then ["from", one-time pubkey], signed by the authority, content sealed from the one-time key to the renewed seal key. `randomHex`: the 48-byte seed for the one-time key (`senderSkHex`), body nonce, aux-rand. The renewed device opens it; the thief does not; the authority\'s key no longer opens it. A reader older than this cannot open it at all, which is why writers wait for readers.',
+    input: {
+      roomId, authority: AUTHORITY, authoritySkHex: hex(AUTHORITY_SK), deviceSkHex: hex(DEVICE_SK), now: NOW, request: request.event.id,
+      credential: renewed, epoch: { epoch: 2, secretHex: hex(EPOCH_2.secret) }, renewedSealSkHex: hex(RENEWED_SEAL_SK), copiedSealSkHex: hex(COPIED_SEAL_SK),
+      event: epochGrantOneTime, randomHex: grantOneTimeDraws.map(hex), senderSkHex: hex(grantOneTimeSk),
+    },
+    output: {
+      sealSender: getPublicKey(grantOneTimeSk),
+      ...healed((sks) => readOneTimeGrant(epochGrantOneTime, sks)),
+      authorityOpens: authorityOpens(epochGrantOneTime.content, RENEWED_SEAL),
+    },
+  },
+  {
+    name: 'epoch-grant-from-off-curve',
+    kind: 'negative',
+    note: 'epoch-grant-one-time-sender\'s content re-signed by the authority with a `from` tag off the curve: the grant is refused (null).',
+    input: { roomId, authority: AUTHORITY, deviceSkHex: hex(DEVICE_SK), now: NOW, request: request.event.id, renewedSealSkHex: hex(RENEWED_SEAL_SK), event: grantFromOffCurve },
+    output: { renewedDevice: readOneTimeGrant(grantFromOffCurve, [RENEWED_SEAL_SK]) },
+  },
 ]
+
+for (const v of vectors) {
+  if (v.name.endsWith('one-time-sender')) {
+    if (v.output.thief?.secretHex || !v.output.renewedDevice?.secretHex) throw new Error(`${v.name} does not heal`)
+    const opens = typeof v.output.authorityOpens === 'object' ? Object.values(v.output.authorityOpens) : [v.output.authorityOpens]
+    if (opens.some(Boolean)) throw new Error(`${v.name}: the authority key still opens a copy`)
+  }
+}
+if (vectors.find((v) => v.name === 'rekey-from-doubled').output.renewedDevice?.secretHex) throw new Error('rekey-from-doubled opened a copy')
+if (vectors.find((v) => v.name === 'epoch-grant-from-off-curve').output.renewedDevice !== null) throw new Error('epoch-grant-from-off-curve was read')
 
 if (!vectors.find((v) => v.name === 'rekey-without-seal-keys').output.device?.secretHex) throw new Error('rekey-without-seal-keys: the device cannot read its own copy')
 for (const v of vectors) {

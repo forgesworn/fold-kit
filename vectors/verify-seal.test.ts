@@ -25,7 +25,7 @@ import {
   sealCredential,
 } from '../src/epoch.js'
 import { decodeMemberEpochGrant, encodeMemberEpochGrant } from '../src/member-epoch.js'
-import { credentialSeal, newerCredential, sealTarget } from '../src/seal.js'
+import { credentialSeal, newerCredential, sealSender, sealTarget } from '../src/seal.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const doc = JSON.parse(readFileSync(join(here, 'seal-vectors.json'), 'utf8'))
@@ -232,5 +232,102 @@ describe('seal-vectors', () => {
     expect(read([i.copiedSealSkHex])).toEqual(v.output.thief)
     expect(v.output.thief).toBeNull()
     expect(sealTarget(getPublicKey(deviceSk), i.credential)).toBe(v.output.sealedTo)
+  })
+
+  it('rekey-one-time-sender: the real encoder reproduces it, the from key opens it and the authority key does not', () => {
+    const v = vec('rekey-one-time-sender')
+    const i = v.input
+    const event = withStubbedRandomness(draws(i.randomHex), () =>
+      encodeRekeyEvent({
+        roomId: i.roomId,
+        authoritySk: hexToBytes(i.authoritySkHex),
+        current: keys(i.previousKeyHex),
+        next: { epoch: i.next.epoch, secret: hexToBytes(i.next.secretHex) },
+        recipients: i.recipients,
+        removed: [],
+        now: i.createdAt,
+        oneTimeSender: true,
+      }),
+    )
+    expect(plain(event)).toEqual(i.event)
+    const sender = getPublicKey(hexToBytes(i.senderSkHex))
+    expect(i.event.pubkey).toBe(i.authority)
+    expect(i.event.tags).toEqual([['d', i.roomId], ['epoch', '1'], ['from', sender]])
+    expect(sealSender(i.event)).toBe(v.output.sealSender)
+    expect(v.output.sealSender).toBe(sender)
+    const read = (deviceSkHex: string, sealSkHexes: string[]) => {
+      const n = decodeRekeyEvent(i.event as Event, { roomId: i.roomId, authority: i.authority, current: keys(i.previousKeyHex), deviceSk: hexToBytes(deviceSkHex), sealSks: sealSkHexes.map(hexToBytes) })
+      return n && { epoch: n.epoch, ...(n.secret ? { secretHex: bytesToHex(n.secret) } : {}) }
+    }
+    expect(read(i.deviceSkHex, [i.renewedSealSkHex, i.copiedSealSkHex])).toEqual(v.output.renewedDevice)
+    expect(read(i.deviceSkHex, [i.copiedSealSkHex])).toEqual(v.output.thief)
+    expect(read(i.bareDeviceSkHex, [])).toEqual(v.output.bareDevice)
+    expect(v.output.renewedDevice.secretHex).toBe(i.next.secretHex)
+    expect(v.output.bareDevice.secretHex).toBe(i.next.secretHex)
+
+    // A second way, with NIP-44 directly: the from key opens each copy, the authority's does not.
+    const body = JSON.parse(nip44.v2.decrypt(i.event.content, hexToBytes(i.previousKeyHex)))
+    const device = getPublicKey(hexToBytes(i.deviceSkHex))
+    const bare = getPublicKey(hexToBytes(i.bareDeviceSkHex))
+    const open = (sk: string, from: string, copy: string) => JSON.parse(nip44.v2.decrypt(copy, nip44.v2.utils.getConversationKey(hexToBytes(sk), from)))
+    expect(open(i.renewedSealSkHex, sender, body.keys[device]).secret).toBeDefined()
+    expect(open(i.bareDeviceSkHex, sender, body.keys[bare]).secret).toBeDefined()
+    expect(() => open(i.renewedSealSkHex, i.authority, body.keys[device])).toThrow()
+    expect(() => open(i.bareDeviceSkHex, i.authority, body.keys[bare])).toThrow()
+    expect(v.output.authorityOpens).toEqual({ [device]: false, [bare]: false })
+  })
+
+  for (const name of ['rekey-from-doubled', 'rekey-from-off-curve']) {
+    it(`${name}: no sender, read without a secret`, () => {
+      const v = vec(name)
+      const i = v.input
+      expect(sealSender(i.event)).toBeNull()
+      expect(v.output.sealSender).toBeNull()
+      const n = decodeRekeyEvent(i.event as Event, { roomId: i.roomId, authority: i.authority, current: keys(i.previousKeyHex), deviceSk: hexToBytes(i.deviceSkHex), sealSks: [hexToBytes(i.renewedSealSkHex)] })
+      expect(n).not.toBeNull()
+      expect(n!.secret).toBeUndefined()
+      expect({ epoch: n!.epoch }).toEqual(v.output.renewedDevice)
+    })
+  }
+
+  it('epoch-grant-one-time-sender: the real encoder reproduces it, and only the renewed device opens it', () => {
+    const v = vec('epoch-grant-one-time-sender')
+    const i = v.input
+    const deviceSk = hexToBytes(i.deviceSkHex)
+    const grant = withStubbedRandomness(draws(i.randomHex), () =>
+      encodeEpochGrant({
+        roomId: i.roomId,
+        authoritySk: hexToBytes(i.authoritySkHex),
+        device: getPublicKey(deviceSk),
+        request: i.request,
+        now: i.now,
+        epoch: { epoch: i.epoch.epoch, secret: hexToBytes(i.epoch.secretHex) },
+        removed: [],
+        credential: i.credential,
+        oneTimeSender: true,
+      }),
+    )
+    expect(plain(grant)).toEqual(i.event)
+    const sender = getPublicKey(hexToBytes(i.senderSkHex))
+    expect(grant.pubkey).toBe(i.authority)
+    expect(grant.tags).toEqual([['d', i.roomId], ['p', getPublicKey(deviceSk)], ['from', sender]])
+    const read = (sealSkHexes: string[]) => {
+      const g = decodeEpochGrant(grant, { roomId: i.roomId, authority: i.authority, deviceSk, sealSks: sealSkHexes.map(hexToBytes), request: i.request, now: i.now })
+      return g && 'epoch' in g && g.epoch.epoch > 0 ? { epoch: g.epoch.epoch, secretHex: bytesToHex((g.epoch as { secret: Uint8Array }).secret) } : g
+    }
+    expect(read([i.renewedSealSkHex, i.copiedSealSkHex])).toEqual(v.output.renewedDevice)
+    expect(read([i.copiedSealSkHex])).toEqual(v.output.thief)
+    expect(v.output.thief).toBeNull()
+    expect(() => nip44.v2.decrypt(grant.content, nip44.v2.utils.getConversationKey(hexToBytes(i.renewedSealSkHex), sender))).not.toThrow()
+    expect(() => nip44.v2.decrypt(grant.content, nip44.v2.utils.getConversationKey(hexToBytes(i.authoritySkHex), getPublicKey(hexToBytes(i.renewedSealSkHex))))).toThrow()
+    expect(v.output.authorityOpens).toBe(false)
+  })
+
+  it('epoch-grant-from-off-curve: refused', () => {
+    const v = vec('epoch-grant-from-off-curve')
+    const i = v.input
+    expect(sealSender(i.event)).toBeNull()
+    expect(decodeEpochGrant(i.event as Event, { roomId: i.roomId, authority: i.authority, deviceSk: hexToBytes(i.deviceSkHex), sealSks: [hexToBytes(i.renewedSealSkHex)], request: i.request, now: i.now })).toBeNull()
+    expect(v.output.renewedDevice).toBeNull()
   })
 })
