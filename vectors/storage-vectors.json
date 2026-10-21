@@ -1,0 +1,3468 @@
+{
+  "protocolVersion": "kithmoot/v1",
+  "generatedBy": "scripts/generate-storage.mjs (forgesworn/fold-kit)",
+  "nostrToolsVersion": "2.25.0",
+  "groups": {
+    "storage": [
+      {
+        "name": "storage-invitation",
+        "kind": "positive",
+        "note": "A kind-1463 group invitation that lists one group storage node: `\"storage\": [\"https://grove.example.net\"]` inside the encrypted body, after `secret` (body order v, room, secret, storage), and never as a tag. A reader returns `storage` and `storageAt`, the `created_at` of the copy whose list stood. `randomHex`: the body nonce, the aux-rand. `oldReader` is what a 0.13.0 reader makes of this event: the same admission without `storage`, so an old client joins as before (today's Android does too).",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "createdAt": 1800000000,
+          "storage": [
+            "https://grove.example.net"
+          ],
+          "event": {
+            "id": "a3c09d3b2899bd6af0cf3126cd63b8a8289dbf8f81eb763841aa94d17b5800ba",
+            "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "created_at": 1800000000,
+            "kind": 1463,
+            "tags": [
+              [
+                "d",
+                "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+              ]
+            ],
+            "content": "As5bLlorGfz5mh7m+1Ob6IpuY4ID+spxfgdItIC2b+SXRAJ429qTier8ZAbUuw70ef01j97boJsTr5H4NIbYmHO3895sLtPuw6XCu3a98ZqPruI1axUMchtuT01HRssdLTFrgQ0gL9bNCOaCsP/9pODnjzWp5tTQ88nFCnWQ02saOqx1lZg24oCzLz+1YY+i4tT+Us9TSyvu4Z16uf6jouTqKUXwq/KirQmYegsFtxWucn9gLE6oEdDLKdzfGLc0u0TmMf0Bq1IzpOzB35NPQPiTEjO2EEo31blXhs4B+hkZitkyt878bdIy4I8s2Ij0zH5LccuHRJ3bwd/Hq2aLyarU4Q==",
+            "sig": "99ba0d91a83b558e034a09f8ed3a574fc4518143beb150d04938de7adb526c54deb9c0dadda1830c2c64be260d0a7c3334582428ee910ae78d5dda273b53f76e"
+          },
+          "randomHex": [
+            "ce5b2e5a2b19fcf99a1ee6fb539be88a6e638203faca717e0748b480b66fe497",
+            "c43344b617f15160b01ecf10c768aca6873a277a8e4e57c585a7bc3833e693e3"
+          ]
+        },
+        "expected": {
+          "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net\"]}",
+          "admission": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "storage": [
+              "https://grove.example.net"
+            ],
+            "storageAt": 1800000000
+          },
+          "oldReader": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0
+          }
+        }
+      },
+      {
+        "name": "storage-full-order",
+        "kind": "positive",
+        "note": "Every optional body key at once, with three nodes: body order v, room, secret, ends, destruct, relays, storage. The nodes keep the order the authority wrote them, which is the order of preference. The `expiration` tag follows `ends` as before. `randomHex`: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "createdAt": 1800000000,
+          "endsAt": 1800086400,
+          "destruct": true,
+          "relays": [
+            "wss://relay.example.com/"
+          ],
+          "storage": [
+            "https://grove.example.net",
+            "https://example.org:8443/wb",
+            "http://127.0.0.1:8080"
+          ],
+          "event": {
+            "id": "2ae11b0a36213fdb6bc7759bbb760c6014abec899952517f86ac1166c68f9be1",
+            "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "created_at": 1800000000,
+            "kind": 1463,
+            "tags": [
+              [
+                "d",
+                "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+              ],
+              [
+                "expiration",
+                "1800086400"
+              ]
+            ],
+            "content": "AmriafPRfWqnKGEs/1/ytsb3HfkOKspijZ3wpdpWy8NrPhTRoU5m58ocJrdZ7T5NT5u4t2n4nGmyGOmfgDn80Hd0TbnjJ/wOdJxjcMWKsqYCdfz2medTVpkQQ9FDOHc1ClMx6tXunvSDvZ4EOUGpfhnSNLNWq4gSW0T9rUC6EBjlF9z5daWw5wDqoWAED1S4+0XOcse8H03G6KXFn5VDjSiQT3qt3Mk6ARaYiOel5GR4Wp8sL3+k2j7BAKO0KwC7gu2VPMewujtmJjD43v7KngPL+088okYVzyj77Ynu4b8rN9vm9EWs5MCqMb/IkZytdyTxFBD3Wyn93Au0nAV5WOaV24eYZTlfWgJiUY97NvcB/MA/apQ4COmtXcf+xE4LokY1yuK12sd43SLYnghXQkwrb+juIg8xC9zamSF8G9PpNFw9mafx4fV4z9dIje2ermuKylZwYh9JVVzcjVKGZb5kuYr7zqwtqN8pmHrXyTo7aRWZvsYySKBRLfg8SxcGQe7+",
+            "sig": "d1358a4ed62934e0f815d3785ceca3ef4527030e148261d0cdf43d666130b779057437780ccaae5726d1bd8460f1b1f50e62f64586fb0bbe73325e6c6b5bd759"
+          },
+          "randomHex": [
+            "6ae269f3d17d6aa728612cff5ff2b6c6f71df90e2aca628d9df0a5da56cbc36b",
+            "3a8320839573a0886a3492ec58e9b7653656918d1868af63f75c272dec925af5"
+          ]
+        },
+        "expected": {
+          "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"ends\":1800086400,\"destruct\":true,\"relays\":[\"wss://relay.example.com/\"],\"storage\":[\"https://grove.example.net\",\"https://example.org:8443/wb\",\"http://127.0.0.1:8080\"]}",
+          "admission": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true,
+            "storage": [
+              "https://grove.example.net",
+              "https://example.org:8443/wb",
+              "http://127.0.0.1:8080"
+            ],
+            "storageAt": 1800000000
+          },
+          "oldReader": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true
+          }
+        }
+      },
+      {
+        "name": "storage-withdrawn",
+        "kind": "positive",
+        "note": "An empty list, `\"storage\": []`: the room's authority withdrew every node. It is valid, it is a list, and it stands against an older copy that named nodes (see `storage-merge`). The admission carries `storage: []` and `storageAt`. `randomHex`: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "createdAt": 1800000000,
+          "storage": [],
+          "event": {
+            "id": "ccf7a7a9b2cd0aac622b24cff1a5ac1b109d4ba10a066bd189cffe0ad571f4bb",
+            "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "created_at": 1800000000,
+            "kind": 1463,
+            "tags": [
+              [
+                "d",
+                "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+              ]
+            ],
+            "content": "AnwZ7IFtEJGvIho7ySs0Rb0e1WLtaN2bBv1CZ9nOHH0D7n18HUM64hMW7eeGcn6CBZ+ZUZOtFTckKKEz87/p3nRjGtnem+GPgEPQE0pVOO4NI0VZgW5B+hFNWeYfqKsmxem8x6i89pgKphZtK9tQov4hQR3IwU7yi80rIbm35aLvMWwVPb8mWsS2eBLkebgfkYmG8tAtPd6BmsjyQaPazasY/ST8mXuE6BCk50ByaDu10XKYHI0eDgyDnnjgxzrvM11tYJ51YrDOCkyZBDvQfwXR4Nm+CLpkvz5bixydWOsnKtg=",
+            "sig": "aa8dfc0734e8b1d8280452697da395c0c06836bc178f47154f684cd2b53d8758f3b4a51e2189f6b695123636bdc724277a76b3848043f0a1c9b5d83589137ada"
+          },
+          "randomHex": [
+            "7c19ec816d1091af221a3bc92b3445bd1ed562ed68dd9b06fd4267d9ce1c7d03",
+            "0a1ae757cb9a089d672392de262b899c8f59b3f8192f5fa50a0829653d0bc156"
+          ]
+        },
+        "expected": {
+          "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[]}",
+          "admission": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "storage": [],
+            "storageAt": 1800000000
+          },
+          "oldReader": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0
+          }
+        }
+      },
+      {
+        "name": "storage-absent",
+        "kind": "positive",
+        "note": "No `storage` key: the event is byte for byte what 0.13.0 wrote. `recorded0130` holds two events recorded from 0.13.0's own encoder (`plain`, and `full` with `ends`, `destruct` and `relays`) under the fixed keys above, with the random draws in `randomHex`; today's encoder must rebuild both exactly. The generator checks that the encoder in this tree, given the same draws, writes the same two events. The admission has no `storage` and no `storageAt`, so a body without the key says nothing about nodes. `randomHex`: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "createdAt": 1800000000,
+          "endsAt": 1800086400,
+          "destruct": true,
+          "relays": [
+            "wss://relay.example.com/"
+          ],
+          "recorded0130": {
+            "plain": {
+              "event": {
+                "id": "ca2271cae9b3e6657b6de88b5d444f2d556377207be1775541f5cc288ce9cb93",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AoYUImhbnzJrNvMLQ+KrLoPZeddgwqF+zkdgIAcZ4hP4z79xrlnUNdV31FZGDbMmbHM+pPHaNPXFciplA0au/qrjURkmdAD6Acaplu9RlmPA8GeChMaOZuaNR5W7ShLJCQUE32kqfDTIUW5UuVptFBEDCbi5KzCBHfAfvqxrlvgYlBufAtl5l1VsA6AFUHC2xM7r75cBJqMN5DEEgvPUIeKQhlaqKvjjgC5ce2t6eR6Poi7/4VVTbRSWZ3nwUC0h78Wy65OZMsT5jOd9dWgMnj+ml0FmWB3NIqOuSMvkjpRTqVM=",
+                "sig": "3542c9cffa6ab6189626b83242bda3e77e2b9b56220d1027fc5abcb501f5568af51d357d35a638b4175aed6ddbb0f8030cff0975fac392a869119fdb21538a08"
+              },
+              "randomHex": [
+                "861422685b9f326b36f30b43e2ab2e83d979d760c2a17ece4760200719e213f8",
+                "1555e1197c43e347def533660229c9f7d5f63285b842d59e7518c5068f7abf24"
+              ]
+            },
+            "full": {
+              "event": {
+                "id": "5042b581b34988f7fa435010ddd33ddf437f718da678019501a81867f2677e90",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ],
+                  [
+                    "expiration",
+                    "1800086400"
+                  ]
+                ],
+                "content": "AlJxN3FbI308f1PKRlWvrTCh/86YDVMC2tntTH6m3ZWJzWz6qjlH8Q1tCaUkgWWg+Y5U3N6BbaReK8o5X59hQdbhlxS2VQwzWyDPhBWIjM6GUc7o0ohRq5xDJx0YCyytDwQlWYbuk5me5zeiklTzaLEIFd6MNSyN++kuz2a58m978yI8ZqFUFxataoDAS2A8NBdr/IQxfpvq2FtvfZJO8JjI1cZnI2QIjV2EhaQ1VxX4pOWcU86a9anXRBT333/zpGAUgq2DoyyYiMJXWkAH+v3qsReLMYfa+/14ePHPKvwWBZmHfpMtDfpWHZy0yQis+unLJNhbpmAO8I15kMGp+jH26Y/YlADQk+xMLQ8cfHIyS0FszXH2ziSAKy9CAjC5Jkm5",
+                "sig": "37266a53d6f4c12bd42f9d466e0c524d31e79cbb97c1db39fa34771ae3fd4d0b24b1cab51b7b8cd6465a4929ba227203593788711f3fd5ffed8838ba3c411d54"
+              },
+              "randomHex": [
+                "527137715b237d3c7f53ca4655afad30a1ffce980d5302dad9ed4c7ea6dd9589",
+                "51de167159d7c60e22cb968f887b00507711c2b412529162a88dcaf83e36101c"
+              ]
+            }
+          }
+        },
+        "expected": {
+          "plainBodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\"}",
+          "fullBodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"ends\":1800086400,\"destruct\":true,\"relays\":[\"wss://relay.example.com/\"]}",
+          "plainAdmission": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0
+          },
+          "fullAdmission": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "endsAt": 1800086400,
+            "relays": [
+              "wss://relay.example.com/"
+            ],
+            "destruct": true
+          }
+        }
+      },
+      {
+        "name": "storage-accepts",
+        "kind": "positive",
+        "note": "Entries the grammar accepts, each with the `server` it implies (its host, exactly as written), alone in a hand-built envelope (`bodyJson`, then `randomHex`: the body nonce, the aux-rand). Each is canonical as it stands: `base` equals `entry`. A reader admits every one of them with `storage` set to the one entry.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "cases": [
+            {
+              "entry": "https://grove.example.net",
+              "server": "grove.example.net",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "9d8ea5432dc5a21f96894f2f8bf0e0dff8fa6d8f8024e5f45383e06db20930a2",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AvCvupSJEXQpx0mtOspJu2E2DQs77dXW4tm61m4oF7qrqBLOVtu/hvbCYPqweUeGgCsSRpUbv02p6PVtHhsJg/mNCNDnqsx+hlrkiNJhpZ3GYZFxmuHoEMheh1HvjzMH/qGhcyXT9Mmna+lqq9PGHJPf3JrvKQgZaQGR4Umjmaaywu/LyjgCs+2mXmch8jVrlWU8SjVzDi8VqIkB/np5tP14PFYIB8l23m/ZDFwD2EDLBTYSuiUvYz+7om3Nc3O9x5wjINmRzwXW8pLxFzdRgIte1m1r6jVXUepFNMKXTxmvULyhsmmFvQbshZWE1+cQMGQJ3muzBLbJ9kBeu87ecQpyfA==",
+                "sig": "5983b6cc1c884cf0cec8e202190d44574964f506933f17d6e0bea953ea823f0c7ab6f9507f21ffd575a8a8cef52b55d9d37b1b08f00aaab6ca23e2d8a50dcdc4"
+              },
+              "randomHex": [
+                "f0afba9489117429c749ad3aca49bb61360d0b3bedd5d6e2d9bad66e2817baab",
+                "447019f068368c8d6f1d635e90475ff2ee9be3954a89e16498408ff225848eb4"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net\"]}"
+            },
+            {
+              "entry": "https://grove.example.net:8443",
+              "server": "grove.example.net",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "4d882ecb90ad36484b25a5075e3169be74f4fcb8c8360c09056c6698517a14a1",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AizomJYJlRMS1IZQkBh6h9gFPnAk8GyLNZw2fhIbbsDhv0SsqDv8WPogR3hMM3+yC8G2bJ57Ka0YExsTMrkYYkvEMM2AGGr553d5BpjO1GLGFdHrxFCAruLcQQoWYMT6utCYDuS6JbIC4koxjOnN/mgSNxwDm3YKiV5PNplW4XGFg9APaAMzP6qWAjGpd/0KA2OrQJXfoQng5ArcYVi654ovymqukt2qOklVzwJYMiCw48sFMfGKhrfZZmC+qRK9aCbqCdcPWd1aqZeqQPrzn8BGfP5kPs2StcN4uHqzJ+UDdmYkT+GuDZ4EGHIYlVsF+H4sdnuPntMaLqHpZKalgarHOg==",
+                "sig": "b0cad594e0a2ce5a11e6941f09ce3b0860b08ddc542a614317c2726517a5f3f31b5673dd9bae30ba39b63a88542bd4ae460e71f7a12afd8cb09315ff65dc57f8"
+              },
+              "randomHex": [
+                "2ce8989609951312d4865090187a87d8053e7024f06c8b359c367e121b6ec0e1",
+                "c4d16d23e6a07f06a73863e47c47ac3f84d5f7a8bc78a7bcf18b6367910b454e"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:8443\"]}"
+            },
+            {
+              "entry": "https://example.net/wb/node-1",
+              "server": "example.net",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "17bc244b9fe8b1ebe552cf87c555894d6cb88015db7b5a59eba081255af70388",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AoZrFSdemZAcf+9a+fAN3VsoyMgy0ao8ny5eOWxS8VlGidVGvQ8WHqXydfl81lBjvB3SW/YWJu+iUqvv4erkJCaJUAuF5+t+FrO54yIqjaBoCDvxXWhflHjIhFVuUAsXRPIzHSwqubNnmMBIkPAXXyKgpdAdbPKYHkCSBCcM0YI0cKcwSAZTpI5wy+PliKh2cRbIg4szRBWZWJVNzv7NcwYf+PUkKN+uOwKvn5F7KZCiDV1kQizzcZ9StuO0a0/7hMHhDgbZR17b0uS9wOtCX4HcrhpSgLQBjglgLuoVl9XgUn9kHbTnHaNrGBG62vIoeZf4sfYnqRLwsY1NvdlsP9p3bA==",
+                "sig": "44b1a946e648adf74dcfb5977852bc0d6f5f08498d6daac31ee4d5a7de0ccdb415fd737a9675aafafe77db2b8d864bf62a6b5966a189032706dd3ebffab1a2af"
+              },
+              "randomHex": [
+                "866b15275e99901c7fef5af9f00ddd5b28c8c832d1aa3c9f2e5e396c52f15946",
+                "f2ff673f3ef57ca08672ba17c1a69729baa5e4687dd42b89682c336d8bb54f52"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/wb/node-1\"]}"
+            },
+            {
+              "entry": "http://localhost:3000",
+              "server": "localhost",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "6dee62e6be84b6aaaa86bcd0fad67f229bc9bda6123ff8a8e7a314a47f827c1a",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ag7IYaNU5BEkhd6BnGBIdqQow0zCb65R8yvkTLKQNtdrQv0eCetcbrnjSx9VJ+Cq1lVqpe5bDTPIEtk6pS4WuoD4bTuq0M8Z49ydb2nsHp2VCeaVMzze9eKivrA04meDSqUPJdaV+4B5c31mwnAK8Lj4INqxgg1k69N7vdwvdTzYw/RbRGUD/udIr+CTquF9IXGsHIq1dgLvSSRDgZZv0TxrXCUtulvAmtre46I5WQCT0mQGL/+BFsYGzKNHz5NSZnE1vsSBxatay1vjFocZd6L90hJpuJf283gSwHtijAHS+UoELfJhxn3yXW0LM1ucWL4GAaAMOPwMlyFzwKtTeud+YQ==",
+                "sig": "b9ca43300ae6b0715235ad5c55138c44eca976fecc0f249d7ca65d941089af6616bb4a38acba3dde1a9e039dd9dc50b279060e6477760fccdaee0a272fe96b58"
+              },
+              "randomHex": [
+                "0ec861a354e4112485de819c604876a428c34cc26fae51f32be44cb29036d76b",
+                "9ca31b68eff0302f903bfcdbb5180a19fc7f4c94651299255bf047891406d712"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://localhost:3000\"]}"
+            },
+            {
+              "entry": "http://127.0.0.1:8080",
+              "server": "127.0.0.1",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "7e97f40abba3d4ebd218305e593a3967cb355a25604be1c3e21b144c9e74cb0f",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AvMfi9hE9NrmpQ5rFwVJVo9McSRR14ilq5wmcC13Jd0uOhz8Q5UXWoKG89B8fzudCuYqZZF1yq+iJLXgTvimFhOMokM9I+j3TmG9qpHbZ6nhGwHFz3459TazEQCJJ+MNFjuNfx5CCZsOU5aGQ5xwsdHHMzEtNeMy3dVm/qWL8LwskrajN3qaOvTrZT7xFwuZclm08LBDT/FfECHNrQ11xqJ13EPmP2ckLvECaqBeYm5OY5cB30+5anhi+OlRa47FIVFRsh0p2OuljHV66oHEEY7xI2Lqx76/XSwMkZFL2Y4lNssY5+HQqFZvOZ5GUJH4yTAXXUKlt6Yk+2iLvdVAOHGlBQ==",
+                "sig": "91d9e31644ec6e494ed1c7b110790d4f56406e8b780e0329d4b65ff0b9f5e530e467ecde816c161571c5d7c3188d7cb6c39e3888275dacc3c1eb3503d255926a"
+              },
+              "randomHex": [
+                "f31f8bd844f4dae6a50e6b170549568f4c712451d788a5ab9c26702d7725dd2e",
+                "db449c1c3651dc1506915051474b473a76442793e70b1e0c9b087a1fb43a289c"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://127.0.0.1:8080\"]}"
+            },
+            {
+              "entry": "http://abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion",
+              "server": "abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "255a19a369936afa837659caffb3f287c9176b5e32d195d18c433999c1194ac0",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Apk6Z1aTOfchjKebMQwjkR5/RQKZjf74fihwZkn0rad+Dp3vktCgt4I8VwzGalvtd6JLJqOgIoyaYNEhnvVcbtk5DEGc1zFvz46Vgyg7NeOOa20kLVKH0zONK7tlCYOI1GlgZVosEFP8Yafs5ue7wSnyS3ZJFeFTXVkUK3NfPUr/yJpKcwMJT86VJMNnkVfMHSEwIzGgQOjgKU0pN5XOwVTqNT5BA3RnLiq/DizkaXSDo35K55sBrG7MYkgf0HisStFAKi0ghh9WJGZ2NnexhyVb5MF3/w8YYAyoIVaV5aZJ16RewUDVKiPye/FsTYbfRjoW70AeQ38NQRIHhGeqaElXKA9QOr7UtUELq2o15ck4n6O6TF+0/CvCTbZUoCcWbLA7",
+                "sig": "647fb329698f23237047676e6ce730912c8733b28bac335b694c195f1fda2af0a11f6063dd09fb7e3c84cd8f52fcf4b9c90141ba48c1ad73a0c8cefac6f0e605"
+              },
+              "randomHex": [
+                "993a67569339f7218ca79b310c23911e7f4502998dfef87e28706649f4ada77e",
+                "79bb978bf081661a1697500cad70cb39807027dbef054781455836b35d1d4b44"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion\"]}"
+            },
+            {
+              "entry": "https://192.0.2.10",
+              "server": "192.0.2.10",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "5e15a6e79429966498c436caa261cff641ad861da5680d5b315cd3452612b82f",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AvYvUGsNMzoiZ1A7EZRMlMSlXP9Ya6r+XBPCBk1jRBAANPXFOGyHS6659qV8sQ+ZUPM3rzMDQG1uPHrgwqBnXUAoX8TM4loUdSNDsgvEcbyZuq7ze2q2uh0I9iES+/KI/7ZCKJiiK3yylBHTrIstqS2jcySOT6c6wj84VvJ2VDZHBbjLC4mq0TzGzw1iO7YK0y4zayb1gnQzbbwWzzMA8PHb9bYNxtwdZ0VQtbzd8p+mehOTJlxvn4Zq+iYwYYXDc75xxawEXsguEFxO7vds6U+X2KfbWcOZ24D1KzxBq4sW07FLDWCxiCuIE6AX1KgTnO3q6cq23BihemMKFrXLc9WILA==",
+                "sig": "6c1b73a5fb781b9a94940cb652a23bc93b72a763271cd82445c9e8a1da7c523597ffedb47ac6593dbd62a567df53924769c207824f2617ce60dd350392a30678"
+              },
+              "randomHex": [
+                "f62f506b0d333a2267503b11944c94c4a55cff586baafe5c13c2064d63441000",
+                "0e8e8f83d54b6786e7c1a99b58f932fc23cca1d33c89fc29f9111d20b2b41dd0"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://192.0.2.10\"]}"
+            },
+            {
+              "entry": "https://localhost",
+              "server": "localhost",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "d66f285d677a0c96b41886567878aaa65904fd605bd9ee037819f4937014dd04",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ah8kKGp7dPJHugidqe3yEORtJbUlRIaK0/MBvXfBWJWqxrjafqvfObe0UU4W6ft0m/txHJFV+DwCCdi/JVaIsZVJ6CMBcrkQYebiAiSUh0W60W3/D1Lq8HK+yzHMzmu/6VR6bJh5WcCj2XbGaeiXRW2PkMurPof1aVyqM3sAdq+yOEH30wXBfMkXpyjvxUjP8jrUySGO46S4bVeYY2vicKa6vxjlOVGW/xKBWj4X6zIXP0//MJdVT7kJZbcnhPQa+StltVU0CthCBVtjYtwA96uToiQV70qBXKbjEaxpu4JM98WRFrf1OVzAF8XLD+akdYOe0Woi78RiC0F6suAgETZ8wQ==",
+                "sig": "d00c9cea952b1b0d1bfcb006a96d0fd2b93befe06bbb1c8aa28b0b6b73300f0ad5f3980b848f76022dc8f38e09db90399bc151f81282ecb26bfd7469fe8dc80a"
+              },
+              "randomHex": [
+                "1f24286a7b74f247ba089da9edf210e46d25b52544868ad3f301bd77c15895aa",
+                "23b55511315d875caf3c4fde57a401bc9208e58c7e5aefe9d278c5bea2e20e15"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://localhost\"]}"
+            },
+            {
+              "entry": "https://example.net:65535",
+              "server": "example.net",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "b1d13efdd7f6af58ba6c41c51286e658098d4a8288d4d60725795322af74c32d",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Aoj5ipl/ZuweZmlFuyLAgdNXgN2o1biY2NEDdNYKLaCEfNGqeqxgZVWj6fuob8/Mpaknl3/ZKfByKKX1ohSfTQQbG/YRlFblo460uKF8vvVXGT1aknJW6JoKoctpEWNVp9VnYRk8oTTB3GEDiDsKIP66mrZypSdyDYwV6VBoLtCXmaT9baSIaH742lRG0sjKlHXKpcV4hyLDjZ8Qn1k8gE4PbQYIFY7fAXvBEsefyEE3EnuJaq88MMl/qypxXvqE71HRaxvYdPWnyJiRqH/PReOi+t0NHkbyAfoiWO+ByyIEYDOSZ25Zo/JGyNRZ+S0KlaBAM44697qn3IPD1nOdPk/JgA==",
+                "sig": "e1c0ba12afb1a9ace440013e67dc969f9a2086f8874298e375171b19ecad029a48ba60435a253fc190be653e5f3bfdd7d37d2d93ab698a1140dc00db76000300"
+              },
+              "randomHex": [
+                "88f98a997f66ec1e666945bb22c081d35780dda8d5b898d8d10374d60a2da084",
+                "e9cc14a5fa21aaa3dadc36786e9de39ef32a6bced76e3ce56d5949ca46f54167"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net:65535\"]}"
+            },
+            {
+              "entry": "http://127.255.255.254",
+              "server": "127.255.255.254",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "299664558e633affe56db108f23d77af57e23aa2108f76b513e13ae4707316ef",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AmgHl4PiPjkxAFchIR8d5DDwnnN+Ljv78BqFkXH80YzRMG2zgcDgb8A0jmRDAthnUBQ1NkxRXj7HLdnUU919CtVleutu1Ca17zjiTwGWQFH4VN3bV29AaM4VlR2i/TvkftAuL2whGNlC3avVLi0DAXSiC1kTAPYuLrJyDSJGRATZlQsAbvydrDjW0ECvwOqgb+3yE+9bwm/RJJ9CjlaQI4Ra20WrcXTiEdQCalHq5lNqSBEzt4RBNNk+jTLxJJaZ7kIuHkrJVyPHOdrsDCO7T0w75cHB63TQfdiSnGdCGri4W1EWhiDlNmuFhjkeWM6HWRKwMPvfFQocQ00q+6VBAiGCYQ==",
+                "sig": "ccdbcc9257a84e4ec94765d7afc606d1fc23aacf2f531435d799bcd4eeaa06d2506044f8336fc400977600463aba95ec46d096719be386318b40451c37beb0e6"
+              },
+              "randomHex": [
+                "68079783e23e3931005721211f1de430f09e737e2e3bfbf01a859171fcd18cd1",
+                "c7a5d75d5c6db7b759a53e8482732b7e61bf573a6db09817b0a8153ba742107c"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://127.255.255.254\"]}"
+            },
+            {
+              "entry": "https://example.net/a.b/c_d/e~f/...",
+              "server": "example.net",
+              "isStorageNodeBase": true,
+              "event": {
+                "id": "65009b307e50b9c8b97f4dbe5c9751d62c510db8f92e5f18e5d2929e8e0f2a1b",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Al552QrL56gpbN60VcB8rRsabhnDc8ucnaUz4YI2JJJPRkVFH/RJbExqFjQtvwKKwhD+eg6i8hYx0UgIPOKfXWPBVwf8zGZhRvRJFoezo9A3oArZphWY51zrTxkdxUqMRm+70KyEXonuiy9O+sL5DSQYFfCEoEYrqhCxctiT7/22wIE3/yIAsrZ3o8y0zknkJrXP87a06G0/xF3faiqZ/YOGmEVs1akoxNcFOWnivwHdPvNzYNA3hk2Z4MezeZlu7RV2OM7yVrShyPcoJY3f4/TFfMagVB57pLOfMbHVupKuljr2idW+uTXs2EzCFX2k7T87xHv+67mrf608hoCQeIfYWQ==",
+                "sig": "18d4492c82a779c9eb6633de614ae562495a5c800f630e875168677d3902052ecccbc6d37d0e6e9f0c91e4435c87d89d39cd4ca47866791960a21bfb14af7d9b"
+              },
+              "randomHex": [
+                "5e79d90acbe7a8296cdeb455c07cad1b1a6e19c373cb9c9da533e1823624924f",
+                "54e0ddeb72de56a5b5def8293d0c480a2f73a24fdff3f4383d1ad550b21fc149"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/a.b/c_d/e~f/...\"]}"
+            }
+          ]
+        },
+        "expected": {
+          "admission": {
+            "https://grove.example.net": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://grove.example.net:8443": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://grove.example.net:8443"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://example.net/wb/node-1": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.net/wb/node-1"
+              ],
+              "storageAt": 1800000000
+            },
+            "http://localhost:3000": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "http://localhost:3000"
+              ],
+              "storageAt": 1800000000
+            },
+            "http://127.0.0.1:8080": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "http://127.0.0.1:8080"
+              ],
+              "storageAt": 1800000000
+            },
+            "http://abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "http://abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://192.0.2.10": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://192.0.2.10"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://localhost": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://localhost"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://example.net:65535": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.net:65535"
+              ],
+              "storageAt": 1800000000
+            },
+            "http://127.255.255.254": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "http://127.255.255.254"
+              ],
+              "storageAt": 1800000000
+            },
+            "https://example.net/a.b/c_d/e~f/...": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.net/a.b/c_d/e~f/..."
+              ],
+              "storageAt": 1800000000
+            }
+          }
+        }
+      },
+      {
+        "name": "storage-entry-refusals",
+        "kind": "negative",
+        "note": "One entry per case, each not canonical, alone in a hand-built envelope signed by the inviter (`bodyJson`, then `randomHex`: the body nonce, the aux-rand). A reader refuses each whole envelope (null); the encoder throws the message in `encoder`. A 0.13.0 reader, which never looks at the key, still admits each one (`oldReader`). The grammar, not what a URL parser prints, decides: `127.1`, `0x7f.0.0.1` and `127.000.0.1` are refused even though a parser would read them as 127.0.0.1.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "cases": [
+            {
+              "label": "trailing slash",
+              "entry": "https://example.net/wb/",
+              "event": {
+                "id": "2ebb64e0ed77417fe77c8f98eb9aadf8dfc5181a80e33727eb35a33963cbc9da",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AnuVIvaDf5To/67PVUxXieqhcW2vQBQBza/KHyM5J/aqX77QICLD4TSXTHrJjCfzugVV2BvOkclV8W4PfFpXhK0gZEj7uAdb85zXC/TjHwMvW4sUKcan0NTu0ox24Zl16FQpLAMeZstv2M7a91DOB0Xnij6LW10o4/i5BHfvC9bYWg/RrJHzZTfLQ6xqe6ggrEfnABU7nykSKjncJT7C4K7LG3wPfrOJ5zgWm9Yh7A4LOi+QvfA0fnUeaWjWK4O1ZRIakiO1zOru4tSITw9fRxNmyq6SIPWDQg/jlMpeT//vqDZGW2evbWs2B7EeFGctWBq9Q5RJpOhZIugrR5/uJxG6Mw==",
+                "sig": "8218e69ad3633b9731cf1637297013e087e1032c32bf9034f490d6de14ad3e8112705c8ae9cce10ee316b586b95b1ec65536f9c25c3683f698bfc3ff94503b71"
+              },
+              "randomHex": [
+                "7b9522f6837f94e8ffaecf554c5789eaa1716daf401401cdafca1f233927f6aa",
+                "0125c97792ab438a996155fc1362b373f7d5df12fbfdced41fd1302e1a65c760"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/wb/\"]}"
+            },
+            {
+              "label": "root slash",
+              "entry": "https://grove.example.net/",
+              "event": {
+                "id": "f347de8afdc4810bd229abc795b05e03f7eeb0565e7de90b705348d02b4d587b",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AsnmqMc+xLJ4ec+ch6XgSWvZ1hoFSjG5iItSxBk8f2dERPHLI4uN+FOyL+lmtl2tIHnTTEJ2gPU30OumV+y0JxtzjpIIILOZbkABq34/rArE+4u0dEkcbgLozAmqIPkgjlBkb3F0xLCGsYytR3d/J5arcdUCqufARH8MOyRbU6rZd+z9BshLPlE3V7CoN2MEa1DMBLzsv+RqruM3dHkD+dhDoqJ3G3MHvWiOifadhdv9PRbrTvZ1QIOdn8OeGkRDagtkUIDikm85Z/r5IicNpJ6T55ajAxosm88O/5BlTcaOZJJCS9XC5+1/wrBSALpGMNoSysrEJbAB+aI97uESaDX7eA==",
+                "sig": "9fc61ebf4727f090ee12ee8c5a3b9e4ff01bc60b86dc44d0241eed721610d393fca24e2e12a740855f00efcaaedb316b7c96543edbd6834270765feaf7f39370"
+              },
+              "randomHex": [
+                "c9e6a8c73ec4b27879cf9c87a5e0496bd9d61a054a31b9888b52c4193c7f6744",
+                "4fd78774cee4bc3254d1fd1f772b1e360860dcf8542300b0f3b7f9cef8a20ed3"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net/\"]}"
+            },
+            {
+              "label": "upper-case host",
+              "entry": "https://Grove.Example.net",
+              "event": {
+                "id": "ab8611d5733fb528fe6bea6eda6a03c76c936f8d253d0b1f922f85ebd550e8da",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ap2IypahK+X+dZCx+ke+VJLkcihTDCjkjwubQZPT5tDnyY3+0X6ImanKJE6jKLXgGUwq+NSiYKbiFs50OcH2bnorGhHtvmby+6DZYwAks+qv1wZV3x3mdARGCwbuvQMuLdo4dhOfJItv5F11aw/LZaynzx9st+C8EVI3w+u7mXIJtylprXTOOanibZ59eCRFpg+JqtoC0k27A7CrvusZEV7xhDUNUmQBfGbHUiJG4hRKT6io8IvB+VtEIhgUPR/tQA84DBxztmkIn+cZBq5qA3d07ORo+912BLdGE8gs/QwAAFNAklGv6napuuY2dw3rK0ArVTqwXHIe8fK7sidPAr/YHQ==",
+                "sig": "8a00c017eccb7f59bdeaf9cc3bb6d89c6c94b94858fee633352ef162cbe04993cbd947c4128654f8f84e33ae68599f506afda0c5b56075d092a59bc3912a08d5"
+              },
+              "randomHex": [
+                "9d88ca96a12be5fe7590b1fa47be5492e47228530c28e48f0b9b4193d3e6d0e7",
+                "0e98ff0c8e9ded0f2340a9879d9d1b8bbb77307a1a04c97d6ac76463def16879"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://Grove.Example.net\"]}"
+            },
+            {
+              "label": "upper-case scheme",
+              "entry": "HTTPS://grove.example.net",
+              "event": {
+                "id": "192e04a6491e3743abc013ea58c03f6446dd2b0750219aa32d26107fa2f32740",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Aq8F81PTTi/lNznr25TKXFGOCOJr9d5BaWbQ9HVBSLjtIK6fhgqa6o1XAXdbHEf40h0yGaB1jwIaUgnu93hGh9yiu7lw74DUCBNSNR5qdjrDxP+q9j7ywYKvQn5Fky2btHlNnrH1cw2WRQIwJlVSXILW6K7xml2r/ZAikJ/nle0rjt9UdR5Fuz6Wn4u2vmtubDWxQ5fol7MZtT5wHqtdLnzlI4Zl6+Dq6tENKAC5C1B1r9hITX1Ts7b1kjZJdfJ1NqT7yJnno1HQi+NHDHIYOdiQXoHD9T93jDCoMIizy+V9Fq/HwZ8+N8CW0QfxW1yWyXMLR67mPX12Deyd1+oLfWki9w==",
+                "sig": "0687008b2f03bb524e4bc0e41e1af4571cd2ba5c9f216fabb26fa46bc9ff5a8a13ca94dc082472bc2588bd1304f3ff70cde06cb828a48fe224d44c77f93a991b"
+              },
+              "randomHex": [
+                "af05f353d34e2fe53739ebdb94ca5c518e08e26bf5de416966d0f4754148b8ed",
+                "d4b25b44e9247182d38dad78b365d623a890955e60fbf03705120b53b8686a51"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"HTTPS://grove.example.net\"]}"
+            },
+            {
+              "label": "default port 443",
+              "entry": "https://grove.example.net:443",
+              "event": {
+                "id": "0286d7359dc7cca1b14c96351a0b60a3c306c6e0c9aeb146906783908309e770",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AqcurPx8zHUt8FqiRRLC2UBeB5QeosVagpgn/4pr64dUkD+QA17JN1MmiDC0PVBkcGW+g4AXRupu5OIivI84MB1R3g8FwzVvIMmPLNxaxw7+Y1prMtJfkXv2w5HPYSdtZm2ywpVGQCETBualNPfy/UX5U6tHYfOTmuulS+FscOEW2DUJgyxSK3O6yBd0BQNzO5HwDVv0msocGIZb/VUHmJSljJGxJfsBxuSXgDVLCQrqZ8aQhXcx7tw8KOM2MgvX9BsMkM1PQ7yr+4CCZAZlgDGyDv9+xAFdN+oiX9yNNPBlmN4XoOTDhFfppX7YyvZjVKQUzVpOmuLyonmkn9z9UUgUZQ==",
+                "sig": "39f4b0842a57b8046a3f799068db3ca3230d41add189db9ec3dc3cf1bc2c447a20012becd969d63249390816f7bf452dbc6c05c7b58c112c15e6f5dbeb746aa1"
+              },
+              "randomHex": [
+                "a72eacfc7ccc752df05aa24512c2d9405e07941ea2c55a829827ff8a6beb8754",
+                "8884efd792a18a567a91456fd9b9e2fe93c591e9a60290affe6f219f367c8a16"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:443\"]}"
+            },
+            {
+              "label": "port 80 on http",
+              "entry": "http://localhost:80",
+              "event": {
+                "id": "8bd72b5e9cce6d7b844670dea63c3dc39aabbb4d3855020748e4a88358324bbd",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Au9xyJW5cotrrxVOPBaLCn9Ie1BI9/0WLvtCALcDWI0MjEAVP2bS1RrYv4wQ8xOa0mFMexWVCswIaZgY2wnSRt82qYLZDNQcgtR88CsA4qNpd8M3EgdOp/rSvpo9u4kY1kwEalccksSOs0S2PPHOBT//SoLO/WVVq1Qr9ZkHeOOOIa3obnB19/GglyZYtuE84gx01tTrVtNETgSfko8xhrUSbsTi5KS8+cTI0FmjwS2EdC6c8o67InGL47++xV19MqUom+HeHv8kbAz39xG4PlhW1HolwisG2xzLkaqpraKRzFWbOi/k23agoe+sqH40ZzjRMYwkDG5NNmUH+j/G9Vfjwg==",
+                "sig": "d5d356779e08d0c009a1ebabbca1cdb9725fa232c1066407a190eb9827d1bb1b566f9c18fa0ebb23494b25d107aaec71fab6839f479b8de678989ccc5bd1b1b5"
+              },
+              "randomHex": [
+                "ef71c895b9728b6baf154e3c168b0a7f487b5048f7fd162efb4200b703588d0c",
+                "d070aa15efb946141798779bf6c37157081ce28e93baa17c17d9804bd18b5000"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://localhost:80\"]}"
+            },
+            {
+              "label": "port with a leading zero",
+              "entry": "https://grove.example.net:08080",
+              "event": {
+                "id": "f99c6b4540c42a56a3b59ebedd1399036dbfd7edb91413af882c052c6248de2d",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ArAT9aVrFYNkCGIAk0cqNLPx/MA6nu6nxoiGWnRCB9ae4SFrINWBQovxWUSQHzOvxquXh0BmbMC25ImkARfCgQOcpGHTCRxSaQoIVhwnM5L2FbAQ7sWrTaFRrBPz0cMPRYqCrcSCi3HxQaeW0juH2t8RgLB6DPxldu7tCv6YT4bqShtN/ehPHUoe1Dp7Hu+OlU1jm9qaNYHvATWb7JiAJcfsboUKOxORPgl44OsBR6pAVk/q0xn1g6I1z21+aXziWqamBZrRj3BdELC4UarzA4F8tF4K3L40lWHXjOS/3XgrIU0sLDyfovh+iRlF93f1VBUvmiRyaaq4Nn9Xkks3RAAafg==",
+                "sig": "eb27929d9c0d59b2b12554fa7d147df19a111ab3adc4da877565342c15a7d0fa72d9c63fa43ff961dc6cd302d24775c69b94c6213d7a2314b477fd8b024bd22f"
+              },
+              "randomHex": [
+                "b013f5a56b15836408620093472a34b3f1fcc03a9eeea7c688865a744207d69e",
+                "17535a31834c6ba2b964c44e191e3e3a509660db0ea4add0131c465ff6471a17"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:08080\"]}"
+            },
+            {
+              "label": "port 0",
+              "entry": "https://grove.example.net:0",
+              "event": {
+                "id": "cdf1956a75fd3f2f63ef13d67c0a905615f11fe6ea142d66239875c81bfe633a",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Akl/Y4Ra8gIbseRxgo0ctEhPEDMyw+XkgkH43Pt3VqU5Q4poNhbvvH/OIOIK2txUUIs8ytp73CzPqxq/CEsCK779+gmQ8d0uMx+vptEpe1SLjinMu4+pnXqJVKOFgZ8WHgRc2iYbdSboE9JfXSrYzn9N69YOI4HRMUt1cr6QbsNx9ZOW4fYXoLQVtUCp30+5nK/itkrs4jhvFmfyjn7ik4EzE9xG/sdEm4pclHXDK2tKwyHtTUr5LvOK99XOwr2XsogYCbIiAAGYjXXpFWDLwWMO19oocB4xUXbor8BDWBOTtvN2j+UC1QIzLYnlWZNNDZfoGaYyGZYCjbiuR35c1P1o6A==",
+                "sig": "c52a15dffedc7e9f7c03413694bb6fb88664d0e9738a0cc39b68e0a2e1ba19e45f799d23f8f74882b628ffac97762700904cfc19ee8d27f7c8bf0c9545182f0a"
+              },
+              "randomHex": [
+                "497f63845af2021bb1e471828d1cb4484f103332c3e5e48241f8dcfb7756a539",
+                "38d8747e53f7e8abf9eb28c871269999edfd08994ec7a57a758da6afa93bd190"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:0\"]}"
+            },
+            {
+              "label": "port 65536",
+              "entry": "https://grove.example.net:65536",
+              "event": {
+                "id": "3a45f179438751c8cb8bdb208a2e1a94822a27b914a65fcbac2c5d89637bad13",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AmEj6I5MTnNwEfYTqYrtrcGsGe+AFd4bFq7RbS/+QCg8v9+ooZTXJrb2KBheIa4sk2VxzHv7zSVWZBxb0mJjnhvMo8FeltH7pdw5rH8Jywvz2oA8cj2SD+vuvbg8HSlAJfVkDlJIEBeZpOamiHdv3fw0EefCiaIGwrVFP5vAoO2pRlxAI42vPXC++qDpPH7ICbzoK+CHX/Hc0Zwv9swzbmGnA3ycZh2p22Z3TFyO1nFr89erpR+zQVA64Itb4r3VSZVq4pckZbPNwiJZPutWrMOb3Sr/v/TVrWwYFFNlamwv/cWG+DFRk7TkayNzxQxUInb3tQ+LV7SkRn4EdYhcHa0dqg==",
+                "sig": "bec76a22514fd89fe3e315de87a66d9e4ae699fc64a145d0919082705c0b43df0767f0f103df1830f02a2c5c3852f1345e43489818a23a25aaca05790250d77f"
+              },
+              "randomHex": [
+                "6123e88e4c4e737011f613a98aedadc1ac19ef8015de1b16aed16d2ffe40283c",
+                "f1c3093dfa4b6135d8b6e2d92ae3034a16a75f27d3bbe36385d4cd38724ed7b1"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:65536\"]}"
+            },
+            {
+              "label": "an empty port",
+              "entry": "https://grove.example.net:",
+              "event": {
+                "id": "99dfe4bade25c7fd32415703b0a0f4af71a93036af22a2876191b47ad56c89e3",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "At0XWDbosy5uVcVjH6985tUSJm863sBgEzpU8j0qWfI4S+VBdPtyU7/lY1SAYdV1eNxYeOHEpF6W+xscR6tg60+oat861zNhbyuoKEvNaiOD3VBxjj+yrCRNhWZD02/6cv0yvyBgk7n5Hr4ytT4y9vVsrXwl3PX5V61zhPDBsV39ZYfKTr7krAkoeb8Q8jOFvtnhplNVhYNyeHCCeq00kaoA8ElljmsFkQLMQpXHbCviEllUDzEAIv0mqRIenIGgfeBSUQbAq54UcL3y7N5WTz38kctFTOYEkoj1yjO6WnZtS9U84Lng3ZgsW6sWsjW4i2uQGe6hJS2WNavk5hXHIxEUtw==",
+                "sig": "6d291a16b06b02530a988ac8b81f01d2c254a74968e308df5c8babba361aaf05af35cac0a836e8869f897180e5d5dbde7aaf4d87849f08d1e49fea387f6946fb"
+              },
+              "randomHex": [
+                "dd175836e8b32e6e55c5631faf7ce6d512266f3adec060133a54f23d2a59f238",
+                "02066225ed2270f478e1d8f1770e99bacd81f46c1132cb5d046e11d114f2b590"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net:\"]}"
+            },
+            {
+              "label": "a query",
+              "entry": "https://grove.example.net?x=1",
+              "event": {
+                "id": "6079e835cbc736eb58ff163313e44667bacc0bb28940b605134a1bbb2fc400ea",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AjF3fHsHD4AR5nIwtEC0+ncanlCtoqyoiio9kUPi+CPFRvtJgzg580zojvRwrqg8RkFMz/95WPRb6EiNYtafP95A6EhSryU+jHqcWFxZ/QDI0FAmLUouueUdH0B+zW9z15jI78IgoOR06B5CkI4MJT/U1J5CDjC9ey66vhJwajA00T/17AOZQ8nqheK7LwPEmmKe40pNHXpl+icu8/G82AEJJkGJXcelQGY+JHujPJfwaiLSTJ8V/EgWYTE1hrwgRd2yGYDngu+hWTCjd/LL27Cww5jQ4n/2LMNnFBWqNf3N+I+74itxFdZ5aqvyMSSdK66hrawUoxxpETfQquy+gIPZ0Q==",
+                "sig": "a6e9d604362336f840bb5d0940727ce1c23dedc04ea1beada28df29de43e3e29ef8adef49d29415bc0b65130d0e7a089d05ddb762aab1b0e4d104f4ed5ce797a"
+              },
+              "randomHex": [
+                "31777c7b070f8011e67230b440b4fa771a9e50ada2aca88a2a3d9143e2f823c5",
+                "a69b79a91f793b16cd59cfe6b327d9a32ecdf0c3456321510b34ec833430092b"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net?x=1\"]}"
+            },
+            {
+              "label": "a fragment",
+              "entry": "https://grove.example.net#x",
+              "event": {
+                "id": "0f395e886a2d7149df8c81136e6202fd42552fc8dd069fd93ea314cddabc1a29",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AnasGIGDmV9oMg7QhknESr8U6afUXWuoHOJ3btlR/l8RN++5wG9rsKngJY70H3CxOxoflonLcsZGb7/oiFuH5SN5sKpZoAI9CwGlxrwQBqU1tv0UvRXIyQl78Hkj6PyfF0Aalz/mh3KVm14A7x77bpxapOKwFN2rpLOmKZWQw0v5hz4XBxAqodcOqtCqO9EUuzSjNXkHgV6nQw1dYfQX4eu9G/1iqDtoRNqRm+HgIvowBaC+tRCOwycrLnJReCG7QKo0JAZTzvvP1HuU3Mk74wwZY2d6Ux7NIpyK6VbPdoVvdiTZBPe5qQRoLkNIz1jrB6uePcxsLJi717SerA+OOtjazw==",
+                "sig": "d28dc26f6479a742f1bd4c42a28673dda335a79057fc6da7c952d250ab8853f5aa30b634cceae1be69bdd844bcd52f9d7bf1706432a1e1a4fd54aac780262c8b"
+              },
+              "randomHex": [
+                "76ac188183995f68320ed08649c44abf14e9a7d45d6ba81ce2776ed951fe5f11",
+                "9409fac2c250974d5f4c654ebc0fa6f6dc177962d5e9f827314352d31141f72e"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net#x\"]}"
+            },
+            {
+              "label": "user info",
+              "entry": "https://user:pw@grove.example.net",
+              "event": {
+                "id": "daeed115ff582d59ccd68814c81e42b65c0d280a52b9528afcec8e8329834fc0",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Auku3ZY+7TJVIYLsxJCNonAN/OgtRz0CX2pr+8PWNuEoCSZmK/jHMPT8PcIWB24U5DzvDe9Wuk6qq0AvTrds4Zb24YbWf1lxTbEDDtEkZuZTFkVb/5oyv7vsV5ZeHp7JwBmuq1vOYFTYHUEyu/YnweucZKoqr0xiFYJjBQtc7QSb0UlU0tmZFn57VxMEpr5PrOdUo+yyDxRLVQ9ZiyUB+SxwFwCix3k3lI6IzPuVX3hF6pNkJCRy5JqKnVQJebwvEymHWufDzUo9qxErUMgv2vH6lr8WeVj9vfWVFjJcE6f/V0nb2IcM4OuD+f7MNUCr40D+rva9ZVZsjlrSdIATyuxXlA==",
+                "sig": "2e618b71ed34d266863f4770c2e9d722e6482b37419dae0864135064b03b3122456725fc825c693c6ed9b97b2260e3fc4fee60f25736f6848c15192f01c1951f"
+              },
+              "randomHex": [
+                "e92edd963eed32552182ecc4908da2700dfce82d473d025f6a6bfbc3d636e128",
+                "d2434110e3445ca24d447623888dc2dc9ed23b1e68180b47587dbf111d348592"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://user:pw@grove.example.net\"]}"
+            },
+            {
+              "label": "http on a public host",
+              "entry": "http://grove.example.net",
+              "event": {
+                "id": "a2480971a08c5365cd54bd746b5e3757304c6d4aeca58fd541851cf6911b3f45",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AunVbrDHjpLuDukQDAIK6y6jeu1ns9G0Yp+65o9M26+j2gdrwHl70RYDDUBKAOtJaY9fmc9Wah97jDdqW+kM7y723Iry0bZafQUGhcij2sqM+wdinYu2ajMjfKjvmBJ74n5XmPaSWtjmvEkOQyS5gqwmxAiwgpX1RGsndNpN/a5eyWHeAQ2g2kCujkkhvdfAmIWaa34qlsqWBqZ0e8TSdfmEWChoNbZgm4xXNkQoT04EOkwwnnEYGzekxOLkDNQJ5E1QdqP1iM8TV3LM+SGaiF1Vu7OQd9jTr9Gb0Q1ymi+YCUPIemR823wzFSvESGd8dgMKsWRa1+C5RSa9a4PqTsIs8g==",
+                "sig": "2e9750b1905953b009b371306c5b2070697d1ef3eac2b0bedd4e8f9d8b3cfe9a7f3723f1a7f6dc92908547c0fe28e6fc2dbb4f2f3862a90e71f50c3da36cf3b0"
+              },
+              "randomHex": [
+                "e9d56eb0c78e92ee0ee9100c020aeb2ea37aed67b3d1b4629fbae68f4cdbafa3",
+                "2e6157e40acec594c42024c27c0e0b8a3ca38aba5b579e559e29f781c26dbc98"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://grove.example.net\"]}"
+            },
+            {
+              "label": "http on a subdomain of localhost",
+              "entry": "http://a.localhost",
+              "event": {
+                "id": "35410c8282f89fd8a9f8a9c91b2b98b60fa4280f77d9d272ae533c3b3bd4a545",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Asmu15Gc1+JNqYa7x49Yy/s2Fu5NG8OTPMJ009grSZ7jjj/DAikBQFazI+WzjPEY5mkZyo1/CdkHoPV8gip64/VAuMD5l+DVWfWw7pe82/EQZUMu5dc8cNp+5xJNVjqAYUYhGL+wZtb1BD4PmTEzD+k9xCDSgjAsBuXmZPdt1Nby47DqJJb4HPyCI+ferH0iN4dkfc8YQW0qk7H7LZ8wpLw9N1YZdH7jGBczzFcf3gKuvOXadqNnV4lxPyI27ZljoSS171G/rlb7sIgNemF+JChly+Jr4vnt9u+rnI73FL2wjBiKlCcLF6fRmwYNeyKes1qbacjfDDHyKEhJGTD+BGkpDg==",
+                "sig": "1092ed78b5a7c9d457523a7ecf2629bb780bfad3c79cbfc2b105fe499c6ce50dc7ddef432db61ad22bc3c23e96e6226abffc39601cb8a7dd33f78b7411132d1d"
+              },
+              "randomHex": [
+                "c9aed7919cd7e24da986bbc78f58cbfb3616ee4d1bc3933cc274d3d82b499ee3",
+                "7b5d030c23cdb3d9d85ae7e56ce8d1eb0942b6d5334204ef768354a106c2745f"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://a.localhost\"]}"
+            },
+            {
+              "label": "a ws scheme",
+              "entry": "ws://grove.example.net",
+              "event": {
+                "id": "2b9a92e2590968726c62bc3976e65910210b866f636a1bc756534c5d91ef5b65",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Au7mzknYFLb+jFUJd62jJCn9ZhQa1d/aMEuAF9h0p3QTTvjzwaBLm3AEArX1FmwTrvztjQIJzOrXxf63MY1sbW+3FCEDMlBzIw9zWm4FB3h/92E5O5LFzzTH/q6DKBAOTsCMb4lk02cf/CtIXXTguRPZQe3pAn3aPXewnNICUJC3SVlYkxQjEUt6pkR7jluduyLLp4iRfgQ+OFwGoy5GTrT+PZRpqYbbNRb6bLmArcRNhrNEh74H5axLdFDaMqQ21D2txSn9sZm8gooFn5pyIghxHE92SpZfn/1fmVu1KChFSIKRg4N1XRMNdoRdqobwQ7tc9EnwDpvgdh0B/qk+ROswFw==",
+                "sig": "58457b28a9910e9f2a733c3adf88e5d7a4b56e6898d7ff9156c9df9be5919541199efa1991bfd48dd8c007b0c43c920cb090a3cc22185ce6787eaaa9b106dd9c"
+              },
+              "randomHex": [
+                "eee6ce49d814b6fe8c550977ada32429fd66141ad5dfda304b8017d874a77413",
+                "75e9d3f2e740dae7f9b3eb5a2c622051ef31ff34567aedbeb5ced64df5040d65"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"ws://grove.example.net\"]}"
+            },
+            {
+              "label": "an IPv6 literal",
+              "entry": "https://[::1]",
+              "event": {
+                "id": "3a4d4be8845a67521d91baf084a8693c885aacfb13bb927d4831553710b1a29e",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "At5/PuDOnHUAWYDt7pXa6wIdTTUz6dmzGp8Ph0qHQjH81ghUwTZJN62fyszh5bEnP872x5YX9x92Eg3kzjy+CEjyX4ONVYThH93p1E3t+ylIAjp1cPOQVRQZyvwZJyAJDU8/339T4mySyifoWz+JM9euFJlWOElYALmoqZhgayxYxQTwfkqUdjXYmhgQ81VuJ0/BNz7moc1MN6DJXaMXoORMsy6Ay7v8VIxxyLlSljZNLWSdNGMEhPAapfuG9xYON9Pk6SjJF1l6fGdPvOa7y3drCsyyMwIz0q1xCYIdMdj2O/3MBA096DCdc9j4SeJbWNM+SxrKGbFsC49p8dJ8W9ZZNA==",
+                "sig": "8ea7ea67b12fbb2d7e2f7db87f416da5ffa22e03810e4a01ff75da5947680b806c511611f33b4bd5d5119b00fdde09ddd98b49a9bd01c9462962b7f2ca69d5e2"
+              },
+              "randomHex": [
+                "de7f3ee0ce9c75005980edee95daeb021d4d3533e9d9b31a9f0f874a874231fc",
+                "8117a5f3143c79a29910ee56afaa8692470dab13df7d9540a5b41cac1c3bb2a5"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://[::1]\"]}"
+            },
+            {
+              "label": "a trailing dot",
+              "entry": "https://grove.example.net.",
+              "event": {
+                "id": "0e2cf7cd7541de7ed0a2342909d0f813b825865aec101c72ec8a725fd6ce8c87",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Au6EtR+Up8rspTvHjpHKmueb7mbJ4TCG36sjqpIG5vZhvQX7iwT9+hvrr2L9kQ/jfPvhnE6HcWRq89uaueFrxsJ0pUxRl51eH5PPMh/hOsYn5ofxSrZLJMYe2ONxELWez+z3F/sNypWZz5lYJEWWI+ScKRGQDXLewL0IgPHYXGQy2VM+mxw3cL7ZbYOLEtaR2zWPlacp7AlO6ACIBIyoJvNW7BIj20Cw/6cZ+RE9OzpBSaG5ZoLBTCs0ebSAqZ1zuQfyZmeFPjjHuqA0Y8Tmhq1qPXMM58KfMPH+9+9Em9m8aLBJI2PxDEbdNe0NcK+p2jYqBZ72V4y2VfPMpwj9/J8nCw==",
+                "sig": "6e6c5456556fae5973f823519d19eeaa5407ca5917800ea6174a2adc7b6436944e54c42ddcb51bc5925fff83581312a4f4b9acfb1a47eef5426bc6b9bedde2ea"
+              },
+              "randomHex": [
+                "ee84b51f94a7caeca53bc78e91ca9ae79bee66c9e13086dfab23aa9206e6f661",
+                "5bc08aa90ba60a7948aa2ef08630a0040f8590e7bbc6c73caf9b87896602e0fb"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net.\"]}"
+            },
+            {
+              "label": "a short IPv4 form",
+              "entry": "http://127.1",
+              "event": {
+                "id": "20c148a3fee49b9a3c3c3e0e2e6140fb0cde03e224fd8ce82832be69c137fb35",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AuTUzoGcGtQKRURN1BVrrLpqhlzbWNBmIrk745219f0NhahejmZ3oHobRG3SW9RQg42psg6Re5r7L94795RD6zxMPMThRYUGLe33W1IEVNJ8XpDhSenkJNOLduprtNgP5tzHNomtf+k+wiH29hcSDgOn1KIfOCh/4DmsVpV1c3uSoyLjTtU8Mrp+bJkH6jH1MQn8EF/t3OFcVn7/xz8/gNE1nNK2hTtUH+582BYQxsuw0CyrdgOSR6isNCT5NM4No3PvzUn3f6jR5D0XUGWKsB7IhyuooDc3w7o43Jc2PPjCibhlPKEmh6zIPT4hjdNLcE51c0Kmq7lZS1ydKF7Nv7Aeew==",
+                "sig": "5776905988502b33fb10980c668f142e582315403fba9f7da2e03a8eaa4eb5888d4b8b837c717fd73a25228d86947be39e75f91f185ae8aef6ef2600c98358b1"
+              },
+              "randomHex": [
+                "e4d4ce819c1ad40a45444dd4156bacba6a865cdb58d06622b93be39db5f5fd0d",
+                "349bc212bad5022db35ed2e47dfc4e82afb907c98ceea5358c97e77377860b3a"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://127.1\"]}"
+            },
+            {
+              "label": "a hex IPv4 form",
+              "entry": "http://0x7f.0.0.1",
+              "event": {
+                "id": "3eb1d9a522172aa6bd0dde0394b9975b99296a133fd4ec47b445c2b384dd506b",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AqZlIiqJKwH5D3XSMcnfj4G06BTj7kBSnQvGwBiIOYWbJ0y32eEpdLJczAL0UH7OTTGs22ydFl4+ikW7OEBRWap4KkUm+4aKFYPPIPlmXYhTvEapZpULbrCUd82roZABTtAjVh5amUcThid2JfM2TAesrizvttVsXbU/TBbLiF+66G/wViW1tosk8YtrX7LOxRSa/WbBkvqPTL/LUHcVmfEOMErWpiRDsdmezudWfBFRhKvFKOX7Zz6vOqrI61GJ4L+OZ9348Dwrjk4NIJnKMelUcwWPhqOVhvUJQERYlqrGPp7fjZuy9SfSmPWHo9TGdS/ded3AmHxd+b1nSLwrOJHH9A==",
+                "sig": "292525ac6c1540d7d98591fe2725fddb2e7b44635f46e12d9df1bb4ca0bcdc941f9a18cefbc7115f42eca90467bdb17f8b47504eb7219aec1f3b474114ab7e64"
+              },
+              "randomHex": [
+                "a665222a892b01f90f75d231c9df8f81b4e814e3ee40529d0bc6c0188839859b",
+                "de99949a5c76962f8415da5b134df39638dae8dd16d1e07af61879edd2b13744"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://0x7f.0.0.1\"]}"
+            },
+            {
+              "label": "an octet with a leading zero",
+              "entry": "http://127.000.0.1",
+              "event": {
+                "id": "7aca1f0056ab215216ac452cf28b229cb16b007dbe094b3e82e3dfb915060e0f",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Am9gGfyl7kSSGjkdcMllJ6CFaYV4/FW+ITbWH85SOt7t1K/f0UKCT3grUZKuQN1jFNLp1RdSRwlzGtEyJ491aL6XmmiWVhGtPZLPFcubaPFkanQL8dZVCPrGkvXxM/TTgfWuLuBAVJ8SrWh4Q3OeeOGbUE0HmOOrxbFeR10aB2iH73bmq8NWALuBdsD6+KcJnFqLws9K7z74ykzu3sMPucOcTdQlNWbdwChH+yszZeaUEheYsjBroPPTklc0C4ueYbzmAzt3N4amG/LKQm7Wv7fup/qjsEGwVvXHO+G9xH8+ilXgXOfDVUEka6kmVUzNptQL2MSO5YZW8n8t0emHx4cJKA==",
+                "sig": "d8ef7e62044a06197047e6c6a3e67ba49ea862ce78701e936b5f7fe6bb9f277f1fe27516a521f9a21cdf7d10ea9e789523eef3d20b65507fabb17283157d45f7"
+              },
+              "randomHex": [
+                "6f6019fca5ee44921a391d70c96527a085698578fc55be2136d61fce523adeed",
+                "6cee0db59694a2a247b9b328080c45adb4429a7bc0f74e64727dea3bfdd4ce16"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"http://127.000.0.1\"]}"
+            },
+            {
+              "label": "an octet over 255",
+              "entry": "https://192.0.2.256",
+              "event": {
+                "id": "9d5e8b5ce42921e56f3c2060ac4e6ddd42e24c477098bf505abcfb7abbe8df1d",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AsM/0la3qWyQ23jQkFaIndzA3cRVSmuJ7iE9m8qKdr1lPBaDz1gX9HOn5JPHUXyPXeW6zQXD/TLD/MuCeZFbOPJo0X6B/94Tz4Dl0FTkjlziC5X9Rw217XskEvAJF19e8iU1efrDQ+MpEZ1qQirCOQcZInR6cWJynlJTdw8/OXg45zq63fwuHE1U7dCgEAGMhPMGEZzbp0MdrMm675Df/LqqDZLJGZHB41gfZ/OtEX7IqyHVm4+zgeWQMw7BRfZxuaBaqCFfH5TzFPNg/vCgr3KV1KfLmK3w2dJwhdfgnaUIEy2zumQC1B5rZi9TcHXM5+p+uy2I7+adagAJM955zl2fwg==",
+                "sig": "16a4d87ea51e497a70558625f75e97141baf8832c0ac62bc5862a9709410e3573913826d3c23bfaa6230c064cee4bd1f79c85225b0b5b723797930c4e466de1a"
+              },
+              "randomHex": [
+                "c33fd256b7a96c90db78d09056889ddcc0ddc4554a6b89ee213d9bca8a76bd65",
+                "733a65df0d1963a8e989ea2baadd616de7a9c865a4d09129f42bd451874735f9"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://192.0.2.256\"]}"
+            },
+            {
+              "label": "a numeric last label with three octets",
+              "entry": "https://example.net.1",
+              "event": {
+                "id": "eca96994100d4488ca17dcad212be9fb087989c0b24dd00a8d2597cc8a52f932",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AkgG45oCEoMccsrc6YXpOjfTF6BE7Gas8ofevvNALMWJdPb6sZ5ML6qiXlj6nExqks0IJ72QMtaOMkRvOdGGf0ny8qDO2yahkqQ8O2old29IcBarYB2afKv7ylm9qOL0NjfUG/o+NkoZbDjYlvFSQkSL+oDxHqqJnjp2OjGm+HGJzlNPhUy9KPiCKde6IFA1JogYtNJYjMD7CMXVcmQE6jF6XyQsezNcHp715S9LmNQBBfjHZLq5EJ5qNYale6PKBxblkxRRd9DjNDdgXad/mMURwDU9ttgSLvMZGWyz1i0IL+JE1cmoa6DyO/v84om1fX4PhHnML1D0Fg08T0WE9HeZzg==",
+                "sig": "21c21b07c236b9134c07af09c989d9cd0636abb93ec5b21b64c354dd5d305f152d6fac5db14ab9f7d7417edb8a2a2be4acbfbde1cf9cfaa05e302938da209291"
+              },
+              "randomHex": [
+                "4806e39a0212831c72cadce985e93a37d317a044ec66acf287debef3402cc589",
+                "17fc1d5ef4c212e5b19c0b3ae9be412920538c28e19b1e88c3373ad027d67337"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net.1\"]}"
+            },
+            {
+              "label": "a percent-encoded path",
+              "entry": "https://example.net/a%2Fb",
+              "event": {
+                "id": "dfd19e27f1bbd345d6bf30dc2cf3f2c04e8499978a30554739ade1dd82a72786",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Aru/0H9KiDxPj51QNYzSDlglq6H6RNeAA9/r27yiaU+g4/96ID2puZDzTk8hbzM4VI5O6AuwoYSxSwQ5BvWkoTwtNLQUeZKKsbUk0ngnEJkp84cMQr2x3khcXdCcK4o1qmErJz1lyJcDEHP9ph8O9aM5wE6Sk9L+ibQktPGpvgzlbKcqrfryO+Kdt87hasFcCANwWStjzXM4v4djax48W9A26vzfb9bX6omKyRoIuRVE7SVxOdEmGdN5YMpXvfKSaXP3jHb0Zh02VV6cDiryh3O9bByHGRhg6B98EZSM3yJpfitp3ODfXGDKfl8X3VWMLJYeX42v4I9sRMl/6Hj44WT3RQ==",
+                "sig": "e353fc29de2d9941e9962073fb44a64d99d1f4c5906e97de4af47e13eab594531d7e2ad3abd6e89b47340c2f2ed651ce18a2e17b97e9c41001c6e35d8f752c5d"
+              },
+              "randomHex": [
+                "bbbfd07f4a883c4f8f9d50358cd20e5825aba1fa44d78003dfebdbbca2694fa0",
+                "ed57df45fdc3a46ee47184dba27b79c85336fb079373b845557a8914fef69260"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/a%2Fb\"]}"
+            },
+            {
+              "label": "a dot segment",
+              "entry": "https://example.net/a/./b",
+              "event": {
+                "id": "99579f6ed7118f7867548dce35343b3ad22ff4400d6fd0d0128303c9683af93a",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AkEYQ6jqvHrV35zpRrKhz37Q1VLsFC5QsPullG9J11l09+dAzXFalXYi0FkoUZfgu+BpyVMyMr3FPxeUZVpHTJIbtQuQH+HzlsrAdZVXHiZwW7XZHBwBHoMnOFE+Jlua1la5VlPNrGnYUrQEfnpIbt7Nu34RGLm1LIoNWKfv+pHC6slTbp2y/+bud+c+L4/1Vv63kmTJt+eJOqfeIM7W+LN0X9HwS/2t2QIJiH3scP6sicYThpq8BelLM0YabNd7RAccXXj91hpno9ndgiU8f6LwfTmZpjFg/94YaXRXlMwbdaZUOKSpKlCSOk0uUIQ+RqnVsxJ97yAR2gsVQUJzh23UVg==",
+                "sig": "d3db605c6088a4653cc61a71fe22abbb5ada2af9bcdd75a1d16a4cbb2e8540067f28c446ad06d2946f4cfa5baa121bc66eddbb09ea5184b455bf7d34e8a768de"
+              },
+              "randomHex": [
+                "411843a8eabc7ad5df9ce946b2a1cf7ed0d552ec142e50b0fba5946f49d75974",
+                "4559771e8584067de3bb2edf6b5016581be252305b628c646b54b44cd5e376e6"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/a/./b\"]}"
+            },
+            {
+              "label": "a dot-dot segment",
+              "entry": "https://example.net/a/../b",
+              "event": {
+                "id": "15a3423694a7aca0d6a2bbddd1df9641b3341b6ccfc57a9b7d25ef95624797be",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ak3Zyp/4Rsz/iPxjROY493FiSvNvplrgHLpGSyIl6cWQsAQ1dLM9DVqhHVQoCqueBehAZ5CV0teJOqpzudBB1suuNErewtlBGKoq0mVq7QlPMS0O1P+NZ78xJtuDE5W2p5Hz8OEOJbBin3ew2MAgETGqMpffsXlSsJ1j1jYuOx1/AtmBO0NKBE5nagTQ2IWQweOU8cun7Ie2X4rH0EFF5gE92T6ey0YObanz4s+HiqbP1eGrkxhz5i7mK0M2pmFkGxvEIFH4H/ZvQAA8+LK8cnV6gxidWAeCT4Xvk5t45aNoXl/ePGQyeojk9e+sTB98su16flMx6S5A/6k7aqp7DrA/gQ==",
+                "sig": "bb27e38b4eff67aa38866269336cc7e17d3e3e787a1b8b5d987aaaa15d51f049141e0b8557ab7b61feff9b955dbfbbc941bd5f407a246fb010a7938316d70c53"
+              },
+              "randomHex": [
+                "4dd9ca9ff846ccff88fc6344e638f771624af36fa65ae01cba464b2225e9c590",
+                "80802cfe9599fee981d2ca8ba39d532b33e611e295c0d3a6a5a2e6c5c06543de"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/a/../b\"]}"
+            },
+            {
+              "label": "an empty segment",
+              "entry": "https://example.net//x",
+              "event": {
+                "id": "a12ea0428121a3fe55eeb6449cfb0cc8e38c059c8ef39f0fd64ac40f208147c0",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AmqA1lZgj0OS2/QTs1yhyF9SDu3jURz4oRTo54U/hoWiqQuORypjzbTTOFIFBH9nk6JwH40/qauADS9R04qsGZJiBwyYjf7BZ/2I39SDb0bs3QKKybPERPFIE1bizF5sxSq+mpB/VKmp92WIsbM4zNp9G1H1AxA87RRkoD6QomWSHvm/Uw1Oi5s/9DDKM1Y3K+hjwUcrOPuZ1Ex/D13fTKZ92lSaVM6PjkmelLrmBQOPv33fh3PjyEEPlLJRAEc5GvUeJbkFBpnCUpZ8mjF4Omeyoehu7mSwJFfiPgMDnoR0Me6xVtuO9D7QKH1K0LlcKgIY60O7mZWDtFzKmKUOJ9dz9Q==",
+                "sig": "63d7414eaff82aa64049829fa268f78a464d9b17495a9edfb7c31526138bb5e1a783aa79a8d361e6b51ba4c4e49966fe5eb19de6bc58e9844a649e4a72066ea7"
+              },
+              "randomHex": [
+                "6a80d656608f4392dbf413b35ca1c85f520eede3511cf8a114e8e7853f8685a2",
+                "16f4c39f12056240ca6be7afbced3ac3dc911e3a0f6fcd42fe03951f862a5c5a"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net//x\"]}"
+            },
+            {
+              "label": "a space in the path",
+              "entry": "https://example.net/a b",
+              "event": {
+                "id": "54d84906fd367d4e4c14b7fb5b475f71f5f97f67e1a257ec7106827a9495b90f",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ArNAcwGlvApnnpUgHmDnKX2wzUy6oAla4NfFWsb7fnv9jtSP54POKa7vivnpuiDK9ZGay32eGAwNTNDaSgJCsWTMf35Gne8J8GHz9lzritugcnxicTS4GjkFOLawcOgkmwKayj5YLsEGKmv1ZQjh2JVO/DyRPq/WAT3EzngxV9smzSgOXYAp3gkx0e3vbS59VLfQcxZz0Go4Tj5BgV1KqatymeyNynFK7WH+atfwQ+OVhX7Ao8lEnmrwU1Jl8AADsgaYOmXTlRvxMSTd+jiRm6/IpNNfuSixvI7LaNqDZUDpKzbcTcBPJJHri83LPhVy88e3CTtFiU1Jd4umgjUKBPNlLQ==",
+                "sig": "1060942a7be665e77e22c73fdb74401caea4f8d7a110dad1286eec4b8edd3b32b9bcb9f71d68cb1382253f1185694455a938d99936b16700cf19ba4f9add6669"
+              },
+              "randomHex": [
+                "b3407301a5bc0a679e95201e60e7297db0cd4cbaa0095ae0d7c55ac6fb7e7bfd",
+                "52bbd18c3f8ddec394b97e6863034a3baeded7679e6a2cc758e53e92e1d3a86f"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/a b\"]}"
+            },
+            {
+              "label": "a non-ASCII host",
+              "entry": "https://exämple.net",
+              "event": {
+                "id": "e5a538b8221b109118d8b9ab8429fcc18dbf2bb62791953d79f7139d2afd2baa",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AgiVgxJBz7I3MDRAS2u4hqeDiLfmnu/ouEyRnMaNPxzpkB4lCZyTd/MQj4W8nDW0FqdOJB7Is6A05bwiyFuwkz2e6T3IAHhxBY6mD943gM2FaXrF51jgsjDR+xVBsrswQ7yNrUOZCS3p5m5F2Q4KZI/nmpesDuQYDl+A5O+6Rl+NQS7KjM3jSSjRGc/farSMlgZdSHI6loTOV+VmSztVz4+sSnzKIz4bnFFbjVn0SIJCn7+Av00jeZPpXBgqpGZix2Fhkigv0yOySP2W45mEnve654GY3UV2nmdXM+K3P7rxvJ2kl0O3Q6KXUeJMQ37E1CGFyghwYBn6/cfJw71Q/j1h6Q==",
+                "sig": "c4bbeb2a575fc835471d50339bed7007934c766576eeb0e2f7b82191e38611f409608c296770d52d0b1787d0ca889e5d4c7bdb385ad94596a4e3736214acaa1d"
+              },
+              "randomHex": [
+                "0895831241cfb2373034404b6bb886a78388b7e69eefe8b84c919cc68d3f1ce9",
+                "69551dce70171b9e890b7d35097a46e196336d8312c6bf4ed85d894d88b4d306"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://exämple.net\"]}"
+            },
+            {
+              "label": "a Kelvin sign in the host",
+              "entry": "https://Kexample.net",
+              "event": {
+                "id": "59db60b904f5f73bcf73782be215e5d87dac81611b603e23deb5ddc5124abe7c",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AjhIn/EKrz0WN2DBUMEegRU4kjzOiLkgZg/SN55JDYrYYJ+43H+FH/3ohXtI6La8IgYeH6V45YQ6aWLiTTQPVRx71OudxRuHOSYVR9a89E5tb7EYxKD7DyWHFVUTfY2rEqylzB1P5KhLTXPnHERh3lZswiNE6/U1yfvr0/15fExSWNIDZ+1tODiwsbGcq0P0rYmFziRERASSQWgWSm2iIxoPXT2LuRCZXfo4yhzv6LYV20gsI2BHDucvZNBcweYzKIp1JOq7fXqxh+8gkQEfR4q9P3AhaN/UXZBnHy/+1pq0bn+0VrdqpNVVariq8Td59NUaxTVcYT2MULvP2lk9MJ8GYg==",
+                "sig": "7c35ee6f73123972c74c8cb0e0b1cdcba367daf35f122b72864d57e3c75d5ca435422a0ff2f96d987ce69e602d1f9d570cff3a100189a1c5100413039c7c658b"
+              },
+              "randomHex": [
+                "38489ff10aaf3d163760c150c11e811538923cce88b920660fd2379e490d8ad8",
+                "fa30998c291b489a7c71c5827eebec0a5f2deb034a2b7e4bc60ca9d75ac85e4c"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://Kexample.net\"]}"
+            },
+            {
+              "label": "a label starting with a hyphen",
+              "entry": "https://-grove.example.net",
+              "event": {
+                "id": "56a7d5db375fa757679c03b446acd417cee436a0bad7bc279d5dcf3d1bd899b9",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ArDDJsE2IZdGGQDxAvaGsmZS79w4b+Eu1z7D+9rEuGMagvgVs1fUkDWF17d9XUvxBvTiJ4BS3HD8mUtx6qiq6VqdLTuHusgxTO+e1zDoY5GRpk9in1uMJ7kJ3k8AlGfefRLjughRyIWDZkkY0ywFltEYPORBO/A87sDq789UhIX/yhEMw40VDjYmAyYAVE0VULLlF4FD1IO/h/BFTVwFdrXs7Z/Jd9NE8QoM8URHiUFfTrg//FGm733xzoAvvcBa6giFThj1m3NLwAIw6LWQym9imZEfLfFsYDlXk0IMgECekec1xA8naWKyvSw5NrmbMmyVj/YZxecn1ZI1/bKwrmWqOA==",
+                "sig": "19ffa468b7caf3a1753d774dc2bc9187c0aee6b48f875d3a40f172efd5c07826db989f3877d13490f51ac28b0b5b43a0c365121f77ff7d620d15a1942fafcfdb"
+              },
+              "randomHex": [
+                "b0c326c1362197461900f102f686b26652efdc386fe12ed73ec3fbdac4b8631a",
+                "f42a15d3f470d57718863702fbfcf5a11c3cd2b554db2d90a0cff6c153526081"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://-grove.example.net\"]}"
+            },
+            {
+              "label": "a label ending with a hyphen",
+              "entry": "https://grove-.example.net",
+              "event": {
+                "id": "ce1e08021e3a2989cb74955861fee03edcdce85917d2bedc010c188b05311ec9",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AgjlWz/M/ZJzysukea5ld9OwyH9gVa5KiOFXqhSL/k2I2bZHtkJ8r3UA+gE4yjK3jssDaqtvAyXAkn55TdqEKF41G0ek8ie8Kk3eKueoxsEEqgdFsvAiLtWZ3biMnUSAJmVY0nMH8Mwge1PhAAJFDkOGrgsk9TTFujf0TuH8krY1K0WJ/Bp6cusOQArOgrHZDuvgrGn9QAVMrntSucesS2WGi4Kx1DXx+co1h7NlI8zue4o08rPnr/8VFhaQVPRqqag1eqE9ILgk8DDAFp9I7mUwzu/y4LBYbuenwqOP5Qhnyo//AyBQdOxj9desk9+5B7p5SeMmc1Z8NJ+XEWNcR7eF6A==",
+                "sig": "a1887f26f1ba6fd828011534d8665378f62c123d9e3d0a0beba5bddc5edcb0f78b914d6aa0d533a7d0cc5e2dbd7b6f391e95548995a2b6abc04c472ced5bb425"
+              },
+              "randomHex": [
+                "08e55b3fccfd9273cacba479ae6577d3b0c87f6055ae4a88e157aa148bfe4d88",
+                "a62b2b24b15dd3762b5f2d07bc02942cc1f6e7cf8cfcf262e0a1ddba84522095"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove-.example.net\"]}"
+            },
+            {
+              "label": "an underscore in the host",
+              "entry": "https://gro_ve.example.net",
+              "event": {
+                "id": "26fe0ca43a19418e29729abae63a7bdd785edbe3c897c9917583ac2a51d23b5c",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AoJ40pwnExGpDNUgnYwni1JzfcXbaY6NOtcyzgj8Kkd3mcXA5RguI9r3kWylmDXZDdf/cJ7WD+x7GhFt4wTRf11HOZgrEWS3rP4wuA3etZdjrRAy2CLGeArH/i3aZuSPpvR+9tk23/awcby2gq/rv50XcvjMGI1pwhJ7LqbhfkH++pdcGFhZdHBUOjI3lIzzZZ6q92wt6ojdKFat4wmTUw5Rg/6zwYa7GvEg05uIcpEH/6bsUbakMYAZdNIBT82sdk9ISZPR/9oXBkqEv2TTE7IvHAN9FKBjp79Dz9A6GpDdD5sobqUV2tocCTSK9DDDy/2krhmcbGhVpcC9cJIaMJhR3Q==",
+                "sig": "b8e3e91b233b3d1446e6194ca206e2cc5ba3dbc7fa9ae5c105bb706a5024fbd3614307bc65594637780a3c964f541eb220c79876e166fe5e426c883723cec159"
+              },
+              "randomHex": [
+                "8278d29c271311a90cd5209d8c278b52737dc5db698e8d3ad732ce08fc2a4777",
+                "96c707b08d9a41041ddf08a5057e99efe2fcfee341b30b73ed2f322920ae8c63"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://gro_ve.example.net\"]}"
+            },
+            {
+              "label": "a 64 character label",
+              "entry": "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.net",
+              "event": {
+                "id": "fae8f8d8e8b34f8d7c8b8dcbcf18b3c0fe484b3028d9fe8e05fae40d7be6ef9b",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Al3KZJ3mspZ+pJ5IS+uBg9dcJWChjvIol4g2VS/fpcmxg7X3lCTfd8SLAl5nDNazpvuV+fcRxmu5JHMwlkm3nB8SQNTrsbMch62ruTgW4dgBmxb5kbRR0MSJKfPSZb3OfVWt3Vee5erJOJVPIsQmQDTSYewfhSNzFWVX6TOt5bgO5ukt4h5uxRq5ig72iySo3Dv6yQUwUZGDQbqy9FXIMyAk8oAvoEE1bYTDIEfZ6Q2ckyUocwl6eaB6cTTrkN58jt+KfXf7WSHBF7kUOij7c79PmOaL25/UxbEDf2O8H/0Z/XMG/t5WB++5Plieh5nWCKujpzjF1MkdVIKjsWGA4OTzIIfGvntqxeJLSWqBlkAIaT24kAkY1JZa50gLK4UUVnMANu/ZKb7Hui2LURl8R9v4INvKIJJOaAZvSOejzBzWt8s=",
+                "sig": "dafef1c41926759df8cd17c1c42deeb6c166b50f689c4da4edc322b023a1d3187946245c40483009c7c10bfeb3fda317155f38352ef6c8f741b311a8fcaf20b9"
+              },
+              "randomHex": [
+                "5dca649de6b2967ea49e484beb8183d75c2560a18ef228978836552fdfa5c9b1",
+                "03d40e36ff81ab4053c1e40dae2a63e88e80278660dcfcbdd440565890e443b1"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.net\"]}"
+            },
+            {
+              "label": "257 characters",
+              "entry": "https://example.net/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "event": {
+                "id": "63ce19f7e60255cb1b9976f5f86f8987664c5b413d064435106e01389d79ac52",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Akc/0zLWwkc2GwQtNOkmEj3JGqQlYMweg5eBiyOM7HZxtySjm0UpkaQh+gKzZzgf4H1r4xaF81uMItP6PdS9nMzNuSMSVpr9GMmGXVc/vvsYbYt/TfP2takUhNQxPUU/rNE3+tSPTGzA3qY+qAX+Om9R/JYb9mE9nxA6WkNA5Oz9FitCAmX0br2ea1uFl2/NPkUqYcbt47teI52pII1VjecSIl87+jtqVWF2/irTn5sn97sfGxhoLILHGmtBNcAikZsPSzrXHr0AkJzLcWGmLcTRiBvX7+tZ8+VKvqOAsll6SNUx0qdeszbhSzulmefqzG/gCA4FrEKJ5mMqQtaeb+Ic/LagOAleqWvrmVtozxj3oyJUWU8pLjJf1Ej0Cz74ysNrcxBpkgtF9Ow0NtwLXkZ2PlfoRCVD111gcut8/zLan2j6EWp08WR4zUWWsDYEyv7o7ZDBOt0vAIF9zfItqRsuRrWe/ONhwj5AD+H9/2+ZW4oXTWII4ayj7zfkH6PjqAgDxWDog4D8+0Y4zL21wgKWkMbxQ/HwwAx2zHPevlGgsmOBw6vsfujagwsqJnhIw50Xwt9loYy9NBmgBaxtuiJTxvpOB5gzxhJOXI8DcjGlcWLv0CA0HeBc9oTmWArD7s6XFQm9aiJuF9WS+d6Zej4o0MC54uqc7c/2rKAE/gaQYVs=",
+                "sig": "13941f4a96434bbdf06fc9e24f7e2f54396617ce1a158d37b917a91a012a4deced2b54a1fb36e2e6f1d9a5c488ab12acb1a3ef041c6634fe2eaee3f96960b71f"
+              },
+              "randomHex": [
+                "473fd332d6c247361b042d34e926123dc91aa42560cc1e8397818b238cec7671",
+                "5656adb1d15232d563dc1becc3700cd50d1f0c3f65ea77a55916025899d2703f"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]}"
+            },
+            {
+              "label": "an empty string",
+              "entry": "",
+              "event": {
+                "id": "ca75190877deba7cf2f8abeeec5ffb366295240d7bc76943eadbf328fab9780e",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AqLVYkus4YHbTByoGuGZAWmJ8j7XlCWeK50BhyfSHcy3SnuuqySP7G5cUuDPE//OuvdCNc8ev2ybY6Z5urFewPgnPBHyj8h+hpuGWiNuLihKkYayzn1kaMZaVOdsVd/4MBkuV6wUTVo/7CAI69rKtK/qDWfkgZ+2sHp3qVZ2p9ewRYQbs/HXiYim2FBbesEWcKYhyLFgG/CJ3CbN6LoyGzFpC64qqrtRAKd4qPH+SSS2fLFuj9z691LG9lboR3+gOFT8BZHeqwh7mC+NrxIu0CI5/L2T9/m/oTc/0NDwIPgM75A=",
+                "sig": "cef8aec61e41854efa115531411b42f35d6870157d9e4476a619730a33109c2a7cd18cfb37dc582926df08f0a7330bb777db90466cf4a7b461be107fe2970109"
+              },
+              "randomHex": [
+                "a2d5624bace181db4c1ca81ae199016989f23ed794259e2b9d018727d21dccb7",
+                "eca6b50acd4d66ebb0d52dab97b77bd4d280d948613a06197f71ec4f9c6a33dd"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"\"]}"
+            },
+            {
+              "label": "no scheme",
+              "entry": "example.net",
+              "event": {
+                "id": "5307ea6b8f766d6276f4ae3e6eaf2474d2d05ef311b51e0e48c7b9ef90457243",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ApxC7/1akywL71xry8n1fTgU8WNNQgsgKP9JRd7mIKYBQjUbzYG4G7tUAZhm7EgjdSvpK2B2malE2C1KxniBXhv5wn57glxZSVEWDzuizmlMarxgm/f0lx00ZAopl8KmD9ZN+7CVg2C7w5o5QG0U7lWxGb7H9HmVpVIFV7m3rnGoONY09UQ3Lw/bwoSPChgpkwDYNWatciRHEVwmNRGwbyfDIoTM6KMFg0t+5nnOccsF+ZCvtdAOdjAxUFSgQMzunsSmkkGmIQ3SfivP3e0U9HSeRTkTnt5RObS71CGWgD490iU5EXwgYrRT/HGEfH+qBbYdT1NPm3rT2uapZDaHNFcdKQ==",
+                "sig": "45aadc9af8879964e411c235e7463c946a204e37adbe08019ab3cf985c8f637d25c7d458057a3d16630d7f3c143ff0182bc7548433f65ea7c304ffda5411ac33"
+              },
+              "randomHex": [
+                "9c42effd5a932c0bef5c6bcbc9f57d3814f1634d420b2028ff4945dee620a601",
+                "cf30d0b9f0f5f8c3bc8642833a0bfcf41ad2137d673ce6d3eaf182d90c80ca84"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"example.net\"]}"
+            }
+          ]
+        },
+        "expected": {
+          "admission": {
+            "trailing slash": null,
+            "root slash": null,
+            "upper-case host": null,
+            "upper-case scheme": null,
+            "default port 443": null,
+            "port 80 on http": null,
+            "port with a leading zero": null,
+            "port 0": null,
+            "port 65536": null,
+            "an empty port": null,
+            "a query": null,
+            "a fragment": null,
+            "user info": null,
+            "http on a public host": null,
+            "http on a subdomain of localhost": null,
+            "a ws scheme": null,
+            "an IPv6 literal": null,
+            "a trailing dot": null,
+            "a short IPv4 form": null,
+            "a hex IPv4 form": null,
+            "an octet with a leading zero": null,
+            "an octet over 255": null,
+            "a numeric last label with three octets": null,
+            "a percent-encoded path": null,
+            "a dot segment": null,
+            "a dot-dot segment": null,
+            "an empty segment": null,
+            "a space in the path": null,
+            "a non-ASCII host": null,
+            "a Kelvin sign in the host": null,
+            "a label starting with a hyphen": null,
+            "a label ending with a hyphen": null,
+            "an underscore in the host": null,
+            "a 64 character label": null,
+            "257 characters": null,
+            "an empty string": null,
+            "no scheme": null
+          },
+          "encoder": {
+            "trailing slash": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/wb/",
+            "root slash": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net/",
+            "upper-case host": "storage nodes must be canonical node URLs (https, or http only on this machine): https://Grove.Example.net",
+            "upper-case scheme": "storage nodes must be canonical node URLs (https, or http only on this machine): HTTPS://grove.example.net",
+            "default port 443": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net:443",
+            "port 80 on http": "storage nodes must be canonical node URLs (https, or http only on this machine): http://localhost:80",
+            "port with a leading zero": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net:08080",
+            "port 0": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net:0",
+            "port 65536": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net:65536",
+            "an empty port": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net:",
+            "a query": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net?x=1",
+            "a fragment": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net#x",
+            "user info": "storage nodes must be canonical node URLs (https, or http only on this machine): https://user:pw@grove.example.net",
+            "http on a public host": "storage nodes must be canonical node URLs (https, or http only on this machine): http://grove.example.net",
+            "http on a subdomain of localhost": "storage nodes must be canonical node URLs (https, or http only on this machine): http://a.localhost",
+            "a ws scheme": "storage nodes must be canonical node URLs (https, or http only on this machine): ws://grove.example.net",
+            "an IPv6 literal": "storage nodes must be canonical node URLs (https, or http only on this machine): https://[::1]",
+            "a trailing dot": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove.example.net.",
+            "a short IPv4 form": "storage nodes must be canonical node URLs (https, or http only on this machine): http://127.1",
+            "a hex IPv4 form": "storage nodes must be canonical node URLs (https, or http only on this machine): http://0x7f.0.0.1",
+            "an octet with a leading zero": "storage nodes must be canonical node URLs (https, or http only on this machine): http://127.000.0.1",
+            "an octet over 255": "storage nodes must be canonical node URLs (https, or http only on this machine): https://192.0.2.256",
+            "a numeric last label with three octets": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net.1",
+            "a percent-encoded path": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/a%2Fb",
+            "a dot segment": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/a/./b",
+            "a dot-dot segment": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/a/../b",
+            "an empty segment": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net//x",
+            "a space in the path": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/a b",
+            "a non-ASCII host": "storage nodes must be canonical node URLs (https, or http only on this machine): https://exämple.net",
+            "a Kelvin sign in the host": "storage nodes must be canonical node URLs (https, or http only on this machine): https://Kexample.net",
+            "a label starting with a hyphen": "storage nodes must be canonical node URLs (https, or http only on this machine): https://-grove.example.net",
+            "a label ending with a hyphen": "storage nodes must be canonical node URLs (https, or http only on this machine): https://grove-.example.net",
+            "an underscore in the host": "storage nodes must be canonical node URLs (https, or http only on this machine): https://gro_ve.example.net",
+            "a 64 character label": "storage nodes must be canonical node URLs (https, or http only on this machine): https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.net",
+            "257 characters": "storage nodes must be canonical node URLs (https, or http only on this machine): https://example.net/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "an empty string": "storage nodes must be canonical node URLs (https, or http only on this machine): ",
+            "no scheme": "storage nodes must be canonical node URLs (https, or http only on this machine): example.net"
+          },
+          "oldReader": {
+            "trailing slash": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "root slash": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "upper-case host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "upper-case scheme": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "default port 443": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "port 80 on http": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "port with a leading zero": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "port 0": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "port 65536": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an empty port": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a query": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a fragment": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "user info": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "http on a public host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "http on a subdomain of localhost": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a ws scheme": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an IPv6 literal": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a trailing dot": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a short IPv4 form": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a hex IPv4 form": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an octet with a leading zero": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an octet over 255": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a numeric last label with three octets": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a percent-encoded path": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a dot segment": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a dot-dot segment": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an empty segment": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a space in the path": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a non-ASCII host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a Kelvin sign in the host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a label starting with a hyphen": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a label ending with a hyphen": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an underscore in the host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a 64 character label": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "257 characters": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an empty string": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "no scheme": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            }
+          }
+        }
+      },
+      {
+        "name": "storage-list-refusals",
+        "kind": "negative",
+        "note": "Lists the invitation may not carry, each in a hand-built envelope (`bodyJson`, then `randomHex`: the body nonce, the aux-rand): not an array, `null`, a number, an object, a number in the list, an object entry, nine entries, two entries on one host (two ports are two entries on one host, and grants are per host), and the same entry twice. A reader refuses each whole envelope; the encoder throws the message in `encoder`. A 0.13.0 reader still admits each (`oldReader`). Exactly eight entries are valid: see `eight`.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "cases": [
+            {
+              "label": "not an array",
+              "storage": "https://grove.example.net",
+              "event": {
+                "id": "a917d294e1b5e105f8870549a78a7141c206b4106f150a314533a8c67b71468d",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "At4KsV2cCEGj3wNusajXyhfiW44f88r90ahllpDBXuabIHYrM2DxHY8mhTv6HP+op87vOVpD7rQddM77++nJumvmq1uotCirZTg46YZr+Z6GI+Bi3cg7/U0M+kM9hn074XkaiTIDMp4AQGOSdJPnUibdjA5FJ4W37jvkf2Fhq5w2TB76yUveoxvaKu6w4hLb5xQ1n0c/IEE8yMga6lS//jFuS7xZ5Aehs++NOvUYP5LdlXJA2z8DdmB+hpUq48l2fV9CrJNbEqUhUjDoUK02OOZzVwDTCNTipmbNkiKMgfg9bHz5Bp7loq0K71jOcnBayoRiKFdBZZzqn95ymL34Fwi31w==",
+                "sig": "940b50329b32cfab6043980a6a9275f9cfb5c6c49d0b8a070e3352e3ec356d238e65a52fb063a8f6e9dd1e6def12f670c9ab284b13081934c8741b79d30c45b0"
+              },
+              "randomHex": [
+                "de0ab15d9c0841a3df036eb1a8d7ca17e25b8e1ff3cafdd1a8659690c15ee69b",
+                "cf34c1b218387be9885b304052098a223a29b106e1bd2c76836dc59224b39d4d"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":\"https://grove.example.net\"}"
+            },
+            {
+              "label": "null",
+              "storage": null,
+              "event": {
+                "id": "06b393f281fbb373aa8e427dd398e583dfc5e4433a8590a9f0d80e75c116dd08",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ao4nG/5H5NftQXOTcAgiinYVIUJLJu6y/xkPWRd/S6d+BDJ4wUGYcT8AwN0HxvGhcyhDK1wihUHugQinOPsn4yoo7yO7fYkB0le48q6ZnIWMowve9MC3438AZ5lo4HxECqwNg9hw9sRjxNx7aPJhIrP7M2UXvJWYomh4hVtGeYc+L2gfKDsPwkYYyne45J95dgLCsKe/uqag1YRJwxwf+8bUJvkzJg9uFvDxwxsSJI15YopO2IvxdI9/0phlR1naWNTb+QV63rSVFmwW1l/0Z2tcZxtQzOhgToF7paso0or3aKw=",
+                "sig": "c92f4c84aed8b2110d08879cd194f64bdbb1b5dacaf3e52160e9ddce8fd8bda8ac9e58cda7ddeebe97fde65846abd9d203f436cc49851d6a1d14e5ba7c3fb365"
+              },
+              "randomHex": [
+                "8e271bfe47e4d7ed4173937008228a761521424b26eeb2ff190f59177f4ba77e",
+                "e0575ad91ab681721067187dbf290ba7b5d27ec2ca68a77482444c4ab85fa78e"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":null}"
+            },
+            {
+              "label": "a number",
+              "storage": 7,
+              "event": {
+                "id": "002fed9f6fb0701df4888eac1042c9ad661eb69ce6899c0ec0779aef305f2f1e",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AtyJ6xKi5/zEkAmny15vOa0cZdkrneqy4k6ogV29m9ZX6J3xIr3kov/j8G86mnLyHoTD9It35XseoBcM6A6YMv52mNKLHy2GLRJA55ny3jXnrN2GIZDYyOE5MbqFw5GTRGSrn6XJ/EmQUBELYyb+7OxpIm9+CJo/qmCqOanWMd8x7g7Y1uCU97u2wj/u7YPOGMws+Nxr9NZIFyBjKHCIFaNFvAsCgnV8gUdl7bwi2Is+gT9ke96KtNbNTZpb/Ztdugfya+IcLpyCk6z6twr4uMxEv2w6AnTOIbzazncTLvJKvPo=",
+                "sig": "6ab6f5136af72d1015b21f875f828185896d887fec18b16eabfd1d164fbbe2ed9051d1137831197027f18df14dc41bb27b58d680e06614efd843800616ff1349"
+              },
+              "randomHex": [
+                "dc89eb12a2e7fcc49009a7cb5e6f39ad1c65d92b9deab2e24ea8815dbd9bd657",
+                "109a486c69431318da8327ae858c331512a7c530f3fefe10fed94d06a79085bf"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":7}"
+            },
+            {
+              "label": "an object",
+              "storage": {
+                "0": "https://grove.example.net"
+              },
+              "event": {
+                "id": "c3357ba2e789201d9d2df570d3bf74fd2f0ece9bfe59ee08112030aaca4945fb",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AjF5isrivDYV0jnmz2oEmwsFTipSOapEnQSbxw9P2N5HaXeMf9yLCANebCMwHKJ1IwJF8J6nvqMOsAuD5PL2numFUe6XBFL6DPJLrDy/USAS9Tx7f6UXvrL1IGmD3XSrFe6L9+Xxv/B9YtnMkNtJ5iBMOizCp3eQXjzlGg5Bw2tcYN2ReXgydwoVMNxzGmoMWKuedDVjTGZl1dwoJIIoh8J251ZgRGRwOdIJNi8d7R0heVnRu/MJhFh2jDYAnUiU/4mtU5IGb1fiLf2YLt3y32QFVL2hzGC1YVNO291cNT2k3aJ+1qZ5g73XgCfaTiVhX3rPPz2ud/9IqtF9Acy3QHtaXQ==",
+                "sig": "0cc264e1b9306ec01220de1c8d3a8c8496043bac4eae773f0caf3838fb282bef78031ca2710ab94830375719c5a8ca9acd285b386aba044910303c81c6c9e43b"
+              },
+              "randomHex": [
+                "31798acae2bc3615d239e6cf6a049b0b054e2a5239aa449d049bc70f4fd8de47",
+                "5d328bdf320d36577c5904735df8e1c35ae780043033f299975023c2a7f860b5"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":{\"0\":\"https://grove.example.net\"}}"
+            },
+            {
+              "label": "a number in the list",
+              "storage": [
+                "https://grove.example.net",
+                7
+              ],
+              "event": {
+                "id": "58006ae3b966743191b0106b62c8e3e12f193df62c2ea2073292aa8a9cab925e",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ao/rALd02Pibcyt6WXx7EmTc7CV+WKKHLOg+8oCLVJlQmeIjgSz4dYMzh2PRXUKHKDkgiDh/oOh5DpM6w7ue/SNKCHdDZqUnI5aFOVWaf6bOrSIiq8esFMIdci2ZAHFxnDZ8p92Ckrbf/yGOERDD7v8lkQmqwdntPon9/78ukpbZp2XH8Wn8QLT8oGKp3TjfollgLUEq9WRFNymPkp9s6+s6RWaXfiguIrO4EMtsnLkHQJ8IzLWbI2IR8hCZL2jEgdb4yMi3jDaHxwsmzGfs/2C4d3IirSPMwvrs6CoWWJWVJyIg79GkaXkN3jdb/605OH7JmlgjMuDZ8nViKhsJ/97ZPw==",
+                "sig": "08b18a18aef471b0b61bc08b970c9a5f4be655bcbacfd43926588d0914e70c7726c23ec0aa7efa57299b468e4521660cca211dac551ff9025b6a627e0c2c05e9"
+              },
+              "randomHex": [
+                "8feb00b774d8f89b732b7a597c7b1264dcec257e58a2872ce83ef2808b549950",
+                "dda8a1865a07e19523c258371ecd24c7b999b95319115ad8828d93f2692842eb"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://grove.example.net\",7]}"
+            },
+            {
+              "label": "an object entry",
+              "storage": [
+                {
+                  "base": "https://grove.example.net"
+                }
+              ],
+              "event": {
+                "id": "0e6d28af364297feccde1eb51f8c48af1ea87d748291035a7f9acf7300b8d5a6",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AivuVQS6GJjpvQ0ncdXb+nGDPxh77n7boaLG9ug9v2Nh547iLjp9kpPOnEjH7IyzugDbBRyx5XqI8n9GMRTJsZNAnwSeEe5KAZYJ3ZRWD5D2cSVYMTmNSBqNHQsUA230iJWVBE5tigajmOzx3wv/z+MAYkKYeNJXTIa2mur/lQSumzpQyOOKUGvBfcEAAqSwOz3Igy4HOm8Kx47HyF9SK7Hc5knYXE7l3cole9HgHjuV9nAI6czOjLAMm3VWsEAPa3/+QqPUbKj2DMoPmZ4DFVZaKssbr90apaSH77DtiyZIUKXM7evR6Y1ZknQ7GMMn74gkYTaSJM4haM1J/mUq1dc/AQ==",
+                "sig": "885345e6134901585b500f53eb18a186c38fcfc16952da2164ce90c2244c448803ff74c89f86bcae5dc5c71475c3fc5186acbdd51534644c47a988efecd0c3a0"
+              },
+              "randomHex": [
+                "2bee5504ba1898e9bd0d2771d5dbfa71833f187bee7edba1a2c6f6e83dbf6361",
+                "49813e5e61cecb868b123094fbc483907bc8346685820078ec383aafd3ece255"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[{\"base\":\"https://grove.example.net\"}]}"
+            },
+            {
+              "label": "nine entries",
+              "storage": [
+                "https://node0.example.net",
+                "https://node1.example.net",
+                "https://node2.example.net",
+                "https://node3.example.net",
+                "https://node4.example.net",
+                "https://node5.example.net",
+                "https://node6.example.net",
+                "https://node7.example.net",
+                "https://node8.example.net"
+              ],
+              "event": {
+                "id": "028ba7e91f0b44f35f175262c277e94765f32569cb41ef100c24f76b78b52a73",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Atoc9Pl8AEVSDSjUneO5zDn2dDadTHmDA8kJgkMquO5FTNYA72tGG0HWX0/4BcO/L+nmweeBViw7CoiETkP95M8qSBK77qDbKD53FugFfksGiJHB5NwHSBN6BgF5SPpquwVYOtl9V4rrXWk2XXVjIEQnauYWOcjnW7qEnC004+Wk4eGHBNgxrdq+eD48bgDaA1JQRrgHv82IE3WqUTgMhAd9Z4gTt+FzIEmc2DVAVU4zrBsFm0m5hs6q8KaFc19K5zSXufO7SM+ZcDQixQ3Od8CJVF6Hj52Qfvz7o+Tq+Qn5e9AYL6A7OR6kRfq4YFIVoNNMocOfwGOCZeU582eCKOtwmWhpQBEIcpOXNH/1RvTUYO+MIOe4FepMiqxcqpYQ1TlJqm38LtrmKDjNxxV7/7LhYVPHOyjrcBEKm3QyKSWHbk5rFcIK+hsSNgz4Sun2WgoTPgntATtCYOCXKfEMw6/NUUjsb4ttxC/j0V5+GiTnvAbX0eIiJsqDv4IDVH5DXtDjnSjXziEWwRfTFfwRDndn4pjmGHrJh7JqicWOdSr4Ymdz91Vv5jh9zGRhABlu1TxIgJKH62dk4tsEJCSP4Ur4UsMTht4zUZHMPQ9WNmgmZySiIyNNbp8JP9kG2hAkncIJcK7JYV42MTyxcf9DBzhcfmgbdMS+CrK/H7/TZ70vEPo=",
+                "sig": "d154992b80d6a296d280559c9a324b470857f74d541584b333fe7cd81a188ede68f5e3003924dcaf7d3aeb4422f319ada67d8ca4eba10db7110d37e42d4cd157"
+              },
+              "randomHex": [
+                "da1cf4f97c0045520d28d49de3b9cc39f674369d4c798303c90982432ab8ee45",
+                "988e9e5bb82c3b5e9904ac7b9f7a58acce3a67412960efeeba7133331c1bdead"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://node0.example.net\",\"https://node1.example.net\",\"https://node2.example.net\",\"https://node3.example.net\",\"https://node4.example.net\",\"https://node5.example.net\",\"https://node6.example.net\",\"https://node7.example.net\",\"https://node8.example.net\"]}"
+            },
+            {
+              "label": "two ports on one host",
+              "storage": [
+                "https://example.net",
+                "https://example.net:8443"
+              ],
+              "event": {
+                "id": "2434b2d411c75656eb81fdc467b5635b9690b8acad32041721c82439619af1c3",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ApEArv1O4gw++xz+u+4g1RqgUXBNb7oIeDKbrwdvTd1IN7qpMHCvoVVKf5K/fhJ9jQIsirukEmi9rSmiKDLaQzbjmt0HQ2ULBJ3ipZFd7HvL8Md2f08SIkcwetj/ew8GPueDKTs9gwqbLUnt8J3wIJCzAZokAK9p1ZE1qRGNFQsFypm3jToi0dR2MJUm4GMAla1Mye38Tb1lEMU3iY1+PFy4urhJATAe1b7nGOZaUwQL1GrCb3oAxhZXeNJ6x6EvXetSz70lP/Ot3XawzpV8T+RO1q+wy8Bw48hVsd37rpD27p8EE6jegV8yqcuXOH/FwllaGXNAHuTXEIlDMTJsHJRdHknu1JTXc6abZ2C8EWS2WEBSiSQCtwUV40XRw9XX6v4M",
+                "sig": "1e72ebebf38f9867390c0e5ade59ddac6cfed07d1dc638b68b37bca99bebb162a241bb83143ed84bb6395cbaf876af9f161bfee4d06bd4f4397bac583b1a25e7"
+              },
+              "randomHex": [
+                "9100aefd4ee20c3efb1cfebbee20d51aa051704d6fba0878329baf076f4ddd48",
+                "83c8937159fe8bdd70eeba6cc9ca777ec7bbae0a0eca094e3de07c657dddf92a"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net\",\"https://example.net:8443\"]}"
+            },
+            {
+              "label": "the same entry twice",
+              "storage": [
+                "https://example.net",
+                "https://example.net"
+              ],
+              "event": {
+                "id": "3493e46614186833704b63a19943bbc30d7350a81b69c2727d061f44cb698923",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ahqq4OE7C3zzN8Xvdg7Hk3objLrUOWAoncTEr61LJmk9+0zmZYKKNUSBwzdy8uIlRLjPRQFn0hYJoiB9I4rbqXJgiF3QuN5cSCl4A4WojSDRiPcFAUWphym9vf/vh3WhqE+7Wg42m4KvprjInqcwmQSyGu1IkzKa6ZV/+ntSjPF7GyZQw7VuVbzXn/aRpf3vlpUPo4y0uuIVX6rfhPl8dkVyzDmb0xIlyja49NuslneqYMIHLxJ5Q9I9N39mhav3/bMGJh+Maqr2w7ZTI1Gr9Mk12npFpF0EjeQs9Va8KpruWLE8M60jv7T1GJIH0tpv1Z3bHPUQQLc33ZnuaZnFolqY7Q==",
+                "sig": "cef4677b0fe99cd76a9a4d99256fd3933f25cde98cde59b46fba93a2895a2324aeac96719243b78c4b54815340b98c13d09320847bc494461a3d044e2da70b6a"
+              },
+              "randomHex": [
+                "1aaae0e13b0b7cf337c5ef760ec7937a1b8cbad43960289dc4c4afad4b26693d",
+                "5c319704452ddc41f76a57f3544f8c80d4701b65e34f680d0b191b5e149b0a72"
+              ],
+              "bodyJson": "{\"v\":3,\"room\":\"6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d\",\"secret\":\"EeeL52OMW5k_qQHVoj2f_kCcq5VMgxEv0Zl6aU_RiKw\",\"storage\":[\"https://example.net\",\"https://example.net\"]}"
+            }
+          ],
+          "eight": {
+            "storage": [
+              "https://node0.example.net",
+              "https://node1.example.net",
+              "https://node2.example.net",
+              "https://node3.example.net",
+              "https://node4.example.net",
+              "https://node5.example.net",
+              "https://node6.example.net",
+              "https://node7.example.net"
+            ],
+            "event": {
+              "id": "c4cfd65a1dee327f3e8a10436e92148e3513dc9a56c14c9be3314592c3461813",
+              "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+              "created_at": 1800000000,
+              "kind": 1463,
+              "tags": [
+                [
+                  "d",
+                  "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                ]
+              ],
+              "content": "AsLznAQCPOQbHDEupIMrghBWMP0r9iuPitzPPjqzn5pBiYtTqXgMS3fEjTm6UMWPRJvBRNJhB84J20k1uDWefvxFZZwX314gfnFlUG18wdSqe1qbnyfOBPcCeEDl+6tT9gnfcUVtcb695g0fOhC/cwVMpCrfchv0K6Ds4DsUF+rCkSOJQx3bhiQlp5CbRMC9yoQUT3dbw+ufi8kZPYNajguyrK8Viyp9DapTpVW0VSr0b4fo40eHxWKAkPXPXmX7vE+pt/Vts6oarXjcnVx1YryYkqnQTRzmBsUa/9bsWHST60jdCLAbFFZlMKQxt/eI94lEPkOZ/UcmCsHBNZSHj+1Z1AGMXoMw/lBVcizlfOeQtuvIYugPEUgeCZ2hDPemFt8hY8rO1vs8RiD3W33yGdEi2W+GCVjC1FV0W513XRph/GjQdP/b0iJH8kMD6F6gtgct6WOsHtBw5reuMUm/6TPN6ghb9dQFOb9nBga2Y6qm1h4VcIXw0XXuRHDiHKT2xQWGJr0E4qL+CfZEip8j96l2tNxjpWzQBFOENrUXCIJyaH7naV3cspppMFJIg6kQOPWag6KdMIbjqK7EduXFyiHpzA==",
+              "sig": "9f3af6e5e4acd3ecd59293c029065dcc6183dbb2bd383bbf44dac8b1df34ddd1a025f092db8d2fbb6e3b56ac6faddb55b4f3c986234c31a4de160c8e80147a26"
+            },
+            "randomHex": [
+              "c2f39c04023ce41b1c312ea4832b82105630fd2bf62b8f8adccf3e3ab39f9a41",
+              "4e102c106705218a3f8d2d2e4ed7f8835be36619f2013e3d173317364ed618b9"
+            ]
+          }
+        },
+        "expected": {
+          "admission": {
+            "not an array": null,
+            "null": null,
+            "a number": null,
+            "an object": null,
+            "a number in the list": null,
+            "an object entry": null,
+            "nine entries": null,
+            "two ports on one host": null,
+            "the same entry twice": null
+          },
+          "encoder": {
+            "not an array": "storage nodes must be a list",
+            "null": "storage nodes must be a list",
+            "a number": "storage nodes must be a list",
+            "an object": "storage nodes must be a list",
+            "a number in the list": "storage nodes must be canonical node URLs (https, or http only on this machine): 7",
+            "an object entry": "storage nodes must be canonical node URLs (https, or http only on this machine): [object Object]",
+            "nine entries": "a room can list at most 8 storage nodes",
+            "two ports on one host": "storage nodes must not share a host name: example.net",
+            "the same entry twice": "storage nodes must not share a host name: example.net"
+          },
+          "oldReader": {
+            "not an array": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "null": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a number": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an object": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "a number in the list": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "an object entry": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "nine entries": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "two ports on one host": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "the same entry twice": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            }
+          },
+          "eight": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "storage": [
+              "https://node0.example.net",
+              "https://node1.example.net",
+              "https://node2.example.net",
+              "https://node3.example.net",
+              "https://node4.example.net",
+              "https://node5.example.net",
+              "https://node6.example.net",
+              "https://node7.example.net"
+            ],
+            "storageAt": 1800000000
+          }
+        }
+      },
+      {
+        "name": "storage-merge",
+        "kind": "positive",
+        "note": "Signed copies of one invitation, heard in every order. `older` (NOW) lists A, `newer` (NOW + 10) lists B, `silent` (NOW + 20) has no `storage` key, `empty` (NOW + 30) lists `[]`, `older-empty` (NOW - 30) lists `[]` before any of them, and `tie-a` and `tie-b` (both NOW + 50) disagree in one second. The newest copy that names storage stands, `[]` included, and a copy without the key says nothing, so `older, newer, silent` always gives B whichever is heard first. `lenient` is `requestPersistentRoomAdmission`: between copies of one second the first heard stands. `strict` is `requestPersistentRoomAdmissionEvidence`: the disagreement holds with reason `conflicting-storage`, and `contributors.storage` names the copy that stood. `orders` keys are the copies in the order heard. `randomHex` on each copy: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "copies": [
+            {
+              "name": "older",
+              "createdAt": 1800000000,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "At4hp0tkTcdN54I+yCi0ZzZZXZG+QO7I/YPjOqVfOY8Zu1RfPsjRu+P/nzv0nHRMzLz97JuB1Vv/Nrsol5I8WHBnMloXjwJ/F+ZBQ2Ib6uliYi4jHpR/n+ZBO29h//ICMpJKSVWJS7VP//Vyx1zcXNBoZLSn+oqSiiN6iWm9YK1gqjbE2MdPsMFfjuBMJbvVwt01ErYQEldYLK6b48GcIVZ2kGUVL1rVLvj/c3Oygqb6wo/3aOojhWUDwkf/IQyA2M3UxQnOXK97W7amrx5aP6PVVOQXtIa5DhucjMpiKWcj87BI4KssH+se41CnJHOwM5b820bppIYRMkiEOZORogEgFg==",
+                "sig": "340a5f50882f8f2fa58c6b454f2f9929158dea081187ccaa3bc2d89f3309b7a6e5089a26d6864ebe5b00f031b2714c72ee6180e820851a703a67286fd627863d"
+              },
+              "randomHex": [
+                "de21a74b644dc74de7823ec828b46736595d91be40eec8fd83e33aa55f398f19",
+                "5cfc09513380aaefe6c64c88911a747efe53a65fa2fd5152972ad453cbc4eecc"
+              ]
+            },
+            {
+              "name": "newer",
+              "createdAt": 1800000010,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000010,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AgrjYg0gpyQlUDXz/L3I1YLndLYO+FIuJa1mB5TvuqQHyfRyZ9rIyIMozSZiaJDpPJNhcBO6Ffp9mAHYxPyS/HJkS2rZn7dJe2Ue9fDfPW7ryXmCccIomJJ5YqP/dOEzVU/ci3Q2CrA1ERwpXEYBk5MliOz4+/g9xQd/t7xDEFRmiTXlnZxkf8dAMdtNQidZPMxVqln22c5IoLZLntCWjb6FMgZyd9bmrfBpt4uZ5yZaK7/kzc+nbCBG5rHjoG4bcNcgeFiegfQLZzhx0PigT3qXxASuXXseCTHD1ze7qSyevTnmA2wx8ozUIy2jB7r+wrJfBFkOjXZbvXwdmhCg/0xn/i3L1PrmP+ksE2UPhEkHF8WbtdMbPdqB2G0kzczee56b",
+                "sig": "09ae7a2cc213c4a4ad30459af594e5b7c767d7e2fa99834b96c8a1924b5802ca139c1b2476a6ba0157139a488b282128210bc389d3fdefebfb880b0c32b4926f"
+              },
+              "randomHex": [
+                "0ae3620d20a724255035f3fcbdc8d582e774b60ef8522e25ad660794efbaa407",
+                "72a1c9dc767401ed00fd6a2de2bb15fe213f642cdb2011d8c5f6e84a7dfd54d6"
+              ]
+            },
+            {
+              "name": "silent",
+              "createdAt": 1800000020,
+              "event": {
+                "id": "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000020,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "ApZTRG+pHax0dSmchduYkrEaVchJ6Xd6upsQPTLl6ondbOaO/PHNuYrQExmliDKm87mWuhhOE/HDa5yawLpbBMLg3FqFAXGF9MluipDJwLg7/1Hz1xfCfD9yG2xPLqH0S7+SIcQAWscERrCy7ii6nYNJzDBRNY/jRB20i5TnWKFTP4QMsASAN2mvHxGc2/XFw39O4wRRoepq2pv+6cKQTuFeo6qQiudJyQblH0wHDPHfb6R2nv4sXWD13qQ7ayjdu7zXAeA/yr6mBbIQIOGwFTBxK+0XBFFHeJf7RawUuUTFlLE=",
+                "sig": "77f3e9d9218b3acfb72022d281b2fc401e6ddb1bdfc72781eba4498aa57bbafeb3c83398c7e628e973967902ce004f6d60c12f6237f7f2834a4515a199827f79"
+              },
+              "randomHex": [
+                "9653446fa91dac7475299c85db9892b11a55c849e9777aba9b103d32e5ea89dd",
+                "ff3363dcb61404e2ab28bd663fe3613cda5d140b782a394bda5ab0059794328f"
+              ]
+            },
+            {
+              "name": "empty",
+              "createdAt": 1800000030,
+              "storage": [],
+              "event": {
+                "id": "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000030,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AuP2bA0bAYpJe09pxOg67kbM6AMDpbtRqZmrWxKlVXXIptlE3YfEZ53dVx3iZghvmoatoRSax0vMtsbSXK14e8YmfviilWZgBeyJK3mj7pqQnBo43Ncc5+ywBbPH3aQUHXMUmsV/SGJe9wcE4Ugfh081Z3vSsYGL2jn1M9HJlYa7eXDp9WXsRSeo6CNRvWy5Tsb3oZsT/YOZjnxYDj8tJqXiFo6lnWLtxlO2LoriG2Xdh1acyafV3cdex2K+xAEV8PJLlfzPMP/PLpcAggNyJ/xCqCjkqHrb3slgF9g5eQU5j1E=",
+                "sig": "38249974f07944daea99822d7a52d7cf254575640c627fbe7afd879ba5dd2a5bd4c3a1260c838535fb118c305953f07e659111db0db0cfba17dcaba7f9aed7fd"
+              },
+              "randomHex": [
+                "e3f66c0d1b018a497b4f69c4e83aee46cce80303a5bb51a999ab5b12a55575c8",
+                "c25ad9e8c2c0bcd450b17bf5912175dac3e7ee83edc9f3c463977a4efb374660"
+              ]
+            },
+            {
+              "name": "older-empty",
+              "createdAt": 1799999970,
+              "storage": [],
+              "event": {
+                "id": "89ece006835cb4bf8494e6b9e2b3a22d7d275a9a20c15d9c35662c1411140dd9",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1799999970,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Akctlh4KsW4z8fAHV1JOR7uO9pDL1lCIx1Om96rcEPNffCCchudFmf9hpvu+gfDhuR5YVsa5YHHhc935if6HiwrYtKmQFF7nTEvRoBXPFimaNBdIcKH6t42TNkcqMd/8XQVNKZ1gXHUp749EMFbomATJi7v+b79uf8EAcutAgWEPMFcS2t3TwLUqkJkI/4VPgh5Oi8Dgps1jaAGt0ebPCqlPD+E+VdZnqz3v+g/ymgbz36FiR1pgOZpNzfq5srFIXqeI3wq7sp5n4BYjAzG3wy5a8v9iLbfprq7ZMvK5MHY1/64=",
+                "sig": "5bf2dbd0747f82ae0ac1cbe5301850985e0946d7d91555bab088bacfc63291667f4e7698e488de4d84adfceb299d397cf99681edf0d498158d9a43e9f60934b2"
+              },
+              "randomHex": [
+                "472d961e0ab16e33f1f00757524e47bb8ef690cbd65088c753a6f7aadc10f35f",
+                "074bae73b480934e8c3f52e21a279f032a3feff17b9c16eb8f31749250094c17"
+              ]
+            },
+            {
+              "name": "tie-a",
+              "createdAt": 1800000050,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "892614548ed17e20dec953020f826602da14fad91cdf870fb0033af57e6a1a87",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000050,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AuW4ebFwvQyj3ijqFn5ejZeZIwNN9xWGEugIP5b5EWQaZCjztBHZM93dxJ7VijsfToX6P6Jfk/KY1XhPgi8HgOP6ZutJ/qu+OJyDQv9evmSWMnEn1bwXdaRS2hK/CVg6f0BoLzV6dOSwN5DuR4Er4Eq9KJ+2f3DLheYCl9RlDbazGVDdWXVEqmhxBOJ81R8AYUF/O7TLHLJlLbuOM7cqR51oXNYOMjxP7Y7geChcNy6BNvWo7gz8IyPa8V5Wc5cJjvukstAbReYdaamYwXfiK4MKu0Kb95cR3MvUs8kOjhKdeVlH/89N1D0wUxtNNVTY79EK/70L0i7pgEPKgDWbQLYX5g==",
+                "sig": "9b09d590acdde9f9d8cf05dad832cd80b8c030cc9496551aad854072916b5eb305a03092642912f7177547c701c01bd96fcecbfdd59ae244b0109701ad025877"
+              },
+              "randomHex": [
+                "e5b879b170bd0ca3de28ea167e5e8d979923034df7158612e8083f96f911641a",
+                "6ec392f2b0b73fc271d4ad63462e4714de7ea4f02b95a2d092c289be7304cc8b"
+              ]
+            },
+            {
+              "name": "tie-b",
+              "createdAt": 1800000050,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "818c6c2854d6941ae83353662b0a9e357c3a588c93db228d7d5bc29a90cfc155",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000050,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Ao3t7nuqVpRxA6k68NtJVyzBdJhX39pbs4AQvvv778XLpxR9a2UgG65456+IKeetRbLUQ3Z+nKdvCtrMVXlmeOcNSU1ZZnKy9/wf7SxCpEmQ9aOtnDp4pfVOjfLYBW3dmgk5HXM0hWWSRBAK4jw2vSVJTfYiR21dDhUMm9bVNXr+NnO7EIViM/C/FDDHA/arNekbeF7I6J68vyaNHJrdgiY3ZT25XaRbfLVtsZIJTB8rAHyN+FwwynVVi0fWpyxBMigMd3FIu1DFI+6qJufOLloqZ34FGnK5Iej46NGW1aPaFlg2/Rxk3gc6eDis4vwc1P8C1mfQQIeKHWxb4hN7akg0muqRX5X0kbyAaFWAZCULEdaxZQCoXKvAWHNxRTV74Mnt",
+                "sig": "dfd295bd71c32ee48848c494d2cb47daf3fb29e47ad1253192d517faa57152a8fd80038bc3f1fdc901a2088aec6d6337f4a8911be07591c2d0742c95b89ba71e"
+              },
+              "randomHex": [
+                "8dedee7baa56947103a93af0db49572cc1749857dfda5bb38010befbfbefc5cb",
+                "ccaeceece8a749cb8003863752b3505158b11cd0b61d09d5ec2a8941cfd7dca6"
+              ]
+            }
+          ]
+        },
+        "expected": {
+          "newest": {
+            "older,newer,silent": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "older,silent,newer": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "newer,older,silent": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "newer,silent,older": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "silent,older,newer": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "silent,newer,older": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "cf576785d898211102966ba11edd892697586f77b8e2afb8581f4cce30939852",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            }
+          },
+          "withdrawn": {
+            "newer,silent,empty": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            },
+            "newer,empty,silent": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            },
+            "silent,newer,empty": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            },
+            "silent,empty,newer": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            },
+            "empty,newer,silent": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            },
+            "empty,silent,newer": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [],
+                "storageAt": 1800000030
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [],
+                  "storageAt": 1800000030
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e",
+                    "fc35472f9501bb508f604427974e930ea3890a90036869ef288b686c4c5992a7"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "942759b19034841b41e95b2b8005a0f3f60941b303b25f86764447793921557e"
+                  ]
+                }
+              }
+            }
+          },
+          "olderEmptyLoses": {
+            "older-empty,newer": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "89ece006835cb4bf8494e6b9e2b3a22d7d275a9a20c15d9c35662c1411140dd9"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            },
+            "newer,older-empty": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000010
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000010
+                },
+                "contributors": {
+                  "room": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3",
+                    "89ece006835cb4bf8494e6b9e2b3a22d7d275a9a20c15d9c35662c1411140dd9"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [],
+                  "storage": [
+                    "82e26df809b30c288bfc28218f9db5220050c78e2c09c9b23850d79cb1b9e2c3"
+                  ]
+                }
+              }
+            }
+          },
+          "tie": {
+            "tie-a,tie-b": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000050
+              },
+              "strict": {
+                "status": "held",
+                "reason": "conflicting-storage",
+                "retirementEventIds": []
+              }
+            },
+            "tie-b,tie-a": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000050
+              },
+              "strict": {
+                "status": "held",
+                "reason": "conflicting-storage",
+                "retirementEventIds": []
+              }
+            }
+          },
+          "alone": {
+            "older": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000000
+            },
+            "newer": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000010
+            },
+            "silent": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "empty": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [],
+              "storageAt": 1800000030
+            },
+            "older-empty": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [],
+              "storageAt": 1799999970
+            },
+            "tie-a": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000050
+            },
+            "tie-b": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000050
+            }
+          }
+        }
+      },
+      {
+        "name": "storage-relays-independent",
+        "kind": "positive",
+        "note": "The relays and the nodes merge independently: the newest copy naming relays (`ind-b`, NOW + 10) is not the newest copy naming nodes (`ind-c`, NOW + 5), and each list comes from its own copy. `contributors.relays` names `ind-b` and `contributors.storage` names `ind-c`. `randomHex` on each copy: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "copies": [
+            {
+              "name": "ind-a",
+              "createdAt": 1800000000,
+              "storage": [
+                "https://grove.example.net"
+              ],
+              "relays": [
+                "wss://old.example.com/"
+              ],
+              "event": {
+                "id": "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "At4bA9j1tlM4oakPjohH2He2mvgH9MJITmakVb/BMW2k4OPQEyl1Wf0ISjCZNpTO8Lm8OlbdzvDRl90SxlCqtULku9c6C5t/wYrZJCnPZXCJ+I8PJGyUQ5RDLo4mekq7lQE6TcTLfeU42Z5Nf17KGEM1nbi5PmZPogAe20yVgHjRFKPa4f+qieT/TKwT4WivrSqS6+4tbwvpJd8QfsbR8IsRtFVdHSi9HyBXwEZcUQRSDSJ7L04rhas1ORMc4j40n7403BP7e3POTJWvp044GCwJVBagzxFKNRYjZ8vORmbzVcwBNkeKiHEgNsYoQLMVVTOmQQwRITsp6h9PEUf+08Uzt8uIkZh96fWOkuPYnDqzCcv9y5JvoB+9tuKrh4HH+Ws7",
+                "sig": "9f4b9aa91950b12f22bc1f4f2ba052af4ecc91765636ae970697c9b59507c46821c12504dfe70d23d5d6cdce39e8e1db81a4206d98dfa3bb2763f15b464e73b4"
+              },
+              "randomHex": [
+                "de1b03d8f5b65338a1a90f8e8847d877b69af807f4c2484e66a455bfc1316da4",
+                "5df491bf5750f40b23392fa9a037f14f5dbf81b8bab33e563e93c9ac9446f4ea"
+              ]
+            },
+            {
+              "name": "ind-b",
+              "createdAt": 1800000010,
+              "relays": [
+                "wss://new.example.com/"
+              ],
+              "event": {
+                "id": "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000010,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AjiOc0SHEP4I6rN6+Ib+TcihhlXBj6aikplPnITqGtcXwkCQJxE0YGpN7uJSXMnsHXmpSDiJo09s/97/P9Zn5ioFPezQB3mPecntKZzyTLPGoPJVpM4YTlbLQ5ja+KSONbczPb+XJUIRHzcEsAES5fLTcEg8VN1PFXS22UiS/iz4R9m1xWKkFA6jgZYzI5zLTM/7dqfFdR532YhY3AAvN45HOUzRQ1Ow+gCdiD42oOf+5bRiDzbFdtlXBVLDLG0Rqxj9oFqVnxinDGk9kECx/DPZFjhrMRiijyK9Qg3XQ11XwFVihx61e0S1eAQigNfwQJBECHpqqmHuicNomRaezzymog==",
+                "sig": "b1547124931e1327f9f5d2b6e3b0826e44b5a821fc57a491b6a17e6ee733898505679fe27947e15e289a7219e47f583450e5a64d0b623d345dd0d10c1d0f7ed4"
+              },
+              "randomHex": [
+                "388e73448710fe08eab37af886fe4dc8a18655c18fa6a292994f9c84ea1ad717",
+                "69a0d72940317c1e897c9887d65a16fcc8a8dfbb570fc1631779fe312c04ab46"
+              ]
+            },
+            {
+              "name": "ind-c",
+              "createdAt": 1800000005,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000005,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "AqYVWijyIEPXAmeUrS9uGSaqFCSMFC/Ngc1+7+poKjNZmVjFAXlIcXp+LkHct6BCN8op5T4A8ncFt+HkLXmx2nu3k+oAEgVClrz3SmR7FnhMeUBagIt532uxi2y/29YgRYv6tgHl1DLSUVDurKEasGm0ZELfm1J/HRPRvJzmzBj9zLz3c0uyVnDYx18kBIdL2s7fPFWF9Wv7lJ2krH/LfHPrxKPPAWcQhhdFNu9qJLRrgJ6xFn7ikQ/2e/7FY0GUeSZXG0h2LH+JYVRiYmLmAL7sPrD8QwEGdYFAJZkJI33oOu2hWbU3b5oVmoGXiV0EAp7A9bKtFfCpUrxhEBYZmoxZIwzyGzPQNWPAGw2vx++6pcvjJosNnfoJVShsc4W2Nsrz",
+                "sig": "b285968f1d95672180cafe687d813948e186e853941e8679e6786b57f7a3341affcd6bf25f50b2add25d8d16cc5548112bad99e0bf89d52b2f88ace55565c913"
+              },
+              "randomHex": [
+                "a6155a28f22043d7026794ad2f6e1926aa14248c142fcd81cd7eefea682a3359",
+                "8914698167b6ece44e4c62cf7ccf475bf3ba9c3bb54ce4f16147e49ccd5f36e1"
+              ]
+            }
+          ]
+        },
+        "expected": {
+          "orders": {
+            "ind-a,ind-b,ind-c": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            },
+            "ind-a,ind-c,ind-b": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            },
+            "ind-b,ind-a,ind-c": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            },
+            "ind-b,ind-c,ind-a": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            },
+            "ind-c,ind-a,ind-b": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            },
+            "ind-c,ind-b,ind-a": {
+              "lenient": {
+                "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                "persistent": true,
+                "epoch": 0,
+                "relays": [
+                  "wss://new.example.com/"
+                ],
+                "storage": [
+                  "https://example.org:8443/wb",
+                  "https://grove.example.net"
+                ],
+                "storageAt": 1800000005
+              },
+              "strict": {
+                "status": "admitted",
+                "admission": {
+                  "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+                  "persistent": true,
+                  "epoch": 0,
+                  "relays": [
+                    "wss://new.example.com/"
+                  ],
+                  "storage": [
+                    "https://example.org:8443/wb",
+                    "https://grove.example.net"
+                  ],
+                  "storageAt": 1800000005
+                },
+                "contributors": {
+                  "room": [
+                    "094f3c2189bef1f9148b77645f95113b6fd38c0b1ab5575485721d0ac9618152",
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9",
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "ends": [],
+                  "destruct": [],
+                  "relays": [
+                    "92faa487d6ddff839aa35f954ecac5bde762872b72a35455cedf7d491fa43a13"
+                  ],
+                  "storage": [
+                    "662eeae804a21109c32f5a0491f3e50c881c482878fae0e265d9112e956a8bb9"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "storage-strict-old-reader",
+        "kind": "positive",
+        "note": "Why a keeper that creates a room publishes a plain copy first: a 0.13.0 strict evidence reader refuses a body key it does not know and never retains that copy. Given a plain copy (NOW) and a copy with storage (NOW + 1), `oldStrictReader` is what 0.13.0 makes of them: `admitted`, with no storage, and `contributors` naming only the plain copy. `expected.strict` is the 0.14.0 outcome: the nodes from the later copy, `storageAt` NOW + 1. Heard with only the copy with storage, 0.13.0 strict holds with reason `unavailable` (`oldStrictReaderAlone`), so the plain copy is the only thing it can admit from. The lenient readers of both versions admit either way. `randomHex` on each copy: the body nonce, the aux-rand.",
+        "input": {
+          "invitation": {
+            "bearerHex": "1e6878787b76900c6275de47b001e14f1d77f8457e7282398caa050f74cf57e8",
+            "inviter": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+            "persistent": true
+          },
+          "inviterSkHex": "e11427318417b9718102f054bce1c78d9d45cb2930636ee9e78cf458051a1327",
+          "roomSecretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+          "roomId": "6144dd9758de6a2e13ccc00d6d413f6dcb6f05f55f6649cda05e7a11aa45320d",
+          "copies": [
+            {
+              "name": "plain",
+              "createdAt": 1800000000,
+              "event": {
+                "id": "f2208bca47fbc33f10095af55a53eaef77d3c399c63cc7dd14ab0e8da8e1d891",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000000,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Aq6UHm4BcCyChWx8hlrqiqNtF396+nDEjyG9v1AdwBSPWYEApKQsBTHBqHgiEgoyUPU9Jp2bNSZ5bge8U9S5SJeEZPwBHkj998hWiNKT1UkRfLMWJs2oPaAcxBZBJPvGD2CRPHa5IYkxVdZZhEr1NJyC8HopD704MCDe6SymfL+IbPNkbac5HwQH6MV2mJweTZLtWwL3xL97AgGhH3ZacpYWyk1OZTa13ccqH2SvN7dNvd7tFrYZgeq8spAYctNMmRnN8S1u+ycZti7hG4bfV+5G2YuO+LFGUFMfeiW7+50H7OA=",
+                "sig": "89f8ef233dbda01b13b55e85cb764b21ec1913802a2af8e40c9bc23bc71ac0d2e87632df7bbf76f386d958b71a604e24fa8406df9f0bf745048cb08296d16b12"
+              },
+              "randomHex": [
+                "ae941e6e01702c82856c7c865aea8aa36d177f7afa70c48f21bdbf501dc0148f",
+                "dfe7d1e65832eb31592e7a55a1d392ca8c31a55817bd681f123bc12461d95eea"
+              ]
+            },
+            {
+              "name": "with-storage",
+              "createdAt": 1800000001,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "event": {
+                "id": "e652c7246407374af80bcfecf656df08b7b41a439f4124e470405ff74a86cb49",
+                "pubkey": "caddad97f8824376a936b17ac2c0f5bbe2c6038e1b581f21c7015517466f118a",
+                "created_at": 1800000001,
+                "kind": 1463,
+                "tags": [
+                  [
+                    "d",
+                    "53d54d568559f777c1ec1e7e2c9fa805277b4fb51cd217b97560eac815605025"
+                  ]
+                ],
+                "content": "Aon53cd62t5zjpEguH2EheZOFxCJ1o0jQRvys/oHxlGUH4707wRCQrRgUJLLw1VSQHafQRTYZQw2FWCZ6A2CauZ4AlzixO4Sh/QRfqNEvyok5JaYk2/lx974BkQmP5OjSqCoIC5jzvNjfLt2gN2iCyMZrh91NLPfEZTKL2D87H//3/dT9Dcd3l+otJvVd2M5/788N0Tiz7zEhpeGX2c+B9XHesdw2YUPX3KjYmW4dxaXPvARc7af6rb72DB/TyNonGoBOCs0zq5hwXsqezFp2jJ44pXyIjWaSqUDqTRn4D0QaiJSFkA8FvZO/y5xXpnOz9mH0CYePRla3d/Pl/Tvl+/wH2jBnArDCVj8HNcFCKrZ1XRNIb/mlVAq3HSBXy/v6NLd",
+                "sig": "cfdb403ab36df746501b65259ebd32ef5ba294b53f98fc54a9f2aab10d5b1d65aad34aaf8256b7a01d41e5d91a11050b22bb8c366d753043499f7783c31a88e1"
+              },
+              "randomHex": [
+                "89f9ddc77adade738e9120b87d8485e64e171089d68d23411bf2b3fa07c65194",
+                "30ee717483fbea5b0d432826a22e3c3637f2be6853f4726721a51a17b39e5ca0"
+              ]
+            }
+          ]
+        },
+        "expected": {
+          "oldStrictReader": {
+            "status": "admitted",
+            "admission": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0
+            },
+            "contributors": {
+              "room": [
+                "f2208bca47fbc33f10095af55a53eaef77d3c399c63cc7dd14ab0e8da8e1d891"
+              ],
+              "ends": [],
+              "destruct": [],
+              "relays": []
+            }
+          },
+          "oldStrictReaderAlone": {
+            "status": "held",
+            "reason": "unavailable",
+            "retirementEventIds": []
+          },
+          "strict": {
+            "status": "admitted",
+            "admission": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000001
+            },
+            "contributors": {
+              "room": [
+                "e652c7246407374af80bcfecf656df08b7b41a439f4124e470405ff74a86cb49",
+                "f2208bca47fbc33f10095af55a53eaef77d3c399c63cc7dd14ab0e8da8e1d891"
+              ],
+              "ends": [],
+              "destruct": [],
+              "relays": [],
+              "storage": [
+                "e652c7246407374af80bcfecf656df08b7b41a439f4124e470405ff74a86cb49"
+              ]
+            }
+          },
+          "strictReversed": {
+            "status": "admitted",
+            "admission": {
+              "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+              "persistent": true,
+              "epoch": 0,
+              "storage": [
+                "https://example.org:8443/wb",
+                "https://grove.example.net"
+              ],
+              "storageAt": 1800000001
+            },
+            "contributors": {
+              "room": [
+                "e652c7246407374af80bcfecf656df08b7b41a439f4124e470405ff74a86cb49",
+                "f2208bca47fbc33f10095af55a53eaef77d3c399c63cc7dd14ab0e8da8e1d891"
+              ],
+              "ends": [],
+              "destruct": [],
+              "relays": [],
+              "storage": [
+                "e652c7246407374af80bcfecf656df08b7b41a439f4124e470405ff74a86cb49"
+              ]
+            }
+          },
+          "lenient": {
+            "secretHex": "11e78be7638c5b993fa901d5a23d9ffe409cab954c83112fd1997a694fd188ac",
+            "persistent": true,
+            "epoch": 0,
+            "storage": [
+              "https://example.org:8443/wb",
+              "https://grove.example.net"
+            ],
+            "storageAt": 1800000001
+          }
+        }
+      }
+    ]
+  }
+}
