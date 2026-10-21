@@ -473,6 +473,25 @@ describe('bounded persistent invitation evidence', () => {
         } finally { spy.mockRestore() }
       })
 
+      it('a tampered over-limit copy with the real id and signature cannot mask the real event, and a repeat of it costs nothing', async () => {
+        const f = fixture(), real = signed(f, 'invitation', 'bytes'), tampered = { ...real, content: real.content + 'A' }, spy = vi.spyOn(verifier, 'verifyEventUncached')
+        try {
+          const error = await query({ transport: replay([tampered, tampered, { ...tampered }, real]).transport, invitation: f.host.invitation }).catch(e => e)
+          expect(error.message).toBe('invitation evidence query refused an event signed by the authority that exceeds the evidence size limits')
+          expect(spy).toHaveBeenCalledTimes(2) // tampered once, real once
+        } finally { spy.mockRestore() }
+      })
+
+      it('a tampered in-limit copy with the real id and signature cannot mask the real event', async () => {
+        const f = fixture(), real = f.invite(), tampered = { ...real, content: real.content + 'A' }, spy = vi.spyOn(verifier, 'verifyEventUncached')
+        try {
+          const result = await query({ transport: replay([tampered, tampered, real]).transport, invitation: f.host.invitation })
+          expect(result.outcome.status).toBe('admitted')
+          expect(result.evidence.eventIds).toEqual([real.id])
+          expect(spy).toHaveBeenCalledTimes(3) // tampered once, real once, revalidation once
+        } finally { spy.mockRestore() }
+      })
+
       it('an over-limit event that is out of scope costs no check', async () => {
         const f = fixture(), real = f.invite(), spy = vi.spyOn(verifier, 'verifyEventUncached')
         const stranger = finalizeEvent({ kind: 1463, created_at: now, tags: [['d', deriveInvitationId(f.host.invitation)]], content: 'x'.repeat(17_000) }, generateSecretKey())

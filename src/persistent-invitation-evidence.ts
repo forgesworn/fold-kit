@@ -2,7 +2,7 @@ import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import { base64urlnopad } from '@scure/base'
 import { nip44 } from 'nostr-tools'
-import { verifiedSymbol, type Event } from 'nostr-tools/pure'
+import { getEventHash, verifiedSymbol, type Event } from 'nostr-tools/pure'
 import { deriveInvitationId, roomInvitation, decodeInvitationRetirementNotice, type RoomInvitation } from './invitation.js'
 import { PERSISTENT_INVITATION_LABELS, type PersistentRoomAdmission } from './persistent-invitation.js'
 import { isRoomEnds } from './expiration.js'
@@ -410,7 +410,11 @@ export async function requestPersistentRoomAdmissionEvidence(opts: {
             // An id already held was verified, so any other carrier with that id
             // has the same signed fields and nothing new to say. A carrier that
             // only claims it cannot verify. Dropping it loses no signed event.
-            if (events.has(c.event.id) || refused.has(c.over ? `${c.event.id}:${c.event.sig}` : c.canonical)) return
+            // An over-limit carrier is remembered by its computed hash and signature,
+            // never by the id it claims: a tampered copy that claims a real event's
+            // id and signature has a different hash, so it cannot mask the real one.
+            const overKey = c.over ? `${getEventHash(c.event)}:${c.event.sig}` : ''
+            if (events.has(c.event.id) || refused.has(c.over ? overKey : c.canonical)) return
             if (verifications >= MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS) throw new Error('invitation evidence query capacity exceeded: too many signature checks')
             verifications++
             if (c.over) {
@@ -419,7 +423,7 @@ export async function requestPersistentRoomAdmissionEvidence(opts: {
               // cannot hold: fail closed rather than select without it. An event
               // that only claims the authority's key is dropped.
               if (verifyEventUncached(c.event)) throw new Error('invitation evidence query refused an event signed by the authority that exceeds the evidence size limits')
-              refused.add(`${c.event.id}:${c.event.sig}`)
+              refused.add(overKey)
               return
             }
             const decoded = decodeEvidenceEvent(c.event, invitation)
