@@ -57,6 +57,31 @@ the one place its behaviour has deliberately diverged.
 - `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
   writes. Off by default; off, every grant is byte-identical to 0.13.0's.
 
+### Fixed
+
+- `requestPersistentRoomAdmissionEvidence` no longer fails a room on repeats,
+  strangers or junk. It charged every delivered event, before de-duplicating
+  and before checking the author, kind and `d` tag, against the 64 retained
+  events and 256 KiB, and one malformed or oversized event failed the whole
+  query. A room on four relays whose keeper had republished 17 times failed to
+  load, and any relay could fail a query with one oversized event or 64 events
+  of another author. Now a delivery is only counted against a new bound,
+  `MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES` (512, which bounds parse
+  work). An event that is malformed, oversized or out of scope (not the
+  inviter, not kind 1463 or 1461, not exactly one `d` tag naming the
+  invitation) is dropped without crypto, as is an exact repeat or another
+  carrier under an id already held (the held event was verified, so its signed
+  fields are the same). Signature checks have their own bound,
+  `MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS` (128: 64 retained events
+  plus 64 in-scope events that fail). Nothing is truncated: a 65th unique valid
+  authority event, 256 KiB of retained carriers, more than 512 deliveries or
+  more than 128 signature checks still fail the query, and an in-scope,
+  well-formed, validly signed authority event is never dropped. The evidence
+  format and its limits (64 events, 256 KiB, 16,384 bytes each) are unchanged,
+  so stored evidence revalidates exactly as before. One difference: a signed
+  carrier that exceeds those per-event limits can never be retained as
+  evidence, and is now dropped where it used to fail the query.
+
 ## 0.13.0
 
 ### Added

@@ -16,6 +16,18 @@ import type { RelayTransport } from './transport.js'
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS = 64
 export const MAX_PERSISTENT_INVITATION_EVENT_BYTES = 16_384
 export const MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES = 262_144
+/** Raw deliveries one query reads, counted before anything is parsed: every
+ * relay's copy of every event, repeats, other authors and junk alike. It bounds
+ * parse work only. It is eight times the retained-event limit, so 64 events
+ * from each of eight relays still fit. Past it the query fails closed, because
+ * an event that could matter may be among those it did not read. */
+export const MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES = 512
+/** Signature checks one query makes. Only an event that is in scope, well
+ * formed and not already held or refused costs one, so a repeat costs none. It
+ * is twice the retained-event limit: room for 64 retained events and 64 more
+ * in-scope events that fail (forged, or signed but not a supported body).
+ * Beyond it the query fails closed rather than skip an unchecked event. */
+export const MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS = 128
 
 /** Protected, local observation metadata. EOSE is NOT evidence of relay
  * completeness, current membership or global absence of retirement.
@@ -166,10 +178,16 @@ function roomId(secret: Uint8Array): string {
   return room.roomId
 }
 
+/** The cheap, unsigned part of scope: the authority, a source kind and exactly
+ * one two-element `d` tag naming this invitation. No crypto. */
+function inAuthorityScope(event: Event, inviter: string, invitationId: string): boolean {
+  if (event.pubkey !== inviter || (event.kind !== KINDS.GROUP_INVITATION && event.kind !== KINDS.INVITATION_RETIREMENT)) return false
+  const d = event.tags.filter(tag => tag[0] === 'd')
+  return d.length === 1 && d[0]!.length === 2 && d[0]![1] === invitationId
+}
+
 function signedScope(event: Event, invitation: RoomInvitation): boolean {
-  return event.pubkey === invitation.inviter && (event.kind === KINDS.GROUP_INVITATION || event.kind === KINDS.INVITATION_RETIREMENT) &&
-    event.tags.filter(tag => tag[0] === 'd').length === 1 && event.tags.find(tag => tag[0] === 'd')?.length === 2 &&
-    event.tags.find(tag => tag[0] === 'd')?.[1] === deriveInvitationId(invitation) && verifyEventUncached(event)
+  return inAuthorityScope(event, invitation.inviter, deriveInvitationId(invitation)) && verifyEventUncached(event)
 }
 
 /** Strict evidence path accepts exactly the bodies/tags of supported writers;
@@ -355,23 +373,32 @@ export async function requestPersistentRoomAdmissionEvidence(opts: {
       opts.signal?.addEventListener('abort', abort, { once: true })
       if (opts.signal?.aborted) { abort(); return }
       try {
-        unsub = opts.transport.subscribe([{ kinds: [KINDS.GROUP_INVITATION, KINDS.INVITATION_RETIREMENT], authors: [invitation.inviter], '#d': [deriveInvitationId(invitation)] }], event => {
+        const invitationId = deriveInvitationId(invitation)
+        // Canonical forms that were checked and refused, so a repeat of one costs no crypto.
+        const refused = new Set<string>()
+        let verifications = 0
+        unsub = opts.transport.subscribe([{ kinds: [KINDS.GROUP_INVITATION, KINDS.INVITATION_RETIREMENT], authors: [invitation.inviter], '#d': [invitationId] }], event => {
           if (settled) return
           try {
-            // Charge invalid candidates and duplicates before carrier/crypto.
-            if (received >= MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS) throw new Error('invitation evidence query capacity exceeded')
+            // Every delivery is charged first and bounds parse work. Retained
+            // events, retained bytes and signature checks have their own limits.
+            if (received >= MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES) throw new Error('invitation evidence query capacity exceeded: too many deliveries')
             received++
-            const c = carrier(event)
-            if (bytes + c.bytes > MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES) throw new Error('invitation evidence query capacity exceeded')
-            bytes += c.bytes
-            const prior = events.get(c.event.id)
-            if (prior !== undefined) {
-              if (prior !== c.canonical) throw new Error('conflicting duplicate invitation event identity')
-              return
-            }
+            let c: ReturnType<typeof carrier>
+            try { c = carrier(event) } catch { return } // malformed or oversized: not evidence, not a failure
+            if (!inAuthorityScope(c.event, invitation.inviter, invitationId)) return
+            // An id already held was verified, so any other carrier with that id
+            // has the same signed fields and nothing new to say. A carrier that
+            // only claims it cannot verify. Dropping it loses no signed event.
+            if (events.has(c.event.id) || refused.has(c.canonical)) return
+            if (verifications >= MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS) throw new Error('invitation evidence query capacity exceeded: too many signature checks')
+            verifications++
             const decoded = decodeEvidenceEvent(c.event, invitation)
-            if (!decoded) return
+            if (!decoded) { refused.add(c.canonical); return }
             if (decoded !== 'retired') decoded.secret.fill(0)
+            // A valid authority event that no longer fits fails the query: never evict or truncate.
+            if (events.size >= MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS || bytes + c.bytes > MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES) throw new Error('invitation evidence query capacity exceeded')
+            bytes += c.bytes
             events.set(c.event.id, c.canonical)
           } catch (error) { finish(error) }
         }, () => finish())

@@ -49,17 +49,38 @@ Unknown fields, non-data descriptors, custom prototypes, sparse arrays and
 noncanonical reload strings are refused. JavaScript proxies are outside this
 plain-data transport boundary; callers must not pass executable objects.
 
-Queries admit at most 64 delivered candidates, including invalid candidates and
-duplicates, with 16,384 UTF-8 bytes per canonical carrier and 262,144 UTF-8 bytes
-across all delivered canonical candidates. Work/bytes are charged before crypto;
-candidate 65 is refused before carrier copying. Retained evidence has the same
-limits. Event tags are bounded to 64 arrays of at most eight strings. These are
-evidence-profile limits, not new wire limits for the legacy API. Exact duplicates
-cost no additional retained capacity but consume query work and byte budget;
-the same ID with a different carrier fails the entire query. Capacity is checked
-before admitting another candidate, with no eviction or truncated success.
-Malformed/oversized object framing fails the query. Well-framed events that
-fail signature, capability or scope validation are ignored, never retained.
+Retained evidence holds at most 64 events, with 16,384 UTF-8 bytes per
+canonical carrier and 262,144 UTF-8 bytes across all retained carriers. Event
+tags are bounded to 64 arrays of at most eight strings. These are
+evidence-profile limits, not new wire limits for the legacy API.
+
+A query reads at most 512 deliveries
+(`MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES`): every relay's copy of every
+event, repeats, other authors and junk alike, each charged before it is parsed.
+Past that the query fails, because an event that could matter may be among
+those it did not read; delivery 513 is never inspected. The bound limits parse
+work only. It is eight times the retained limit so that 64 events heard from
+each of eight relays still fit.
+
+What is delivered is then sorted cheaply, before any signature check:
+
+- A malformed or oversized carrier, an event not by the inviter, not kind 1463
+  or 1461, or without exactly one `d` tag naming the invitation, is dropped.
+  It is not evidence and it does not fail the query.
+- An exact repeat, another carrier under an id already held, and a carrier
+  already checked and refused, are dropped. A held id was verified, so a second
+  carrier with it has the same signed fields.
+- Anything else costs one signature check. A query makes at most 128
+  (`MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS`): room for 64 retained
+  events and 64 more in-scope events that fail, forged or not a supported body.
+  The 129th is never checked and the query fails.
+- A checked, valid authority event is retained. If that would be a 65th event
+  or pass 262,144 bytes, the query fails. Nothing is evicted or truncated.
+
+An in-scope, well-formed, validly signed authority event is never dropped. The
+failures above are failures, not omissions, and they reject with
+`PersistentInvitationEvidenceQueryError`. The one carrier that cannot be kept
+is a signed event over the per-event limits above, which no evidence can hold.
 
 Evidence records, carrier strings and ID arrays are frozen owned copies.
 String memory is not claimed securely erased. Each admitted result has a fresh
@@ -102,8 +123,8 @@ custody and later independent revalidation.
 ## Completion and failure
 
 The query waits for the transport's EOSE even after an invitation or retirement
-arrives. Timeout, abort, subscription failure, contradictory duplicate or
-capacity failure rejects with `PersistentInvitationEvidenceQueryError`.
+arrives. Timeout, abort, subscription failure or a capacity failure (deliveries,
+signature checks, retained events or retained bytes) rejects with `PersistentInvitationEvidenceQueryError`.
 Its bounded `observation` is explicitly `completion: 'incomplete'`, diagnostic
 custody only. The revalidator always refuses incomplete observations. They
 cannot be relabelled to establish completeness; completion metadata itself is

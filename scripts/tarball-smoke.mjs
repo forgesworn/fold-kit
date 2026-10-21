@@ -49,7 +49,7 @@ import * as lane from '@forgesworn/fold-kit/lane'
 import * as mls from '@forgesworn/fold-kit/mls-admission'
 import * as evidence from '@forgesworn/fold-kit/persistent-invitation-evidence'
 import { readFileSync } from 'node:fs'
-for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'revalidatePersistentInvitationSource', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES']) {
+for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'revalidatePersistentInvitationSource', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS']) {
   if (!(name in evidence)) throw new Error('missing packaged evidence export ' + name)
 }
 
