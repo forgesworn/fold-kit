@@ -17,7 +17,7 @@ import { nip44 } from 'nostr-tools'
 import { type Event } from 'nostr-tools/pure'
 import { finalizeDeterministic, withStubbedRandomness } from './lib/determinism.mjs'
 import { roomInvitation } from '../src/invitation.js'
-import { isStorageNodeBase, storageNodeFromBase } from '../src/invitation-storage.js'
+import { isStorageNodeBase, storageNodeFromBase, storageNodeServer } from '../src/invitation-storage.js'
 import { decodePersistentInvitation, encodePersistentInvitation, requestPersistentRoomAdmission, type PersistentRoomAdmission } from '../src/persistent-invitation.js'
 import { requestPersistentRoomAdmissionEvidence } from '../src/persistent-invitation-evidence.js'
 import type { RelayTransport } from '../src/transport.js'
@@ -172,10 +172,13 @@ describe('storage-vectors', () => {
       expect(plain(rebuild(c, welcomeKey(i.invitation.bearerHex), hexToBytes(i.inviterSkHex)))).toEqual(c.event)
       expect(JSON.parse(bodyOf(i, c.event)).storage).toEqual([c.entry])
       expect(isStorageNodeBase(c.entry)).toBe(true)
+      expect(storageNodeServer(c.entry)).toBe(c.server)
       expect(storageNodeFromBase(c.entry)).toEqual({ base: c.entry, server: c.server })
       expect(admission(decodePersistentInvitation(c.event, invitationOf(i)))).toEqual(v.expected.admission[c.entry])
       expect(v.expected.admission[c.entry]?.storage).toEqual([c.entry])
       // The grammar decides, not a parser; but today's Node must agree on each accepted case.
+      // (Runtimes differ on IDNA, so `xn--` labels are left out.)
+      if (c.entry.split('/')[2].split('.').some((label: string) => label.startsWith('xn--'))) continue
       const u = new URL(c.entry)
       expect(`${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname}`).toBe(c.entry)
     }

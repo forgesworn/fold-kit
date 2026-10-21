@@ -109,6 +109,16 @@ export function isStorageNodeBase(value: unknown): value is string {
   return true
 }
 
+/**
+ * The `server` a token names for a node: the host of a canonical base,
+ * exactly as written, or `undefined` when `base` is not canonical. Decided by
+ * the grammar alone, with no URL parser, so a client derives the same server
+ * from a listed base on every runtime. Never throws.
+ */
+export function storageNodeServer(base: string): string | undefined {
+  return isStorageNodeBase(base) ? hostOf(base) : undefined
+}
+
 /** True for a list the invitation may carry (0 to 8 canonical entries, one per host), including []. Never throws. */
 export function isInvitationStorage(value: unknown): value is string[] {
   if (!Array.isArray(value) || value.length > MAX_INVITATION_STORAGE_NODES) return false
@@ -145,11 +155,14 @@ function shorten(text: string): string {
  * The canonical form of an operator's URL, and its server. Lower-cases the
  * scheme and host, drops a default port and trailing slashes, and throws a
  * message fit to show an operator on anything the grammar refuses. It does not
- * refuse onion hosts: a keeper that cannot reach one says so itself.
+ * refuse onion hosts: a keeper that cannot reach one says so itself. Text that
+ * is already canonical is returned as it stands, without a URL parser.
  */
 export function storageNodeFromBase(text: string): StorageNode {
   const shown = shorten(String(text))
   const typed = String(text).trim()
+  const already = storageNodeServer(typed)
+  if (already !== undefined) return { base: typed, server: already }
   let url: URL
   try { url = new URL(typed) } catch { throw new Error(`group node ${shown}: not a URL`) }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -191,6 +204,7 @@ export function storageNodeFromBase(text: string): StorageNode {
   if (base.length > MAX_STORAGE_NODE_URL_LENGTH) {
     throw new Error(`group node ${shown}: the URL is longer than ${MAX_STORAGE_NODE_URL_LENGTH} characters`)
   }
-  if (!isStorageNodeBase(base)) throw new Error(`group node ${shown}: not a canonical node URL`)
-  return { base, server: hostText }
+  const server = storageNodeServer(base)
+  if (server === undefined) throw new Error(`group node ${shown}: not a canonical node URL`)
+  return { base, server }
 }

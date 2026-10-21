@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  storageNodeServer,
   isInvitationStorage,
   isStorageNodeBase,
   MAX_INVITATION_STORAGE_NODES,
@@ -12,6 +13,7 @@ import { ACCEPTS, ONION, REFUSALS } from '../test/storage-fixtures.js'
 describe('storage node base URLs', () => {
   it.each(ACCEPTS)('accepts %s and names %s as its server', (entry, server) => {
     expect(isStorageNodeBase(entry)).toBe(true)
+    expect(storageNodeServer(entry)).toBe(server)
     expect(storageNodeFromBase(entry)).toEqual({ base: entry, server })
   })
 
@@ -36,6 +38,9 @@ describe('storage node base URLs', () => {
     // A cross-check, not a rule: the wire answer never consults a URL parser,
     // but today's Node must agree with the grammar on every accepted case.
     for (const [entry] of ACCEPTS) {
+      // Runtimes differ on IDNA (Node 22 refuses an invalid `xn--` label that
+      // Node 24 reads), and the grammar decides, so `xn--` labels are not compared.
+      if (entry.split('/')[2]!.split('.').some(label => label.startsWith('xn--'))) continue
       const u = new URL(entry)
       expect(`${u.protocol}//${u.host}${u.pathname === '/' ? '' : u.pathname}`).toBe(entry)
     }
@@ -49,9 +54,17 @@ describe('storage node base URLs', () => {
       for (const [entry] of ACCEPTS) expect(isStorageNodeBase(entry)).toBe(true)
       for (const [, entry] of REFUSALS) expect(isStorageNodeBase(entry)).toBe(false)
       expect(isInvitationStorage(['https://xn--a.example.net'])).toBe(true)
+      expect(storageNodeServer('https://xn--a.example.net')).toBe('xn--a.example.net')
+      expect(storageNodeFromBase('https://xn--a.example.net')).toEqual({ base: 'https://xn--a.example.net', server: 'xn--a.example.net' })
       expect(() => requireInvitationStorage(['https://xn--a.example.net'])).not.toThrow()
       expect(calls).toBe(0)
     } finally { globalThis.URL = real }
+  })
+
+  it('storageNodeServer gives the host of a canonical base and undefined otherwise, never throwing', () => {
+    for (const [, entry] of REFUSALS) expect(storageNodeServer(entry)).toBeUndefined()
+    for (const value of [undefined, null, 7, {}, [] as unknown]) expect(storageNodeServer(value as string)).toBeUndefined()
+    expect(storageNodeServer('https://grove.example.net:8443/wb')).toBe('grove.example.net')
   })
 
   it('agrees with the grammar for every accepted row and no refused row', () => {

@@ -68,7 +68,7 @@ const expectedMain = ${JSON.stringify([
       'encodePersistentInvitation', 'decodePersistentInvitation', 'requestPersistentRoomAdmission', 'PERSISTENT_INVITATION_LABELS',
       'withExpiration', 'isRoomEnds', 'requireRoomEnds', 'MAX_ROOM_ENDS_SECONDS',
       'isInvitationRelays', 'requireInvitationRelays', 'MAX_INVITATION_RELAYS',
-      'isStorageNodeBase', 'storageNodeFromBase', 'isInvitationStorage', 'requireInvitationStorage', 'MAX_INVITATION_STORAGE_NODES', 'MAX_STORAGE_NODE_URL_LENGTH',
+      'isStorageNodeBase', 'storageNodeFromBase', 'storageNodeServer', 'isInvitationStorage', 'requireInvitationStorage', 'MAX_INVITATION_STORAGE_NODES', 'MAX_STORAGE_NODE_URL_LENGTH',
       'MAX_ROOM_LINK_FRAGMENT_LENGTH', 'parseRoomLink', 'encodeRoomLink',
       'EPOCH_ID_INFO', 'EPOCH_KEY_INFO', 'MAX_EPOCH', 'EPOCH_REQUEST_KEY_INFO', 'generateEpochSecret', 'deriveEpoch',
       'encodeRekeyEvent', 'peekRekeyEvent', 'decodeRekeyEvent', 'HISTORY_WINDOW_SECONDS', 'MAX_HISTORY_EPOCHS', 'epochsInWindow', 'deriveEpochRequestKey', 'epochRequestAdmission',
@@ -126,7 +126,7 @@ const evidenceReload = evidence.revalidatePersistentInvitationEvidence({ evidenc
 if (!evidenceStopped || evidenceReload.outcome.status !== 'admitted' || evidenceReload.outcome.admission.relays[0] !== 'wss://fixed.example/') throw new Error('packaged persistent invitation evidence did not revalidate')
 const storageEvent = main.encodePersistentInvitation({ ...groupHost, roomSecret: groupSecret, now, storage: ['https://grove.example.net', 'http://127.0.0.1:8080'] })
 const storageAdmission = main.decodePersistentInvitation(storageEvent, groupHost.invitation)
-if (storageAdmission?.storage?.[1] !== 'http://127.0.0.1:8080' || storageAdmission.storageAt !== now || main.storageNodeFromBase('HTTPS://Grove.Example.net:443/').base !== 'https://grove.example.net' || main.isInvitationStorage(['https://a.example.net', 'https://a.example.net:8443']) || main.MAX_INVITATION_STORAGE_NODES !== 8) throw new Error('packaged storage nodes did not round trip')
+if (storageAdmission?.storage?.[1] !== 'http://127.0.0.1:8080' || storageAdmission.storageAt !== now || main.storageNodeFromBase('HTTPS://Grove.Example.net:443/').base !== 'https://grove.example.net' || main.isInvitationStorage(['https://a.example.net', 'https://a.example.net:8443']) || main.storageNodeServer('https://xn--a.example.net') !== 'xn--a.example.net' || main.storageNodeServer('https://grove.example.net/') !== undefined || main.MAX_INVITATION_STORAGE_NODES !== 8) throw new Error('packaged storage nodes did not round trip')
 if (evidence.revalidatePersistentInvitationSource({ event: storageEvent, invitation: groupHost.invitation, expectedRoomSecret: groupSecret }).admission.storage?.length !== 2) throw new Error('packaged strict path dropped the storage nodes')
 const proof = await main.encodeInvitationAccountProof({ invitation, identity, device: main.localIdentity(requesterSk).pubkey, now })
 const event = main.encodeInvitationRequest({ invitation, requesterSk, participant: identity.pubkey, accountProof: proof, now })

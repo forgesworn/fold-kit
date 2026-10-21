@@ -132,6 +132,7 @@ export { isInvitationRelays, requireInvitationRelays, MAX_INVITATION_RELAYS } fr
 export {
   isStorageNodeBase,
   storageNodeFromBase,
+  storageNodeServer,
   isInvitationStorage,
   requireInvitationStorage,
   MAX_INVITATION_STORAGE_NODES,

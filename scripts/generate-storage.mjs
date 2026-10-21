@@ -38,7 +38,7 @@ import {
   roomInvitation,
   isInvitationRelays,
   isStorageNodeBase,
-  storageNodeFromBase,
+  storageNodeServer,
   MAX_STORAGE_NODE_URL_LENGTH,
   encodePersistentInvitation,
   decodePersistentInvitation,
@@ -269,8 +269,7 @@ const ACCEPTS = [
   'https://xn--a.example.net',
 ]
 const acceptCases = ACCEPTS.map((entry, i) => {
-  const node = storageNodeFromBase(entry)
-  return { entry, server: node.server, isStorageNodeBase: isStorageNodeBase(entry), ...handBuilt(`accept-${i}`, invitationBody({ storage: [entry] })) }
+  return { entry, server: storageNodeServer(entry), isStorageNodeBase: isStorageNodeBase(entry), ...handBuilt(`accept-${i}`, invitationBody({ storage: [entry] })) }
 })
 
 const REFUSALS = [
@@ -496,7 +495,7 @@ if (JSON.stringify(rebuilt(GOLDEN_0130.plain, {})) !== JSON.stringify(GOLDEN_013
 if (JSON.stringify(rebuilt(GOLDEN_0130.full, { endsAt: ENDS, destruct: true, relays: RELAYS })) !== JSON.stringify(GOLDEN_0130.full.event)) throw new Error("today's encoder does not rebuild the 0.13.0 full event")
 const abs = v('storage-absent')
 if ('storage' in abs.plainAdmission || 'storageAt' in abs.fullAdmission) throw new Error('an absent list read as present')
-for (const c of acceptCases) if (!c.isStorageNodeBase || storageNodeFromBase(c.entry).base !== c.entry || !readInvitation(c.event)?.storage) throw new Error(`accepts ${c.entry} was refused`)
+for (const c of acceptCases) if (!c.isStorageNodeBase || storageNodeServer(c.entry) === undefined || !readInvitation(c.event)?.storage) throw new Error(`accepts ${c.entry} was refused`)
 for (const c of refusalCases) if (isStorageNodeBase(c.entry) || readInvitation(c.event) !== null || !readInvitationAs0130(c.event)) throw new Error(`refusal ${c.label} was not refused, or the old reader refused it`)
 for (const c of listCases) if (readInvitation(c.event) !== null || v('storage-list-refusals').encoder[c.label] === 'encoded' && Array.isArray(c.storage)) throw new Error(`list refusal ${c.label} was not refused`)
 if (readInvitation(eightEvent.event)?.storage?.length !== 8) throw new Error('eight nodes were refused')
