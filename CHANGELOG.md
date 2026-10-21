@@ -5,6 +5,13 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+### Added
+
+- `hostRoomEpoch` takes `oneTimeSender`, passed to every grant the desk
+  writes. Off by default; off, every grant is byte-identical to 0.13.0's.
+
 ## 0.13.0
 
 ### Added

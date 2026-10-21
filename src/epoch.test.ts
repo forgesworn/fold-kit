@@ -249,6 +249,38 @@ describe('epoch requests and grants', () => {
     desk.close()
   })
 
+  it('a desk with oneTimeSender seals each grant from a fresh key, and the member still reads it', async () => {
+    const relay = new SimRelay()
+    const epoch = { epoch: 3, secret: generateEpochSecret() }
+    const desk = hostRoomEpoch({
+      transport: new SimTransport(relay),
+      replyDelayMs: [0, 0],
+      roomId,
+      authoritySk,
+      roomKey,
+      current: () => epoch,
+      removed: () => new Set(),
+      now,
+      oneTimeSender: true,
+    })
+    const granted = await requestRoomEpoch({ transport: new SimTransport(relay), roomId, authority, deviceSk, roomKey, credential: await credentialFor(deviceSk), now, timeoutMs: 1_000 })
+    expect(granted.epoch).toEqual(epoch)
+    const grant = relay.published.find((e) => e.kind === KINDS.EPOCH_GRANT)!
+    expect(grant.pubkey).toBe(authority)
+    const from = grant.tags.find((t) => t[0] === 'from')?.[1]
+    expect(from).toBeDefined()
+    expect(from).not.toBe(authority)
+    desk.close()
+  })
+
+  it('a desk without oneTimeSender writes no from tag', async () => {
+    const relay = new SimRelay()
+    const desk = hostRoomEpoch({ transport: new SimTransport(relay), replyDelayMs: [0, 0], roomId, authoritySk, roomKey, current: () => ({ epoch: 1, secret: generateEpochSecret() }), removed: () => new Set(), now })
+    await requestRoomEpoch({ transport: new SimTransport(relay), roomId, authority, deviceSk, roomKey, credential: await credentialFor(deviceSk), now, timeoutMs: 1_000 })
+    expect(relay.published.find((e) => e.kind === KINDS.EPOCH_GRANT)!.tags.some((t) => t[0] === 'from')).toBe(false)
+    desk.close()
+  })
+
   it('a request carries an admission proof under the room key, and one without it, or under another key, is refused', async () => {
     const credential = await credentialFor(deviceSk)
     const request = encodeEpochRequest({ roomId, authority, deviceSk, roomKey, credential, now: NOW })

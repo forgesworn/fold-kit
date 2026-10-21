@@ -619,6 +619,19 @@ const QUIET_REPLY_CHANGES = {
 }
 
 /**
+ * The desk's one-time sender switch (unreleased): `hostRoomEpoch` takes
+ * `oneTimeSender` and passes it to every grant. Off by default. Declared as
+ * new text -> previous text, generated hunk by hunk from the diff with one
+ * line of context, and applied before everything else.
+ */
+const HOST_ONE_TIME_SENDER_CHANGES = {
+  "src/epoch.ts": [
+    ["  expiresAt?: number\n  /** Seal every grant from a one-time key (`EncodeEpochGrantOptions.oneTimeSender`).\n   *  Off by default; turn it on only once every client reads one-time\n   *  senders (fold-kit 0.13.0 and the clients built on it). */\n  oneTimeSender?: boolean\n  /** Seconds before the same participant is sent a `removed` or `closed`\n", "  expiresAt?: number\n  /** Seconds before the same participant is sent a `removed` or `closed`\n", 1],
+    ["                expiresAt: opts.expiresAt,\n                ...(opts.oneTimeSender ? { oneTimeSender: true } : {}),\n              })\n", "                expiresAt: opts.expiresAt,\n              })\n", 2],
+  ],
+}
+
+/**
  * One-time senders (0.13.0, see docs/seal-key.md "One-time senders"):
  * `encodeRekeyEvent` and `encodeEpochGrant` take `oneTimeSender`, which seals
  * the copies from a fresh key named in a `from` tag, and both readers open a
@@ -666,7 +679,7 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 
