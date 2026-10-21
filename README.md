@@ -265,7 +265,8 @@ decision completes, so approval cannot extend an expired request's authority.
   of the newest signed copy that names any, independently of the relays; the
   strict path holds a same-second disagreement as `conflicting-storage`.
   `storageNodeFromBase(text)` canonicalises an operator's URL and gives its
-  `server`; `isStorageNodeBase`, `isInvitationStorage`,
+  `server`; `storageNodeServer(base)` gives the `server` of a canonical base by
+  grammar alone (`undefined` when not canonical); `isStorageNodeBase`, `isInvitationStorage`,
   `requireInvitationStorage`, `MAX_INVITATION_STORAGE_NODES` and
   `MAX_STORAGE_NODE_URL_LENGTH` are the rule. Vectors:
   `vectors/storage-vectors.json`

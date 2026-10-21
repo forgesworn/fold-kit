@@ -27,7 +27,8 @@ the one place its behaviour has deliberately diverged.
   decides on the wire: no URL parser is consulted, so every client gets the
   same answer, `xn--` labels included (valid Punycode or not). New exports:
   `storageNodeFromBase` (an operator's URL to `{ base, server }`),
-  `isStorageNodeBase`, `isInvitationStorage`, `requireInvitationStorage`,
+  `storageNodeServer` (the `server` of a canonical base, by grammar alone, for
+  a client that must not need a URL parser), `isStorageNodeBase`, `isInvitationStorage`, `requireInvitationStorage`,
   `MAX_INVITATION_STORAGE_NODES` (8), `MAX_STORAGE_NODE_URL_LENGTH` (256) and
   the `StorageNode` type.
 - `decodePersistentInvitation` returns `storage` and `storageAt` (the

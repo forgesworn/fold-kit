@@ -338,7 +338,9 @@ client can upload to the group's own nodes instead of a public server. The
 rule (0 to 8 canonical node URLs on distinct hosts, defined by a grammar
 rather than by what a URL parser prints, and decided by the grammar alone on
 the wire) lives in a new module, `src/invitation-storage.ts`,
-which moved from nowhere. With no `storage` the body, and the whole event, is
+which moved from nowhere; `storageNodeServer` there gives the `server` of a
+canonical base by grammar alone, for clients that must not need a URL parser.
+With no `storage` the body, and the whole event, is
 byte-identical to 0.13.0's (`vectors/storage-vectors.json`, vector
 `storage-absent`, pins two events recorded from 0.13.0's own encoder). The
 admission gains `storage` and `storageAt`; the strict evidence path
