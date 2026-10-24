@@ -151,7 +151,7 @@ function printFirstDiffLine(a, b, label) {
 
 // --- Whole-file modules (import paths unchanged, or rewritten as noted) ---
 
-for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints.ts', 'display-name.ts', 'link.ts', 'lane.ts']) {
+for (const f of ['hex.ts', 'verify.ts', 'identity.ts', 'room.ts', 'network-hints.ts', 'display-name.ts', 'lane.ts']) {
   checkWholeFile(`src/${f}`, `src/${f}`)
 }
 
@@ -692,6 +692,76 @@ const STORAGE_CHANGES = {
   ],
 }
 
+/**
+ * Room authority in links (0.15.0, see EXTRACTION.md "Room authority in
+ * links"): a version 5 link names the room's authority as `o` beside a
+ * member's own inviter. `RoomInvitation` gains an optional `authority` and
+ * the `invitationAuthority` helper; `link.ts` reads and writes version 5.
+ * Every link whose inviter is the authority is written byte for byte as
+ * before.
+ */
+const LINK_AUTHORITY_CHANGES = {
+  "src/link.ts": [
+    [
+      " * Exactly one of `invitation` (v2 live rendezvous, v3 stored group, or v5\n * live rendezvous a member made, naming the room's authority) and `secret`\n * (legacy version 1, the room traffic secret itself) is present.",
+      " * Exactly one of `invitation` (v2 live rendezvous or v3 stored group) and\n * `secret` (legacy version 1, the room traffic secret itself) is present.",
+      1
+    ],
+    [
+      "  v?: 2 | 3 | 5\n",
+      "  v?: 2 | 3\n",
+      1
+    ],
+    [
+      "\n  /** Version 5: the room's authority, when the link's inviter is not it. */\n  o?: unknown",
+      "",
+      1
+    ],
+    [
+      " && payload.v !== 3 && payload.v !== 5) throw",
+      " && payload.v !== 3) throw",
+      1
+    ],
+    [
+      "if (payload.v === 2 || payload.v === 3 || payload.v === 5) {",
+      "if (payload.v === 2 || payload.v === 3) {",
+      1
+    ],
+    [
+      "\n    if (payload.v === 5) link.invitation.authority = readLinkAuthority(payload.o, link.invitation.inviter)",
+      "",
+      1
+    ],
+    [
+      "  const authority = link.invitation ? writtenLinkAuthority(link.invitation) : undefined\n",
+      "",
+      1
+    ],
+    [
+      "{ v: authority ? 5 : link.invitation.persistent ? 3 : 2,",
+      "{ v: link.invitation.persistent ? 3 : 2,",
+      1
+    ],
+    [
+      " ...(authority ? { o: authority } : {}),",
+      "",
+      1
+    ],
+    [
+      "  throw new Error('a room link needs an invitation or a secret')\n}\n\nconst HEX64 = /^[0-9a-f]{64}$/i\n\n/**\n * A version 5 link's `o`: 32-byte hex, and not the link's own inviter, since\n * a link whose inviter is the authority is written as version 2. Anything\n * else is a malformed link, refused, so there is one way to write each link.\n */\nfunction readLinkAuthority(raw: unknown, inviter: string): string {\n  if (typeof raw !== 'string' || !HEX64.test(raw)) throw new Error('join URL carries a malformed invitation')\n  const authority = raw.toLowerCase()\n  if (authority === inviter.toLowerCase()) throw new Error('join URL carries a malformed invitation')\n  return authority\n}\n\n/**\n * The authority a link writes as `o`, or undefined for a link whose inviter\n * is the room's authority, which stays version 2 or 3 byte for byte. A\n * member's link only ever asks: a group link that admits by itself is the\n * authority's to make, so naming another authority on one throws.\n */\nfunction writtenLinkAuthority(invitation: RoomInvitation): string | undefined {\n  if (invitation.authority === undefined || invitation.authority.toLowerCase() === invitation.inviter.toLowerCase()) return undefined\n  if (!HEX64.test(invitation.authority)) throw new Error('room authority must be 32-byte hex')\n  if (invitation.persistent) throw new Error('a group link cannot name another authority')\n  return invitation.authority.toLowerCase()\n}\n",
+      "  throw new Error('a room link needs an invitation or a secret')\n}\n",
+      1
+    ]
+  ],
+  "src/invitation.ts": [
+    [
+      "\n  /**\n   * The room's authority, when it is not `inviter`: lower-case hex, carried\n   * as `o` by a version 5 link. A member makes one when nobody can answer\n   * the room's own link any more: the member's fresh key is the inviter and\n   * answers requests to join, and this names the key that signs the room's\n   * rekeys, which every member already pinned. Absent from every link whose\n   * inviter is the room's authority. Only the link's maker writes it; a\n   * responder in the link's chain cannot change it.\n   */\n  authority?: string\n}\n\n/**\n * The room's authority for a link: the key a joiner pins to follow rekeys and\n * to prove admission when it asks for an epoch. `authority` when the link\n * names one, else the inviter, as for every link before version 5.\n */\nexport function invitationAuthority(invitation: RoomInvitation): string {\n  return invitation.authority ?? invitation.inviter\n}",
+      "\n}",
+      1
+    ]
+  ]
+}
+
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
   for (const [kit, source, count] of changes) {
@@ -715,8 +785,9 @@ function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
 }
 
 for (const f of ['invitation.ts', 'persistent-invitation.ts', 'epoch.ts']) {
-  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(EVIDENCE_CARRIER_CHANGES[`src/${f}`] ?? []), ...(STORAGE_CHANGES[`src/${f}`] ?? []), ...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
+  checkWholeFileWithDeclaredChanges(`src/${f}`, [...(LINK_AUTHORITY_CHANGES[`src/${f}`] ?? []), ...(EVIDENCE_CARRIER_CHANGES[`src/${f}`] ?? []), ...(STORAGE_CHANGES[`src/${f}`] ?? []), ...(HOST_ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(ONE_TIME_SENDER_CHANGES[`src/${f}`] ?? []), ...(INVITATION_RETRY_CHANGES[`src/${f}`] ?? []), ...(QUIET_REPLY_CHANGES[`src/${f}`] ?? []), ...(INVITATION_DECLINE_CHANGES[`src/${f}`] ?? []), ...(INVITATION_ACCOUNT_CHANGES[`src/${f}`] ?? []), ...(GRANT_PUBLICATION_CHANGES[`src/${f}`] ?? []), ...(DESTRUCT_CHANGES[`src/${f}`] ?? []), ...(SCHEDULE_CHANGES[`src/${f}`] ?? []), ...(SEAL_CHANGES[`src/${f}`] ?? []), ...(KNOWN_MEMBERS_CHANGES[`src/${f}`] ?? []), ...(MEMBER_EPOCH_CHANGES[`src/${f}`] ?? []), ...(ROOM_RELAY_CHANGES[`src/${f}`] ?? []), ...CONFERENCE_CHANGES[`src/${f}`]], [["from './transport.js'", "from './relay-pool.js'"]])
 }
+checkWholeFileWithDeclaredChanges('src/link.ts', LINK_AUTHORITY_CHANGES['src/link.ts'], [])
 checkWholeFile('test/sim-relay.ts', 'test/sim-relay.ts', [["from '../src/transport.js'", "from '../src/relay-pool.js'"]])
 
 // --- Subsetted / extracted modules: exact reconstruction ---

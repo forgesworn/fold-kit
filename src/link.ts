@@ -23,8 +23,9 @@ export const MAX_ROOM_LINK_FRAGMENT_LENGTH = 16_384
  * library concern from here on: one parser, shared by the page and by
  * anything else that is handed a link.
  *
- * Exactly one of `invitation` (v2 live rendezvous or v3 stored group) and
- * `secret` (legacy version 1, the room traffic secret itself) is present.
+ * Exactly one of `invitation` (v2 live rendezvous, v3 stored group, or v5
+ * live rendezvous a member made, naming the room's authority) and `secret`
+ * (legacy version 1, the room traffic secret itself) is present.
  */
 export interface RoomLink {
   /** V2 meeting invitation or v3 persistent group invitation. */
@@ -54,10 +55,12 @@ export interface RoomLink {
 /** The fragment payload as written. Field names are short because the
  *  whole link has to fit in a QR code. */
 interface RoomLinkPayload {
-  v?: 2 | 3
+  v?: 2 | 3 | 5
   s?: string
   j?: string
   h?: string
+  /** Version 5: the room's authority, when the link's inviter is not it. */
+  o?: unknown
   r?: unknown
   i?: unknown
   a?: unknown
@@ -82,7 +85,7 @@ export function parseRoomLink(url: string): RoomLink {
     throw new Error('join URL fragment is not valid')
   }
   if (typeof payload !== 'object' || payload === null) throw new Error('join URL fragment is not valid')
-  if (payload.v !== undefined && payload.v !== 2 && payload.v !== 3) throw new Error('join URL uses an unsupported version')
+  if (payload.v !== undefined && payload.v !== 2 && payload.v !== 3 && payload.v !== 5) throw new Error('join URL uses an unsupported version')
   assertNetworkHintBounds(payload.r, payload.i)
 
   const link: RoomLink = {
@@ -103,7 +106,7 @@ export function parseRoomLink(url: string): RoomLink {
     }
   }
 
-  if (payload.v === 2 || payload.v === 3) {
+  if (payload.v === 2 || payload.v === 3 || payload.v === 5) {
     if (typeof payload.j !== 'string' || typeof payload.h !== 'string') {
       throw new Error('join URL carries a malformed invitation')
     }
@@ -114,6 +117,7 @@ export function parseRoomLink(url: string): RoomLink {
       throw new Error('join URL carries a malformed invitation')
     }
     link.invitation = roomInvitation(bearer, payload.h, payload.v === 3)
+    if (payload.v === 5) link.invitation.authority = readLinkAuthority(payload.o, link.invitation.inviter)
     return link
   }
 
@@ -134,8 +138,9 @@ export function encodeRoomLink(base: string, link: RoomLink): string {
   assertNetworkHintBounds(link.relays, link.iceUrls)
   const relays = safeRelayUrls(link.relays)
   const iceUrls = safeIceUrls(link.iceUrls)
+  const authority = link.invitation ? writtenLinkAuthority(link.invitation) : undefined
   const payload: RoomLinkPayload & { r: string[]; i: string[] } = link.invitation
-    ? { v: link.invitation.persistent ? 3 : 2, j: base64urlnopad.encode(link.invitation.bearer), h: link.invitation.inviter, r: relays, i: iceUrls }
+    ? { v: authority ? 5 : link.invitation.persistent ? 3 : 2, j: base64urlnopad.encode(link.invitation.bearer), h: link.invitation.inviter, ...(authority ? { o: authority } : {}), r: relays, i: iceUrls }
     : { s: base64urlnopad.encode(link.secret ?? invalid()), r: relays, i: iceUrls }
   if (link.policy) payload.a = link.policy
   if (link.pairingCode) payload.c = bytesToHex(link.pairingCode)
@@ -150,4 +155,31 @@ export function encodeRoomLink(base: string, link: RoomLink): string {
 
 function invalid(): never {
   throw new Error('a room link needs an invitation or a secret')
+}
+
+const HEX64 = /^[0-9a-f]{64}$/i
+
+/**
+ * A version 5 link's `o`: 32-byte hex, and not the link's own inviter, since
+ * a link whose inviter is the authority is written as version 2. Anything
+ * else is a malformed link, refused, so there is one way to write each link.
+ */
+function readLinkAuthority(raw: unknown, inviter: string): string {
+  if (typeof raw !== 'string' || !HEX64.test(raw)) throw new Error('join URL carries a malformed invitation')
+  const authority = raw.toLowerCase()
+  if (authority === inviter.toLowerCase()) throw new Error('join URL carries a malformed invitation')
+  return authority
+}
+
+/**
+ * The authority a link writes as `o`, or undefined for a link whose inviter
+ * is the room's authority, which stays version 2 or 3 byte for byte. A
+ * member's link only ever asks: a group link that admits by itself is the
+ * authority's to make, so naming another authority on one throws.
+ */
+function writtenLinkAuthority(invitation: RoomInvitation): string | undefined {
+  if (invitation.authority === undefined || invitation.authority.toLowerCase() === invitation.inviter.toLowerCase()) return undefined
+  if (!HEX64.test(invitation.authority)) throw new Error('room authority must be 32-byte hex')
+  if (invitation.persistent) throw new Error('a group link cannot name another authority')
+  return invitation.authority.toLowerCase()
 }

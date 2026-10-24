@@ -17,6 +17,8 @@ import { getPublicKey, verifiedSymbol, type Event } from 'nostr-tools/pure'
 import { deriveScoped } from '../src/scoped.js'
 import { createSubKeyCertificate, verifySubKeyCertificate } from '../src/sub-cert.js'
 import { verifyDeviceCredential } from '../src/credential.js'
+import { encodeRoomLink, parseRoomLink } from '../src/link.js'
+import { invitationAuthority, roomInvitation } from '../src/invitation.js'
 import { deriveSecretKey, finalizeDeterministic, seed32 } from './lib/determinism.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -247,4 +249,41 @@ describe('fold-vectors: verifyDeviceCredential refuses a sub-key certificate out
     expect(result).toEqual(g.asRoomAcceptPerson)
     expect(result).toEqual({ ok: false, reason: 'unknown scope' })
   })
+})
+
+describe('fold-vectors: room authority in links (0.15.0)', () => {
+  const g = doc.groups.linkAuthority as {
+    input: { base: string; bearerHex: string; inviter: string; authority: string; relays: string[] }
+    written: Array<{ name: string; authority: string | null; persistent: boolean; url: string }>
+    read: Array<{ name: string; url: string; result: { threw: boolean; message?: string; inviter?: string; authority?: string; named?: string | null; persistent?: boolean } }>
+  }
+  const bearer = seed32('fold/link-bearer')
+
+  it('pins the fixed inputs to their labels', () => {
+    expect(bytesToHex(bearer)).toBe(g.input.bearerHex)
+    expect(getPublicKey(deriveSecretKey('fold/member-inviter'))).toBe(g.input.inviter)
+    expect(getPublicKey(deriveSecretKey('fold/room-authority'))).toBe(g.input.authority)
+  })
+
+  for (const v of g.written) {
+    it(`writes ${v.name}`, () => {
+      const invitation = roomInvitation(bearer, g.input.inviter, v.persistent)
+      const url = encodeRoomLink(g.input.base, { invitation: v.authority === null ? invitation : { ...invitation, authority: v.authority }, relays: g.input.relays, iceUrls: [] })
+      expect(url).toBe(v.url)
+    })
+  }
+
+  for (const v of g.read) {
+    it(`reads ${v.name}`, () => {
+      if (v.result.threw) {
+        expect(() => parseRoomLink(v.url)).toThrow(v.result.message!)
+        return
+      }
+      const invitation = parseRoomLink(v.url).invitation!
+      expect(invitation.inviter).toBe(v.result.inviter)
+      expect(invitationAuthority(invitation)).toBe(v.result.authority)
+      expect(invitation.authority ?? null).toBe(v.result.named)
+      expect(invitation.persistent === true).toBe(v.result.persistent)
+    })
+  }
 })

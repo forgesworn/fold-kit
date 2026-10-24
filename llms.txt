@@ -105,7 +105,8 @@ Invitation versions: v1 (`encodeJoinUrl`, the room secret in the link) is legacy
 
 ### Links and invitations
 
-- `parseRoomLink(url)` / `encodeRoomLink(base, link)` → `RoomLink` - the v1/v2/v3 link envelope
+- `parseRoomLink(url)` / `encodeRoomLink(base, link)` → `RoomLink` - the v1/v2/v3/v5 link envelope. v5 is a member's temporary link: `inviter` is the member's own key, which answers requests to join, and `o` (`RoomInvitation.authority`) names the room's authority. A link whose inviter is the authority is always written as v2 or v3; a group (v3) link cannot name another authority.
+- `invitationAuthority(invitation)` - the room's authority a joiner pins (rekeys, epoch requests): `invitation.authority ?? invitation.inviter`
 - `createRoomInvitation(persistent?)`, `roomInvitation(bearer, inviter, persistent?)`, `deriveInvitationId(invitation)`
 - `encodeInvitationRequest(opts)` / `decodeInvitationRequest(event, opts)` - v2 live rendezvous request
 - `encodeInvitationAccountProof({ invitation, device, identity, now })` - account signature bound to this invitation, ephemeral request device and exact timestamp. The optional proof remains inside the encrypted request; it grants no room access. `participant` alone is unverified. Automatic account-based admission must use decoded `verifiedParticipant`; invalid/missing proof never sets it.

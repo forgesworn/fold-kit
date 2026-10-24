@@ -211,7 +211,11 @@ new exchange. The helper copies a supplied `requesterSk` before signing and
 erases only its owned copy on settlement. Hosts recheck freshness when a human
 decision completes, so approval cannot extend an expired request's authority.
 
-- `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3 link envelope
+- `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3/v5 link envelope.
+  Version 5 is a member's temporary link: its own `inviter` answers requests
+  to join, and `o` (`RoomInvitation.authority`) names the room's authority
+- `invitationAuthority(invitation)` - the key a joiner pins as the room's
+  authority: `authority` when the link names one, else `inviter`
 - `createRoomInvitation`, `roomInvitation`, `deriveInvitationId`,
   `encodeInvitationAccountProof`, `encodeInvitationRequest`, `decodeInvitationRequest`,
   `verifyInvitationDelegation`, `encodeInvitationGrant`,

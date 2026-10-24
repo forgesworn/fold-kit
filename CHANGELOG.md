@@ -5,6 +5,32 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.15.0
+
+### Added
+
+- Room authority in links: a version 5 link is a member's temporary link for
+  a room somebody else started. Its `h` is the member's own fresh inviter
+  key, which answers requests to join; its new `o` names the room's
+  authority, the key that signs the room's rekeys and that every member
+  already pinned. Before this, a member's own link made its inviter the
+  newcomer's authority, so in a room that had rekeyed the newcomer's epoch
+  requests were refused and it never caught up; and a room whose link-maker
+  had gone shut to new devices 12 hours later, when the last delegation ran
+  out.
+- `RoomInvitation.authority` (optional, lower-case hex) and
+  `invitationAuthority(invitation)`, which returns it or else `inviter`.
+  `parseRoomLink` reads version 5 and `encodeRoomLink` writes it whenever
+  `authority` is set and differs from `inviter`.
+- Version 5 is new rather than an extra field on version 2 so that a client
+  that does not know it refuses the link ("unsupported version") instead of
+  joining with the wrong authority and stalling. A link whose inviter is the
+  authority is written as version 2 or 3, byte for byte as before. A version
+  5 link must carry `o` as 32-byte hex different from `h`; anything else is
+  malformed. A group (v3) link cannot name another authority: a member's link
+  only ever asks, and `encodeRoomLink` throws on `persistent` with one.
+- Vectors: `linkAuthority` in `vectors/fold-vectors.json`.
+
 ## 0.14.0
 
 ### Added
