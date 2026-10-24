@@ -545,6 +545,18 @@ establish global absence or current membership. No storage or client effects
 move into the kit. See `docs/persistent-invitation-evidence.md` for the carrier,
 selection, refusal and caller integration boundaries.
 
+## Room authority in links: declared additions to `link.ts` and `invitation.ts`
+
+0.15.0. A version 5 link names the room's authority as `o` beside a member's
+own inviter `h`, so any member can make a working link for a room whose
+creator has gone. `RoomInvitation` gains an optional `authority` and the
+`invitationAuthority` helper (`invitation.ts`); `parseRoomLink` reads and
+`encodeRoomLink` writes version 5 (`link.ts`). A link whose inviter is the
+authority is written byte for byte as before, so every existing vector still
+verifies; the new ones are `linkAuthority` in `fold-vectors.json`.
+`link.ts` leaves the whole-file list in `scripts/diff-source.mjs` for
+`LINK_AUTHORITY_CHANGES`, which also carries the `invitation.ts` hunk.
+
 ## Quiet automatic replies: declared additions to `epoch.ts` and `invitation.ts`
 
 Unreleased. The authority desk waits a random time before every answer and

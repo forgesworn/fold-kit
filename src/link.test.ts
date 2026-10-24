@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { base64urlnopad } from '@scure/base'
 import { bytesToHex } from '@noble/hashes/utils'
 import { parseRoomLink, encodeRoomLink } from './link.js'
-import { createRoomInvitation } from './invitation.js'
+import { createRoomInvitation, invitationAuthority } from './invitation.js'
 import { encodeJoinUrl } from './room.js'
 
 const BASE = 'https://example.test/j/'
@@ -99,5 +99,64 @@ describe('room links', () => {
   it('refuses a malformed version 2 invitation', () => {
     const payload = base64urlnopad.encode(new TextEncoder().encode(JSON.stringify({ v: 2, j: 'x', r: [] })))
     expect(() => parseRoomLink(`${BASE}#${payload}`)).toThrow(/invitation/)
+  })
+})
+
+describe("a member's link naming the room's authority (version 5)", () => {
+  const AUTHORITY = 'AB'.repeat(32)
+  const fragment = (url: string) => JSON.parse(new TextDecoder().decode(base64urlnopad.decode(url.split('#')[1]!))) as Record<string, unknown>
+  const link = (payload: Record<string, unknown>) => `${BASE}#${base64urlnopad.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+
+  it('round-trips the authority beside the inviter, lower-cased, and the inviter still answers', () => {
+    const { invitation } = createRoomInvitation()
+    const url = encodeRoomLink(BASE, { invitation: { ...invitation, authority: AUTHORITY }, relays: ['wss://a.example'], iceUrls: [] })
+    expect(fragment(url)).toMatchObject({ v: 5, h: invitation.inviter, o: AUTHORITY.toLowerCase() })
+    expect(Object.keys(fragment(url))).toEqual(['v', 'j', 'h', 'o', 'r', 'i'])
+    const read = parseRoomLink(url)
+    expect(read.invitation?.inviter).toBe(invitation.inviter)
+    expect(read.invitation?.authority).toBe(AUTHORITY.toLowerCase())
+    expect(read.invitation?.persistent).toBeUndefined()
+    expect(bytesToHex(read.invitation!.bearer)).toBe(bytesToHex(invitation.bearer))
+    expect(invitationAuthority(read.invitation!)).toBe(AUTHORITY.toLowerCase())
+  })
+
+  it('writes a link whose inviter is the authority exactly as before: version 2 or 3, no o', () => {
+    for (const persistent of [false, true]) {
+      const { invitation } = createRoomInvitation(persistent)
+      const plain = encodeRoomLink(BASE, { invitation, relays: [], iceUrls: [] })
+      expect(encodeRoomLink(BASE, { invitation: { ...invitation, authority: invitation.inviter.toUpperCase() }, relays: [], iceUrls: [] })).toBe(plain)
+      expect(fragment(plain)).not.toHaveProperty('o')
+      expect(fragment(plain).v).toBe(persistent ? 3 : 2)
+      const read = parseRoomLink(plain)
+      expect(read.invitation?.authority).toBeUndefined()
+      expect(invitationAuthority(read.invitation!)).toBe(invitation.inviter)
+    }
+  })
+
+  it('refuses to write a group link that names another authority, or a malformed one', () => {
+    const group = createRoomInvitation(true).invitation
+    expect(() => encodeRoomLink(BASE, { invitation: { ...group, authority: AUTHORITY }, relays: [], iceUrls: [] })).toThrow(/group link/)
+    const meeting = createRoomInvitation().invitation
+    expect(() => encodeRoomLink(BASE, { invitation: { ...meeting, authority: 'not hex' }, relays: [], iceUrls: [] })).toThrow(/32-byte hex/)
+  })
+
+  it('refuses a version 5 link with no authority, a malformed one, or one equal to its inviter', () => {
+    const { invitation } = createRoomInvitation()
+    const base = { v: 5, j: base64urlnopad.encode(invitation.bearer), h: invitation.inviter, r: [], i: [] }
+    for (const o of [undefined, 42, 'zz'.repeat(32), 'ab'.repeat(31), invitation.inviter, invitation.inviter.toUpperCase()]) {
+      expect(() => parseRoomLink(link({ ...base, o }))).toThrow(/malformed invitation/)
+    }
+    expect(parseRoomLink(link({ ...base, o: AUTHORITY })).invitation?.authority).toBe(AUTHORITY.toLowerCase())
+  })
+
+  it('ignores o on a version 2 link: only version 5 names an authority', () => {
+    const { invitation } = createRoomInvitation()
+    const read = parseRoomLink(link({ v: 2, j: base64urlnopad.encode(invitation.bearer), h: invitation.inviter, o: AUTHORITY, r: [], i: [] }))
+    expect(read.invitation?.authority).toBeUndefined()
+  })
+
+  it('still refuses a version it does not know', () => {
+    const { invitation } = createRoomInvitation()
+    expect(() => parseRoomLink(link({ v: 6, j: base64urlnopad.encode(invitation.bearer), h: invitation.inviter, o: AUTHORITY, r: [] }))).toThrow(/unsupported version/)
   })
 })

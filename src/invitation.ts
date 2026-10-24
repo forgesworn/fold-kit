@@ -39,6 +39,25 @@ export interface RoomInvitation {
   inviter: string
   /** Version 3 group link: admission is stored encrypted on the relays. */
   persistent?: true
+  /**
+   * The room's authority, when it is not `inviter`: lower-case hex, carried
+   * as `o` by a version 5 link. A member makes one when nobody can answer
+   * the room's own link any more: the member's fresh key is the inviter and
+   * answers requests to join, and this names the key that signs the room's
+   * rekeys, which every member already pinned. Absent from every link whose
+   * inviter is the room's authority. Only the link's maker writes it; a
+   * responder in the link's chain cannot change it.
+   */
+  authority?: string
+}
+
+/**
+ * The room's authority for a link: the key a joiner pins to follow rekeys and
+ * to prove admission when it asks for an epoch. `authority` when the link
+ * names one, else the inviter, as for every link before version 5.
+ */
+export function invitationAuthority(invitation: RoomInvitation): string {
+  return invitation.authority ?? invitation.inviter
 }
 
 /** The private half retained by the browser that created an invitation. */

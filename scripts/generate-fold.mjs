@@ -26,7 +26,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getPublicKey } from 'nostr-tools/pure'
 import { seed32, deriveSecretKey, finalizeDeterministic } from './../vectors/lib/determinism.mjs'
-import { deriveScoped, createSubKeyCertificate, createDeviceCredential, verifyDeviceCredential } from '../dist/index.js'
+import { deriveScoped, createSubKeyCertificate, createDeviceCredential, verifyDeviceCredential, encodeRoomLink, parseRoomLink, roomInvitation, invitationAuthority } from '../dist/index.js'
+import { base64urlnopad } from '@scure/base'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const outPath = join(here, '..', 'vectors', 'fold-vectors.json')
@@ -257,6 +258,53 @@ const subCertAsDeviceCredential = {
   asRoomAcceptPerson: verifyDeviceCredential(subCertPositiveEvent, { roomId: signerId, now: NOW, acceptPerson: true }),
 }
 
+// --- Room authority in links (0.15.0) -----------------------------------------
+// A member's link names the room's authority as `o` beside its own inviter
+// (version 5); a link whose inviter is the authority stays version 2 or 3.
+// Fixed bearer and keys, so the exact URL is a known answer for any client.
+
+const LINK_BASE = 'https://example.test/j/'
+const LINK_BEARER = seed32('fold/link-bearer')
+const MEMBER_INVITER = getPublicKey(deriveSecretKey('fold/member-inviter'))
+const ROOM_AUTHORITY = getPublicKey(deriveSecretKey('fold/room-authority'))
+const LINK_RELAYS = ['wss://relay.example']
+
+function linkWith(authority, persistent = false) {
+  const invitation = roomInvitation(LINK_BEARER, MEMBER_INVITER, persistent)
+  return encodeRoomLink(LINK_BASE, { invitation: authority === undefined ? invitation : { ...invitation, authority }, relays: LINK_RELAYS, iceUrls: [] })
+}
+function rawLink(payload) {
+  return `${LINK_BASE}#${base64urlnopad.encode(new TextEncoder().encode(JSON.stringify(payload)))}`
+}
+function readLink(url) {
+  try {
+    const link = parseRoomLink(url)
+    return { threw: false, inviter: link.invitation.inviter, authority: invitationAuthority(link.invitation), named: link.invitation.authority ?? null, persistent: link.invitation.persistent === true }
+  } catch (error) {
+    return { threw: true, message: error.message }
+  }
+}
+const v5 = { v: 5, j: base64urlnopad.encode(LINK_BEARER), h: MEMBER_INVITER, r: LINK_RELAYS, i: [] }
+const linkAuthority = {
+  input: { base: LINK_BASE, bearerHex: Buffer.from(LINK_BEARER).toString('hex'), inviter: MEMBER_INVITER, authority: ROOM_AUTHORITY, relays: LINK_RELAYS },
+  written: [
+    { name: 'member-link-names-authority', authority: ROOM_AUTHORITY, persistent: false, url: linkWith(ROOM_AUTHORITY) },
+    { name: 'authority-equal-to-inviter-stays-v2', authority: MEMBER_INVITER, persistent: false, url: linkWith(MEMBER_INVITER) },
+    { name: 'no-authority-stays-v2', authority: null, persistent: false, url: linkWith(undefined) },
+    { name: 'group-link-stays-v3', authority: null, persistent: true, url: linkWith(undefined, true) },
+  ],
+  read: [
+    { name: 'v5-reads-authority', url: rawLink({ ...v5, o: ROOM_AUTHORITY }) },
+    { name: 'v5-upper-case-authority-reads-lower', url: rawLink({ ...v5, o: ROOM_AUTHORITY.toUpperCase() }) },
+    { name: 'v2-ignores-o', url: rawLink({ ...v5, v: 2, o: ROOM_AUTHORITY }) },
+    { name: 'v5-without-o-refused', url: rawLink(v5) },
+    { name: 'v5-o-equal-to-inviter-refused', url: rawLink({ ...v5, o: MEMBER_INVITER }) },
+    { name: 'v5-o-short-refused', url: rawLink({ ...v5, o: ROOM_AUTHORITY.slice(2) }) },
+    { name: 'v5-o-not-hex-refused', url: rawLink({ ...v5, o: 'zz' + ROOM_AUTHORITY.slice(2) }) },
+    { name: 'v6-refused', url: rawLink({ ...v5, v: 6, o: ROOM_AUTHORITY }) },
+  ].map(v => ({ ...v, result: readLink(v.url) })),
+}
+
 // --- Independent recompute check data ---------------------------------------
 // (the actual recompute is done in vectors/verify-fold.test.ts using
 // @noble/hashes directly, not deriveScoped - this just records which epoch
@@ -274,6 +322,7 @@ const doc = {
     scoped: { positive: scopedPositive, refusals: scopedRefusals, epochKeyLabels },
     subKeyCertificate: subKeyCertificate,
     subCertAsDeviceCredential,
+    linkAuthority,
   },
 }
 

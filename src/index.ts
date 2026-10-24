@@ -81,6 +81,7 @@ export {
   MAX_INVITATION_DELEGATION_DEPTH,
   createRoomInvitation,
   roomInvitation,
+  invitationAuthority,
   deriveInvitationId,
   encodeInvitationAccountProof,
   encodeInvitationRequest,
