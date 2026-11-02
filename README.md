@@ -1,5 +1,9 @@
 # @forgesworn/fold-kit
 
+Version 0.16 adds opt-in [ask-only node rooms](docs/node-rooms.md): signed
+node descriptors, version 6 links, sealed device admission and a rolling
+NIP-40 expiry helper. Legacy room links keep their existing semantics.
+
 Circle primitives for private Nostr groups that nobody operates: a room key
 per epoch, sealed to each device that stays; link invitations as
 capabilities; member removal by rekey; device credentials so a person
@@ -120,12 +124,13 @@ needs none.
 
 ## Exports
 
-Four entry points: `@forgesworn/fold-kit` (circle primitives),
+Five entry points: `@forgesworn/fold-kit` (circle primitives),
 `@forgesworn/fold-kit/lane` (just the lane helpers, for a consumer that only
 wants to classify a relay as `public`/`sheltered`/`direct` without pulling in
 the rest), `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec), and
 `@forgesworn/fold-kit/persistent-invitation-evidence` (bounded stored invitation
-observation and independent revalidation).
+observation and independent revalidation), and `@forgesworn/fold-kit/node-room`
+(opt-in node descriptors, admission and closure evidence).
 
 ### Identity, verification, hex
 
