@@ -5,6 +5,14 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.16.1
+
+- Add encrypted version 6 node retirement, bound to the descriptor and close
+  operation, without constructing a legacy bearer invitation.
+- Verify a node completion receipt using only its paired public service key
+  and random operation id after room self-destruct.
+- Add deterministic retirement vectors and preserve all 0.16.0 vector bytes.
+
 ## 0.16.0
 
 - Add opt-in signed node descriptors and ask-only version 6 links.

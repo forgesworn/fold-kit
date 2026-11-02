@@ -4,7 +4,7 @@ import { hexToBytes } from '@noble/hashes/utils'
 import { withStubbedRandomness } from './lib/determinism.mjs'
 import { signNodeRoom, readNodeRoom, parseNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest, encodeNodeJoinAnswer, decodeNodeJoinAnswer } from '../src/node-room.js'
 import { parseRoomLink } from '../src/link.js'
-import { signNodeClosure, readNodeClosure, recoverNodeClosure, readNodeCloseReceipt } from '../src/node-room.js'
+import { signNodeClosure, readNodeClosure, recoverNodeClosure, readNodeCloseReceipt, signNodeRetirement, readNodeRetirement, readNodeOperationReceipt } from '../src/node-room.js'
 const v = JSON.parse(readFileSync(new URL('./node-room-vectors.json', import.meta.url), 'utf8'))
 const wire = (value: unknown) => JSON.parse(JSON.stringify(value))
 it('recomputes the byte-identical node descriptor and NIP-59 envelopes from recorded randomness', () => {
@@ -15,6 +15,9 @@ it('recomputes the byte-identical node descriptor and NIP-59 envelopes from reco
   expect(readNodeClosure(v.closure, node, now)).toEqual(v.closureProof)
   expect(recoverNodeClosure(v.closureProof, node, now)).toEqual(v.closure)
   expect(readNodeCloseReceipt(v.receipt, node, v.closureProof.operation, now)).toMatchObject({ callsRevoked: true, relayPurged: true, eventsDeleted: 3 })
+  expect(readNodeOperationReceipt(v.receipt, node.serviceKey, v.closureProof.operation, now)).toMatchObject({ callsRevoked: true, relayPurged: true, eventsDeleted: 3 })
+  expect(wire(withStubbedRandomness(v.retirementRandom.map(hexToBytes), () => signNodeRetirement({ node, authoritySk, roomSecret: hexToBytes(v.keys.secret), operation: v.closureProof.operation, now })))).toEqual(v.retirement)
+  expect(readNodeRetirement(v.retirement, node, hexToBytes(v.keys.secret), now)).toEqual({ operation: v.closureProof.operation, at: now })
   expect(readNodeCloseReceipt(v.receipt, node, 'ff'.repeat(16), now)).toBeNull()
   expect(readNodeClosure(v.receipt, node, now)).toBeNull()
   expect(() => parseRoomLink(v.link)).toThrow('unsupported version')
