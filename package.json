@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/fold-kit",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Circle primitives for private Nostr groups nobody operates: epoch keys, link invites, removal by rekey, device credentials.",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,6 +22,10 @@
     "./persistent-invitation-evidence": {
       "types": "./dist/persistent-invitation-evidence.d.ts",
       "default": "./dist/persistent-invitation-evidence.js"
+    },
+    "./node-room": {
+      "types": "./dist/node-room.d.ts",
+      "default": "./dist/node-room.js"
     }
   },
   "files": [
@@ -43,7 +47,8 @@
     "vectors/fold-vectors.json",
     "docs",
     "EXTRACTION.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "vectors/node-room-vectors.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -66,7 +71,8 @@
     "generate-live-persistent": "node scripts/generate-live-persistent.mjs",
     "generate-invitation-account": "node scripts/generate-invitation-account.mjs",
     "generate-invitation-decline": "node scripts/generate-invitation-decline.mjs",
-    "generate-mls-admission": "node scripts/generate-mls-admission.mjs"
+    "generate-mls-admission": "node scripts/generate-mls-admission.mjs",
+    "generate-node-room": "node scripts/generate-node-room.mjs"
   },
   "keywords": [
     "nostr",

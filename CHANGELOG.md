@@ -5,6 +5,16 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## 0.16.0
+
+- Add opt-in signed node descriptors and ask-only version 6 links.
+- Add sealed node admission requests, admitted answers and refusals, with
+  device credential, room/node binding and active grant verification.
+- Add rolling node-room NIP-40 expiry and deterministic cross-client vectors.
+- Add explicit keeper closure proofs and separate node completion receipts;
+  a grant reset or a node refusal alone cannot authorise device deletion.
+- Existing link versions and moved primitive behaviour remain unchanged.
+
 ## 0.15.0
 
 ### Added

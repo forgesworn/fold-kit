@@ -25,6 +25,7 @@ import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
 import { LIVE_PERSISTENT_ADMISSION_LABELS } from './live-persistent-admission.js'
 import { MLS_ADMISSION_LABELS } from './mls-admission.js'
 import { ROOM_LABELS } from './room.js'
+import { NODE_ROOM_LABELS } from './node-room.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -63,6 +64,9 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v1/epoch-request:',
   'kithmoot/v1/kindred:',
   'kithmoot/v1/member-epoch-request-key',
+  'kithmoot/v1/node-room',
+  'kithmoot/v1/node-ask',
+  'kithmoot/v1/node-answer',
   'kithmoot/v1/persistent-live/request-key',
   'kithmoot/v1/room-id',
   'kithmoot/v1/room-key',
@@ -118,6 +122,7 @@ const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = 
   ['persistent-invitation.ts', PERSISTENT_INVITATION_LABELS],
   ['live-persistent-admission.ts', LIVE_PERSISTENT_ADMISSION_LABELS],
   ['room.ts', ROOM_LABELS],
+  ['node-room.ts', NODE_ROOM_LABELS],
   ['mls-admission.ts', MLS_ADMISSION_LABELS],
 ]
 

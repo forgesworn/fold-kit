@@ -581,3 +581,11 @@ entries are not evicted to make room; only idle expired entries are pruned.
 This changes local host behaviour, not any encoder or wire format.
 `INVITATION_RETRY_CHANGES` in `scripts/diff-source.mjs` reverses these exact
 hunks before earlier declared changes and the pinned-source comparison.
+
+## Keeper-controlled node rooms
+
+`node-room.ts` is a new opt-in codec, not a moved implementation. It reserves
+link version 6; version 5 remains member invitations. It adds private signed
+node evidence, sealed ask/answer exchange and a rolling NIP-40 helper without
+changing any moved function. Host lifecycle and grant-ledger ordering stay
+with the consuming application and supervisor. See `docs/node-rooms.md`.
