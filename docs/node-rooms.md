@@ -34,6 +34,12 @@ room end and an event's existing expiry. Call it before signing every
 node-room event, including events made by rotating and one-time signers.
 Legacy rooms do not acquire this policy.
 
+For retained chat and epoch responders, pass an `ExpirationDeadline`
+callback to the relevant codec's `expiresAt` option. It is resolved when an
+event is signed, so the horizon moves even if the host stays open for more
+than 30 days. Fixed numeric ends and absent expiry retain their existing
+bytes. A callback error or invalid result stops signing.
+
 ## Admission exchange
 
 An asker creates a fresh room device key and a room-scoped participant-signed

@@ -11,6 +11,8 @@ the one place its behaviour has deliberately diverged.
 - Add sealed node admission requests, admitted answers and refusals, with
   device credential, room/node binding and active grant verification.
 - Add rolling node-room NIP-40 expiry and deterministic cross-client vectors.
+- Resolve optional expiration callbacks when signing, including long-lived
+  epoch responders, while preserving fixed and absent expiry behaviour.
 - Add explicit keeper closure proofs and separate node completion receipts;
   a grant reset or a node refusal alone cannot authorise device deletion.
 - Existing link versions and moved primitive behaviour remain unchanged.

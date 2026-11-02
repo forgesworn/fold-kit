@@ -589,3 +589,12 @@ link version 6; version 5 remains member invitations. It adds private signed
 node evidence, sealed ask/answer exchange and a rolling NIP-40 helper without
 changing any moved function. Host lifecycle and grant-ledger ordering stay
 with the consuming application and supervisor. See `docs/node-rooms.md`.
+
+Node rooms also need a deadline calculated at signing time after a long-lived
+host has been open for weeks. `ExpirationDeadline` broadens the existing
+`expiresAt` option fields in `epoch.ts` and `member-epoch.ts` to accept a
+callback. `withExpiration` resolves it before signing; numeric and absent
+values keep their exact wire behaviour. The pinned comparison reverses the
+one type import and exactly five fields in moved `epoch.ts`; member-epoch
+and expiration are new modules. The long-lived epoch-host test crosses the
+30-day horizon without reconstructing the host.

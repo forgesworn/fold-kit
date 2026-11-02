@@ -1,3 +1,4 @@
+import type { ExpirationDeadline } from './expiration.js'
 import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 import { base64urlnopad } from '@scure/base'
@@ -194,7 +195,7 @@ export interface EncodeMemberEpochRequestOptions {
   /** The epoch this device is at. */
   have: number
   now: number
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
 }
 
 /** Ask any current member for the epochs after `have`. */
@@ -312,7 +313,7 @@ export interface EncodeMemberEpochGrantOptions {
    *  sealed to its seal key when it names one (see `seal.ts`). */
   credential?: DeviceCredential
   now: number
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
 }
 
 function plainEvent(event: Event): Event {
@@ -525,7 +526,7 @@ export interface HostMemberEpochDeskOptions {
    *  Nothing is published either way: a member's refusal is not something a
    *  requester could believe, so it is not sent. */
   onRefused?: (request: MemberEpochRequest, why: EpochRefusal) => void
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
 }
 
 /**
@@ -742,7 +743,7 @@ export interface MemberEpochRequestOptions {
   /** The seal key secrets this device holds. Asked on every answer,
    *  because a credential may renew while the ask is out. */
   sealSks?: () => readonly Uint8Array[]
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
 }
 
 /** What `requestRoomEpoch({ members })` takes: a second source of answers

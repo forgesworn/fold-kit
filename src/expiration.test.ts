@@ -1,10 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_ROOM_ENDS_SECONDS, isRoomEnds, requireRoomEnds, withExpiration } from './expiration.js'
+import { generateSecretKey, getPublicKey } from 'nostr-tools/pure'
+import { SimRelay, SimTransport } from '../test/sim-relay.js'
+import { createDeviceCredential } from './credential.js'
+import { localIdentity } from './identity.js'
+import { deriveRoom } from './room.js'
+import { hostRoomEpoch, requestRoomEpoch } from './epoch.js'
 
 const NOW = 1_800_000_000
 const ENDS = NOW + 86_400
 
+it('a retained epoch host signs a fresh rolling expiry after more than thirty days', async () => {
+  let clock = NOW
+  const authoritySk = generateSecretKey(), authority = getPublicKey(authoritySk), deviceSk = generateSecretKey()
+  const identity = localIdentity(generateSecretKey()), secret = generateSecretKey(), { roomId, roomKey } = deriveRoom(secret)
+  const credential = await createDeviceCredential({ identity, devicePubkey: getPublicKey(deviceSk), roomId, expiresAt: NOW + 90 * 86400, now: () => clock })
+  const relay = new SimRelay(), deadline = () => clock + MAX_ROOM_ENDS_SECONDS
+  const desk = hostRoomEpoch({ transport: new SimTransport(relay), roomId, authoritySk, roomKey, current: () => ({ epoch: 0, secret }),
+    removed: () => new Set(), known: p => p === identity.pubkey, now: () => clock, expiresAt: deadline, replyDelayMs: [0, 0] })
+  try {
+    for (const later of [NOW, NOW + 31 * 86400]) {
+      clock = later
+      const result = await requestRoomEpoch({ transport: new SimTransport(relay), roomId, roomKey, authority, deviceSk, credential,
+        now: () => clock, expiresAt: deadline, timeoutMs: 1000 })
+      expect(result.epoch.epoch).toBe(0)
+      const grant = relay.published.slice().reverse().find(e => e.kind === 20469)!
+      expect(grant.tags.find(t => t[0] === 'expiration')?.[1]).toBe(String(later + MAX_ROOM_ENDS_SECONDS))
+    }
+  } finally { desk.close() }
+})
+
 describe('withExpiration', () => {
+  it('refuses an invalid rolling deadline rather than dropping expiration', () => {
+    expect(() => withExpiration([], () => undefined as unknown as number)).toThrow()
+    expect(() => withExpiration([], () => NaN)).toThrow()
+    expect(() => withExpiration([], () => { throw Error('room closed') })).toThrow('room closed')
+  })
   it('leaves tags untouched, the same array, when the room has no end', () => {
     const tags = [['d', 'x'], ['expiration', String(NOW + 10)]]
     expect(withExpiration(tags, undefined)).toBe(tags)
