@@ -89,7 +89,7 @@ const expectedLane = ${JSON.stringify(['LANES', 'LANE_MEANING', 'LANE_LABEL', 'L
 
 const expectedMls = ["MLS_ADMISSION_LABELS", "MLS_ADMISSION_PLAINTEXT_BYTES", "MLS_ADMISSION_CIPHERTEXT_CHARACTERS", "encodeMlsInvitationV4", "readMlsInvitationV4", "mlsAdmissionProofTemplatesV4", "encodeMlsAdmissionRequestV4", "decodeMlsAdmissionRequestV4", "readMlsAdmissionRequestV4", "encodeMlsAdmissionAnswerV4", "decodeMlsAdmissionAnswerV4", "readMlsAdmissionAnswerV4"]
 let missing = []
-for (const name of ['signNodeRoom', 'readNodeRoom', 'encodeNodeRoomLink', 'parseNodeRoomLink', 'encodeNodeJoinRequest', 'decodeNodeJoinRequest', 'encodeNodeJoinAnswer', 'decodeNodeJoinAnswer', 'verifyNodeRoomGrant', 'withNodeRoomExpiration', 'signNodeClosure', 'readNodeClosure', 'recoverNodeClosure', 'readNodeCloseReceipt']) if (!(name in nodeRoom)) missing.push('node-room:' + name)
+for (const name of ['signNodeRoom', 'readNodeRoom', 'readNodeTurnPorts', 'encodeNodeRoomLink', 'parseNodeRoomLink', 'encodeNodeJoinRequest', 'decodeNodeJoinRequest', 'encodeNodeJoinAnswer', 'decodeNodeJoinAnswer', 'verifyNodeRoomGrant', 'withNodeRoomExpiration', 'signNodeClosure', 'readNodeClosure', 'recoverNodeClosure', 'readNodeCloseReceipt']) if (!(name in nodeRoom)) missing.push('node-room:' + name)
 for (const name of expectedMain) if (!(name in main)) missing.push('main:' + name)
 for (const name of expectedLane) if (!(name in lane)) missing.push('lane:' + name)
 for (const name of expectedMls) if (!(name in mls)) missing.push('mls:' + name)
@@ -102,6 +102,8 @@ if (missing.length > 0) {
 const nodeVector = JSON.parse(readFileSync(new URL('./node_modules/@forgesworn/fold-kit/vectors/node-room-vectors.json', import.meta.url), 'utf8'))
 const nodeRecord = nodeRoom.parseNodeRoomLink(nodeVector.link, nodeVector.now)
 if (!nodeRecord || nodeRoom.decodeNodeJoinAnswer({ node: nodeRecord, deviceSk: new Uint8Array(Buffer.from(nodeVector.keys.device, 'hex')), event: nodeVector.answer, requestId: nodeVector.request.requestId, requestExpiresAt: nodeVector.request.expiresAt, now: nodeVector.now + 2 })?.epochHint !== 3) throw new Error('packaged node admission did not verify')
+const customNode = nodeRoom.parseNodeRoomLink(nodeVector.customPorts.link, nodeVector.now)
+if (!customNode || JSON.stringify(customNode.turnUrls) !== JSON.stringify(nodeVector.customPorts.turnUrls) || nodeRoom.readNodeTurnPorts({ udpTcp: 443, tls: 5349 }) !== null) throw new Error('packaged signed node ports did not verify')
 const room = main.deriveRoom(new Uint8Array(32).fill(7))
 if (!/^[0-9a-f]{64}$/.test(room.roomId)) throw new Error('deriveRoom did not return a hex room id')
 if (lane.laneOfRelayUrl('wss://relay.example') !== 'public') throw new Error('laneOfRelayUrl misbehaved')

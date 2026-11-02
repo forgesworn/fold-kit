@@ -4,7 +4,8 @@ Version 0.16 adds opt-in [ask-only node rooms](docs/node-rooms.md): signed
 node descriptors, version 6 links, sealed device admission and a rolling
 NIP-40 expiry helper. Version 0.16.1 adds encrypted node retirement and
 completion receipt verification after room self-destruct. Legacy room links
-keep their existing semantics.
+keep their existing semantics. Version 0.17 adds keeper-signed per-node TURN
+ports for hosted app coexistence; default descriptor bytes stay unchanged.
 
 Circle primitives for private Nostr groups that nobody operates: a room key
 per epoch, sealed to each device that stays; link invitations as

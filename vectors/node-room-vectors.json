@@ -267,5 +267,38 @@
     "expired-answer",
     "forged-grant",
     "legacy-parser-refuses-link"
-  ]
+  ],
+  "customPorts": {
+    "turnPorts": {
+      "udpTcp": 34790,
+      "tls": 53499
+    },
+    "descriptor": {
+      "kind": 27542,
+      "created_at": 1900000000,
+      "tags": [
+        [
+          "d",
+          "f39a78dfe77018d204fc63bd77c62b614a56451c084b2651f1e7d24533a2a74d"
+        ]
+      ],
+      "content": "{\"v\":1,\"profile\":\"kithmoot/v1/node-room\",\"room\":\"f39a78dfe77018d204fc63bd77c62b614a56451c084b2651f1e7d24533a2a74d\",\"node\":\"https://node.example\",\"service\":\"b0db5ec74b9d630433cfc86ec8128c671dfa4d0ea587eba716375901b79b3827\",\"calls\":\"relay-only\",\"files\":\"off\",\"turnPorts\":{\"udpTcp\":34790,\"tls\":53499}}",
+      "pubkey": "692643effa4658779b8c949ac7c3273e67d486537aea7c59e3387293998b0aab",
+      "id": "185b1b93d672fcc5a9b641de07ca80ec8bf7076d5792832452dffe63b2719ce2",
+      "sig": "1c52985c5cd5df5b8b272142caaeb8bd12806199af151ee155ac72b422395bf79c5a5cf95768d63112aac78ee979138b209cc172f6ce5c13afa6d325d75b8f7d"
+    },
+    "descriptorRandom": [
+      "51edd698fc7f68774c1eefab2495c4d69c5bc8c359b7f5f2dbfeb2df56ae8068"
+    ],
+    "link": "https://app.example/j/#eyJ2Ijo2LCJub2RlIjp7ImtpbmQiOjI3NTQyLCJjcmVhdGVkX2F0IjoxOTAwMDAwMDAwLCJ0YWdzIjpbWyJkIiwiZjM5YTc4ZGZlNzcwMThkMjA0ZmM2M2JkNzdjNjJiNjE0YTU2NDUxYzA4NGIyNjUxZjFlN2QyNDUzM2EyYTc0ZCJdXSwiY29udGVudCI6IntcInZcIjoxLFwicHJvZmlsZVwiOlwia2l0aG1vb3QvdjEvbm9kZS1yb29tXCIsXCJyb29tXCI6XCJmMzlhNzhkZmU3NzAxOGQyMDRmYzYzYmQ3N2M2MmI2MTRhNTY0NTFjMDg0YjI2NTFmMWU3ZDI0NTMzYTJhNzRkXCIsXCJub2RlXCI6XCJodHRwczovL25vZGUuZXhhbXBsZVwiLFwic2VydmljZVwiOlwiYjBkYjVlYzc0YjlkNjMwNDMzY2ZjODZlYzgxMjhjNjcxZGZhNGQwZWE1ODdlYmE3MTYzNzU5MDFiNzliMzgyN1wiLFwiY2FsbHNcIjpcInJlbGF5LW9ubHlcIixcImZpbGVzXCI6XCJvZmZcIixcInR1cm5Qb3J0c1wiOntcInVkcFRjcFwiOjM0NzkwLFwidGxzXCI6NTM0OTl9fSIsInB1YmtleSI6IjY5MjY0M2VmZmE0NjU4Nzc5YjhjOTQ5YWM3YzMyNzNlNjdkNDg2NTM3YWVhN2M1OWUzMzg3MjkzOTk4YjBhYWIiLCJpZCI6IjE4NWIxYjkzZDY3MmZjYzVhOWI2NDFkZTA3Y2E4MGVjOGJmNzA3NmQ1NzkyODMyNDUyZGZmZTYzYjI3MTljZTIiLCJzaWciOiIxYzUyOTg1YzVjZDVkZjViOGIyNzIxNDJjYWFlYjhiZDEyODA2MTk5YWYxNTFlZTE1NWFjNzJiNDIyMzk1YmY3OWM1YTVjZjk1NzY4ZDYzMTEyYWFjNzhlZTk3OTEzOGIyMDljYzE3MmY2Y2U1YzEzYWZhNmQzMjVkNzViOGY3ZCJ9fQ",
+    "iceUrls": [
+      "stun:node.example:34790"
+    ],
+    "turnUrls": [
+      "turn:node.example:34790?transport=udp",
+      "turn:node.example:34790?transport=tcp",
+      "turns:node.example:53499?transport=tcp",
+      "turns:turn.node.example:443?transport=tcp"
+    ]
+  }
 }

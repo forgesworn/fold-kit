@@ -23,6 +23,7 @@ export const NODE_ASK_SECONDS = 600
 const KEY = /^[0-9a-f]{64}$/
 const utf8 = new TextEncoder(), text = new TextDecoder('utf-8', { fatal: true })
 
+export interface NodeTurnPorts { udpTcp: number; tls: number }
 export interface NodeRoomRecord {
   event: Event
   room: string
@@ -30,6 +31,7 @@ export interface NodeRoomRecord {
   origin: string
   serviceKey: string
   endsAt?: number
+  turnPorts?: NodeTurnPorts
   relay: string
   iceUrls: string[]
   turnUrls: string[]
@@ -90,31 +92,44 @@ function origin(raw: unknown): URL {
     && url.hostname.split('.').every(s => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s)))
   return url
 }
+/** Only ports on the already pinned node hostname vary. HTTPS and the
+ * dedicated TURN TLS hostname always retain port 443. */
+export function readNodeTurnPorts(raw: unknown = undefined): NodeTurnPorts | null {
+  if (raw === undefined) return { udpTcp: 3478, tls: 5349 }
+  try {
+    shape(raw, ['udpTcp', 'tls'])
+    const ports = raw as unknown as NodeTurnPorts
+    check([ports.udpTcp, ports.tls].every(value => Number.isSafeInteger(value) && value >= 1024 && value <= 65535) && ports.udpTcp !== ports.tls)
+    return { udpTcp: ports.udpTcp, tls: ports.tls }
+  } catch { return null }
+}
+const standardPorts = (ports: NodeTurnPorts): boolean => ports.udpTcp === 3478 && ports.tls === 5349
 /** A signed record pins one node, its transport key and the privacy policy.
  * It contains no room traffic key, grant token, account key or device list. */
-export function signNodeRoom(opts: { authoritySk: Uint8Array; room: string; origin: string; serviceKey: string; now: number; endsAt?: number }): Event {
+export function signNodeRoom(opts: { authoritySk: Uint8Array; room: string; origin: string; serviceKey: string; now: number; endsAt?: number; turnPorts?: NodeTurnPorts }): Event {
+  const ports = readNodeTurnPorts(opts.turnPorts); check(ports)
   check(integer(opts.now) && KEY.test(opts.room) && KEY.test(opts.serviceKey) && opts.serviceKey !== getPublicKey(opts.authoritySk)); origin(opts.origin)
   if (opts.endsAt !== undefined) check(integer(opts.endsAt) && opts.endsAt > opts.now && opts.endsAt <= opts.now + MAX_ROOM_ENDS_SECONDS)
   return finalizeEvent({ kind: NODE_RECORD_KIND, created_at: opts.now,
     tags: withExpiration([['d', opts.room]], opts.endsAt), content: JSON.stringify({ v: 1, profile: PROFILE, room: opts.room,
-      node: opts.origin, service: opts.serviceKey, calls: 'relay-only', files: 'off', ...(opts.endsAt === undefined ? {} : { ends: opts.endsAt }) }) }, opts.authoritySk)
+      node: opts.origin, service: opts.serviceKey, calls: 'relay-only', files: 'off', ...(opts.endsAt === undefined ? {} : { ends: opts.endsAt }), ...(standardPorts(ports) ? {} : { turnPorts: ports }) }) }, opts.authoritySk)
 }
 export function readNodeRoom(raw: unknown, now: number, pinnedAuthority?: string): NodeRoomRecord | null {
   try {
     check(integer(now)); event(raw, 4096)
     check(raw.kind === NODE_RECORD_KIND && raw.created_at <= now + 30 && (pinnedAuthority === undefined || raw.pubkey === pinnedAuthority))
-    const body = json(raw.content, ['v', 'profile', 'room', 'node', 'service', 'calls', 'files'], ['ends'])
+    const body = json(raw.content, ['v', 'profile', 'room', 'node', 'service', 'calls', 'files'], ['ends', 'turnPorts'])
     check(body.v === 1 && body.profile === PROFILE && body.calls === 'relay-only' && body.files === 'off'
       && typeof body.room === 'string' && KEY.test(body.room) && tag(raw, 'd') === body.room
       && typeof body.service === 'string' && KEY.test(body.service) && body.service !== raw.pubkey)
-    const node = origin(body.node)
+    const node = origin(body.node), ports = readNodeTurnPorts(body.turnPorts); check(ports)
     if (body.ends !== undefined) check(integer(body.ends) && body.ends > now && body.ends <= raw.created_at + MAX_ROOM_ENDS_SECONDS
       && tag(raw, 'expiration') === String(body.ends) && raw.tags.length === 2)
     else check(raw.tags.length === 1)
     return { event: JSON.parse(JSON.stringify(raw)), room: body.room, authority: raw.pubkey, origin: node.origin, serviceKey: body.service,
-      ...(body.ends === undefined ? {} : { endsAt: body.ends as number }), relay: `wss://${node.host}/events`,
-      iceUrls: [`stun:${node.host}:3478`], turnUrls: [`turn:${node.host}:3478?transport=udp`, `turn:${node.host}:3478?transport=tcp`,
-        `turns:${node.host}:5349?transport=tcp`, `turns:turn.${node.host}:443?transport=tcp`] }
+      ...(body.ends === undefined ? {} : { endsAt: body.ends as number }), ...(standardPorts(ports) ? {} : { turnPorts: ports }), relay: `wss://${node.host}/events`,
+      iceUrls: [`stun:${node.host}:${ports.udpTcp}`], turnUrls: [`turn:${node.host}:${ports.udpTcp}?transport=udp`, `turn:${node.host}:${ports.udpTcp}?transport=tcp`,
+        `turns:${node.host}:${ports.tls}?transport=tcp`, `turns:turn.${node.host}:443?transport=tcp`] }
   } catch { return null }
 }
 function record(value: NodeRoomRecord, now: number): NodeRoomRecord {

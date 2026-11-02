@@ -39,5 +39,9 @@ const record = { profile: 'node-room/1', linkVersion: 6, note: 'Synthetic determ
   retirement, retirementRandom: retirementRandom.map(bytesToHex),
   receipt,
   refusals: ['wrong-request-id', 'wrong-device-key', 'wrong-node', 'tampered-descriptor', 'expired-answer', 'forged-grant', 'legacy-parser-refuses-link'] }
+const portsRandom = [seed32('node/ports-descriptor-aux')], turnPorts = { udpTcp: 34790, tls: 53499 }
+const portsDescriptor = wire(withStubbedRandomness(portsRandom, () => signNodeRoom({ authoritySk: authority, room, origin: 'https://node.example', serviceKey, now, turnPorts })))
+const portsNode = readNodeRoom(portsDescriptor, now)
+record.customPorts = { turnPorts, descriptor: portsDescriptor, descriptorRandom: portsRandom.map(bytesToHex), link: encodeNodeRoomLink('https://app.example/j/', portsDescriptor, now), iceUrls: portsNode.iceUrls, turnUrls: portsNode.turnUrls }
 writeFileSync(new URL('../vectors/node-room-vectors.json', import.meta.url), JSON.stringify(record, null, 2) + '\n')
 console.log('Node-room v6 descriptor, sealed request, answer and refusal vectors generated')
