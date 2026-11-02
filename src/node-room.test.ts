@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generateSecretKey, getPublicKey, finalizeEvent, verifiedSymbol } from 'nostr-tools/pure'
-import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, parseNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest,
+import { signNodeRoom, readNodeRoom, readNodeTurnPorts, encodeNodeRoomLink, parseNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest,
   encodeNodeJoinAnswer, decodeNodeJoinAnswer, withNodeRoomExpiration, verifyNodeRoomGrant } from './node-room.js'
 import { signNodeClosure, readNodeClosure, recoverNodeClosure, signNodeRetirement, readNodeRetirement, readNodeCloseReceipt, readNodeOperationReceipt } from './node-room.js'
 import { deriveRoom } from './room.js'
@@ -123,5 +123,37 @@ describe('ask-only node rooms', () => {
     expect(readNodeClosure(reset, f.node, now)).toBeNull()
     const forged = finalizeEvent({ kind: closed.kind, created_at: now, content: '', tags: closed.tags }, generateSecretKey())
     expect(readNodeClosure(forged, f.node, now)).toBeNull()
+  })
+})
+
+describe('keeper-signed node TURN port selection', () => {
+  it('pins only two unprivileged ports on the node while retaining HTTPS and dedicated TLS443', async () => {
+    const f = await fixture(), turnPorts = { udpTcp: 34790, tls: 53499 }
+    const signed = signNodeRoom({ authoritySk: f.authority, room: f.room, serviceKey: f.node.serviceKey, origin: f.node.origin, now, turnPorts })
+    const node = readNodeRoom(signed, now)!
+    expect(node.turnPorts).toEqual(turnPorts)
+    expect(node.iceUrls).toEqual(['stun:node.example:34790'])
+    expect(node.turnUrls).toEqual(['turn:node.example:34790?transport=udp', 'turn:node.example:34790?transport=tcp', 'turns:node.example:53499?transport=tcp', 'turns:turn.node.example:443?transport=tcp'])
+    expect(parseNodeRoomLink(encodeNodeRoomLink('https://app.example/j/', signed, now), now)).toEqual(node)
+    const changed = JSON.parse(signed.content); changed.turnPorts.udpTcp++
+    expect(readNodeRoom({ ...signed, content: JSON.stringify(changed), [verifiedSymbol]: true }, now)).toBeNull()
+  })
+  it('omits explicit standard ports so existing descriptor bytes and reader shape remain unchanged', async () => {
+    const f = await fixture()
+    const signed = signNodeRoom({ authoritySk: f.authority, room: f.room, serviceKey: f.node.serviceKey, origin: f.node.origin, now, turnPorts: { udpTcp: 3478, tls: 5349 } })
+    expect(signed.content).toBe(f.event.content)
+    expect(readNodeRoom(signed, now)).not.toHaveProperty('turnPorts')
+    const ports = readNodeTurnPorts()!; ports.udpTcp = 10000
+    expect(readNodeTurnPorts()).toEqual({ udpTcp: 3478, tls: 5349 })
+  })
+  it('refuses malformed, privileged, duplicated and host-bearing port records even with a valid keeper signature', async () => {
+    const f = await fixture()
+    for (const ports of [null, [], {}, { udpTcp: 1023, tls: 53499 }, { udpTcp: 443, tls: 53499 }, { udpTcp: 65536, tls: 53499 },
+      { udpTcp: '34790', tls: 53499 }, { udpTcp: 34790.5, tls: 53499 }, { udpTcp: 34790, tls: 34790 }, { udpTcp: 34790, tls: 53499, host: 'other.example' }]) {
+      expect(readNodeTurnPorts(ports)).toBeNull()
+      expect(() => signNodeRoom({ authoritySk: f.authority, room: f.room, serviceKey: f.node.serviceKey, origin: f.node.origin, now, turnPorts: ports as never })).toThrow()
+      const signed = finalizeEvent({ kind: f.event.kind, created_at: now, tags: f.event.tags, content: JSON.stringify({ ...JSON.parse(f.event.content), turnPorts: ports }) }, f.authority)
+      expect(readNodeRoom(signed, now)).toBeNull()
+    }
   })
 })

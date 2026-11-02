@@ -35,3 +35,10 @@ it('recomputes the byte-identical node descriptor and NIP-59 envelopes from reco
   expect(decodeNodeJoinAnswer({ ...context, event: v.answer, now: now + 91 })).toBeNull()
   expect(decodeNodeJoinAnswer({ ...context, event: { ...v.answer, content: v.answer.content + 'x' } })).toBeNull()
 })
+
+it('recomputes the signed custom-port descriptor while retaining the same v6 envelope and fixed TLS443 URL', () => {
+  const custom = v.customPorts, node = readNodeRoom(custom.descriptor, v.now)!
+  expect(node).not.toBeNull(); expect(parseNodeRoomLink(custom.link, v.now)).toEqual(node)
+  expect(node.turnPorts).toEqual(custom.turnPorts); expect(node.iceUrls).toEqual(custom.iceUrls); expect(node.turnUrls).toEqual(custom.turnUrls)
+  expect(wire(withStubbedRandomness(custom.descriptorRandom.map(hexToBytes), () => signNodeRoom({ authoritySk: hexToBytes(v.keys.authority), room: node.room, serviceKey: node.serviceKey, origin: node.origin, now: v.now, turnPorts: custom.turnPorts })))).toEqual(custom.descriptor)
+})

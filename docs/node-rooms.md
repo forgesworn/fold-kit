@@ -23,11 +23,28 @@ its authority closes it; it does not remove rolling event expiry.
 
 `readNodeRoom` verifies the uncached signature, shape, origin, policy and
 optional authority pin. It derives exactly one `/events` relay, the node's
-STUN URL and four TURN URLs: UDP and TCP 3478, TLS 5349, and TLS 443 at
-`turn.<node>`. No supplied fallback list is accepted. `encodeNodeRoomLink`
+STUN URL and four TURN URLs. By default these are UDP/TCP 3478, TLS 5349
+and TLS 443 at `turn.<node>`. No supplied fallback list is accepted. `encodeNodeRoomLink`
 and `parseNodeRoomLink` use the fragment envelope `{v:6,node:<signed event>}`.
 The service public key identifies the node transport; it is not an owner,
 room authority or admitted device key.
+
+Version 0.17 adds optional `turnPorts:{udpTcp,tls}` to `signNodeRoom` and the
+signed descriptor body. `readNodeTurnPorts` validates that pair; omission
+returns fresh defaults of 3478 and 5349, malformed input returns null.
+Both values must be distinct integer ports in 1024..65535. They change only
+STUN and TURN UDP/TCP, and TURN TLS on the already pinned node hostname.
+HTTPS stays on 443 and the fourth TURN URL stays `turns:turn.<node>:443`.
+No host, URL list, alternate issuer or fallback endpoint can be supplied.
+This lets hosted packages select separate ports beside an existing relay.
+
+Explicit standard values are omitted by the writer, preserving existing
+default descriptor bytes and parsed record shape. Older strict readers reject
+custom-port descriptors. Use upgraded clients for such rooms; do not change
+an existing room's listener ports behind its signed record. Changing a node's
+port profile requires closing affected rooms or preserving their old listeners.
+The vector file adds a separate custom-port descriptor and v6 link; every
+pre-existing vector field retains its earlier value.
 
 `withNodeRoomExpiration` applies the earlier of 30 days from signing, the
 room end and an event's existing expiry. Call it before signing every
