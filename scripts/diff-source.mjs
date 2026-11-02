@@ -764,6 +764,16 @@ const LINK_AUTHORITY_CHANGES = {
 
 function checkWholeFileWithDeclaredChanges(kitPath, changes, importRewrites) {
   let text = readKit(kitPath)
+  if (kitPath === 'src/epoch.ts') {
+    // Explicit type-only broadening for rolling node expiry. Reverse exactly
+    // five existing option fields and its one import before older declared
+    // conference changes are compared. The event bodies remain unchanged.
+    const field = 'expiresAt?: ExpirationDeadline'
+    if (text.split(field).length - 1 !== 5 || text.split("import type { ExpirationDeadline } from './expiration.js'\n").length - 1 !== 1) {
+      failures++; console.error('FAIL: rolling expiration declaration count changed'); return
+    }
+    text = text.split(field).join('expiresAt?: number').replace("import type { ExpirationDeadline } from './expiration.js'\n", '')
+  }
   for (const [kit, source, count] of changes) {
     const found = text.split(kit).length - 1
     if (found !== count) {

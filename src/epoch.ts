@@ -1,3 +1,4 @@
+import type { ExpirationDeadline } from './expiration.js'
 import { hkdf } from '@noble/hashes/hkdf'
 import { hmac } from '@noble/hashes/hmac'
 import { sha256 } from '@noble/hashes/sha2'
@@ -233,7 +234,7 @@ export interface EncodeRekeyOptions {
   now: number
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
   /** Seal the copies from a one-time key, named in a `from` tag and
    *  discarded once they are sealed, instead of from the authority's key.
    *  Readers from fold-kit 0.13.0 open either; an older reader opens no copy
@@ -552,7 +553,7 @@ export interface EncodeEpochRequestOptions {
   now: number
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
 }
 
 /** Ask the authority which epoch the room is at, and for its secret. */
@@ -711,7 +712,7 @@ export interface EncodeEpochGrantOptions {
   credential?: DeviceCredential
   /** A conference room's end, in unix seconds: the event carries it as a
    *  NIP-40 expiration (see `withExpiration`). Omit for a room with no end. */
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
   /** Seal the copies from a one-time key, named in a `from` tag and
    *  discarded once they are sealed, instead of from the authority's key.
    *  Readers from fold-kit 0.13.0 open either; an older reader opens no copy
@@ -926,7 +927,7 @@ export interface HostRoomEpochOptions {
    *  wire. */
   onRefused?: (request: EpochRequest, why: EpochRefusal) => void
   /** A conference room's end: every grant carries it as an expiration. */
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
   /** Seal every grant from a one-time key (`EncodeEpochGrantOptions.oneTimeSender`).
    *  Off by default; turn it on only once every client reads one-time
    *  senders (fold-kit 0.13.0 and the clients built on it). */
@@ -1164,7 +1165,7 @@ export interface RequestRoomEpochOptions {
   timeoutMs?: number
   retryMs?: number
   /** A conference room's end: the request carries it as an expiration. */
-  expiresAt?: number
+  expiresAt?: ExpirationDeadline
   /** Ask the room's current members too (`memberEpochSource`): the first
    *  answer that checks out, the authority's or a member's, settles it. */
   members?: MemberEpochSource

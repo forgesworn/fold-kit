@@ -13,6 +13,10 @@
  *  created: thirty days. */
 export const MAX_ROOM_ENDS_SECONDS = 30 * 24 * 60 * 60
 
+/** A fixed conference end, or a rolling deadline resolved immediately before
+ * signing. A callback must return a positive safe integer or signing fails. */
+export type ExpirationDeadline = number | (() => number)
+
 /** True for a whole number of unix seconds a room could end at: a positive
  *  safe integer. Says nothing about whether it is in the future. */
 export function isRoomEnds(value: unknown): value is number {
@@ -39,8 +43,9 @@ export function requireRoomEnds(endsAt: number, now: number): number {
  * the same array, so a room with no end signs exactly the bytes it always
  * did.
  */
-export function withExpiration(tags: string[][], expiresAt: number | undefined): string[][] {
-  if (expiresAt === undefined) return tags
+export function withExpiration(tags: string[][], deadline: ExpirationDeadline | undefined): string[][] {
+  if (deadline === undefined) return tags
+  const expiresAt = typeof deadline === 'function' ? deadline() : deadline
   if (!isRoomEnds(expiresAt)) throw new Error('an expiration must be a positive whole number of seconds')
   let earliest = expiresAt
   let first = -1
