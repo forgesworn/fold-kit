@@ -92,6 +92,24 @@ results must be complete. The node's receipt authenticates its assertion;
 it does not prove underlying storage-media erasure and does not replace the
 keeper's closure statement.
 
+`readNodeOperationReceipt` performs the same receipt verification with only
+the paired public service key, expected operation id and current time. After
+self-destruct, an owner can poll for completion without retaining a room
+descriptor, room id, member list or traffic key. This receipt never authorises
+deletion on another device.
+
+Version 6 has no legacy invitation secret. `signNodeRetirement` writes its
+kind 1461 retirement using the room authority signature and NIP-44 encryption
+under the root room key. Its body is exactly `{v:1, profile:
+"kithmoot/v1/node-retirement", descriptor, operation, closed:true}`. The
+`d` tag names the room; NIP-40 expiry is the earlier of thirty days and the
+signed room end. `readNodeRetirement` verifies the signature and deadline,
+then decrypts and checks the descriptor and operation before accepting it. The
+application durably submits this event with its closing kind 1462 rekey,
+grant reset and explicit kind 27543 statement before retiring the local room.
+The explicit statement remains the independently recoverable wipe authority
+after relay purge. A retirement event alone is not a substitute for it.
+
 `verifyNodeRoomGrant` accepts the active kind 27541 subset with exactly the
 three scopes `turn`, `relay-read` and `relay-write`, the pinned authority,
 room, node host, admitted device and a live expiration. It checks signature
@@ -101,8 +119,8 @@ must also be checked by the node and clients. GROUP-GRANTS remains the
 authority for that protocol.
 
 The deterministic [vectors](../vectors/node-room-vectors.json) record the
-descriptor, link, credential, grant, sealed request, admitted answer, refusal
-and every randomness input. Tests reproduce their exact bytes. Keys in that
+descriptor, link, credential, grant, sealed request, admitted answer, refusal,
+retirement, closure, receipt and every randomness input. Tests reproduce their exact bytes. Keys in that
 file are synthetic fixtures. These are codec checks; web/Android vector
 parity, real-node transport, network isolation, signed release dependencies,
 physical device acceptance and UI review are separate release gates.

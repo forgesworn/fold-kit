@@ -67,6 +67,7 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v1/node-room',
   'kithmoot/v1/node-ask',
   'kithmoot/v1/node-answer',
+  'kithmoot/v1/node-retirement',
   'kithmoot/v1/persistent-live/request-key',
   'kithmoot/v1/room-id',
   'kithmoot/v1/room-key',

@@ -6,7 +6,7 @@ import { sha256 } from '@noble/hashes/sha2'
 import { getPublicKey } from 'nostr-tools/pure'
 import { deriveSecretKey, seed32, finalizeDeterministic, withStubbedRandomness } from '../vectors/lib/determinism.mjs'
 import { deriveRoom } from '../dist/index.js'
-import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, encodeNodeJoinRequest, encodeNodeJoinAnswer, signNodeClosure, readNodeClosure } from '../dist/node-room.js'
+import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, encodeNodeJoinRequest, encodeNodeJoinAnswer, signNodeClosure, readNodeClosure, signNodeRetirement } from '../dist/node-room.js'
 
 const now = 1_900_000_000, authority = deriveSecretKey('node/authority'), device = deriveSecretKey('node/device'), participant = deriveSecretKey('node/participant')
 const serviceSk = deriveSecretKey('node/service')
@@ -27,6 +27,8 @@ const deniedRandom = wrapRandom('node/denied')
 const denied = wire(withStubbedRandomness(deniedRandom, () => encodeNodeJoinAnswer({ node, authoritySk: authority, request: request.event, now: now + 1 })))
 const closureRandom = [seed32('node/close-aux')]
 const closure = wire(withStubbedRandomness(closureRandom, () => signNodeClosure({ node, authoritySk: authority, operation: 'ab'.repeat(16), now })))
+const retirementRandom = [seed32('node/retirement-nonce'), seed32('node/retirement-aux')]
+const retirement = wire(withStubbedRandomness(retirementRandom, () => signNodeRetirement({ node, authoritySk: authority, roomSecret: secret, operation: 'ab'.repeat(16), now })))
 const receipt = finalizeDeterministic({ kind: 27544, created_at: now, tags: [['operation', 'ab'.repeat(16)], ['expiration', String(now + 30 * 86400)]],
   content: JSON.stringify({ v: 1, operation: 'ab'.repeat(16), published: true, callsRevoked: true, relayPurged: true, eventsDeleted: 3, completedAt: now }) }, serviceSk, seed32('node/receipt-aux'))
 const record = { profile: 'node-room/1', linkVersion: 6, note: 'Synthetic deterministic keys. Codec evidence only, not backend or device acceptance.', now,
@@ -34,6 +36,7 @@ const record = { profile: 'node-room/1', linkVersion: 6, note: 'Synthetic determ
   descriptor, descriptorRandom: descriptorRandom.map(bytesToHex), link: encodeNodeRoomLink('https://app.example/j/', descriptor, now), credential, grant,
   request, requestRandom: requestRandom.map(bytesToHex), answer, answerRandom: answerRandom.map(bytesToHex), denied, deniedRandom: deniedRandom.map(bytesToHex),
   closure, closureRandom: closureRandom.map(bytesToHex), closureProof: readNodeClosure(closure, node, now),
+  retirement, retirementRandom: retirementRandom.map(bytesToHex),
   receipt,
   refusals: ['wrong-request-id', 'wrong-device-key', 'wrong-node', 'tampered-descriptor', 'expired-answer', 'forged-grant', 'legacy-parser-refuses-link'] }
 writeFileSync(new URL('../vectors/node-room-vectors.json', import.meta.url), JSON.stringify(record, null, 2) + '\n')

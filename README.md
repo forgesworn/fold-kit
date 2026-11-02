@@ -2,7 +2,9 @@
 
 Version 0.16 adds opt-in [ask-only node rooms](docs/node-rooms.md): signed
 node descriptors, version 6 links, sealed device admission and a rolling
-NIP-40 expiry helper. Legacy room links keep their existing semantics.
+NIP-40 expiry helper. Version 0.16.1 adds encrypted node retirement and
+completion receipt verification after room self-destruct. Legacy room links
+keep their existing semantics.
 
 Circle primitives for private Nostr groups that nobody operates: a room key
 per epoch, sealed to each device that stays; link invitations as
@@ -17,7 +19,7 @@ vectors (see EXTRACTION.md). Framework-free: owns no storage, UI, relay
 defaults or identity keys, and no relay I/O of its own - callers inject a
 transport.
 
-**Status:** Version 0.14.0 on `main`. Published on npm as
+**Status:** See `package.json` for this checkout's version. Published on npm as
 `@forgesworn/fold-kit`, but `main` can run ahead of the npm `latest` release, so
 compare `npm view @forgesworn/fold-kit version` with this repository's
 `package.json` before relying on an API listed here. KithMoot has cut over to

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { generateSecretKey, getPublicKey, finalizeEvent, verifiedSymbol } from 'nostr-tools/pure'
 import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, parseNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest,
   encodeNodeJoinAnswer, decodeNodeJoinAnswer, withNodeRoomExpiration, verifyNodeRoomGrant } from './node-room.js'
-import { signNodeClosure, readNodeClosure, recoverNodeClosure } from './node-room.js'
+import { signNodeClosure, readNodeClosure, recoverNodeClosure, signNodeRetirement, readNodeRetirement, readNodeCloseReceipt, readNodeOperationReceipt } from './node-room.js'
 import { deriveRoom } from './room.js'
 import { parseRoomLink } from './link.js'
 import { createDeviceCredential } from './credential.js'
@@ -10,8 +10,8 @@ import { localIdentity } from './identity.js'
 
 const now = 1_900_000_000
 async function fixture() {
-  const authority = generateSecretKey(), device = generateSecretKey(), secret = generateSecretKey(), room = deriveRoom(secret).roomId
-  const event = signNodeRoom({ authoritySk: authority, room, serviceKey: getPublicKey(generateSecretKey()), origin: 'https://node.example', now })
+  const authority = generateSecretKey(), service = generateSecretKey(), device = generateSecretKey(), secret = generateSecretKey(), room = deriveRoom(secret).roomId
+  const event = signNodeRoom({ authoritySk: authority, room, serviceKey: getPublicKey(service), origin: 'https://node.example', now })
   const node = readNodeRoom(event, now)!
   const credential = await createDeviceCredential({ identity: localIdentity(generateSecretKey()), devicePubkey: getPublicKey(device), roomId: room, expiresAt: now + 3600, now: () => now })
   const request = encodeNodeJoinRequest({ node, deviceSk: device, credential, now, name: 'Guest' })
@@ -19,9 +19,45 @@ async function fixture() {
     ['device', getPublicKey(device)], ['server', 'node.example'], ['scope', 'turn'], ['scope', 'relay-read'], ['scope', 'relay-write'],
     ['status', 'active'], ['expiration', String(now + 3600)]] }, authority)
   const answer = encodeNodeJoinAnswer({ node, authoritySk: authority, request: request.event, now: now + 1, admission: { roomSecret: secret, epochHint: 3, grant } })
-  return { authority, device, secret, room, event, node, credential, request, grant, answer }
+  return { authority, service, device, secret, room, event, node, credential, request, grant, answer }
 }
 describe('ask-only node rooms', () => {
+  it('retires the v6 link inside the admitted room without making a legacy bearer secret', async () => {
+    const f = await fixture(), operation = 'ab'.repeat(16)
+    const retired = signNodeRetirement({ node: f.node, authoritySk: f.authority, roomSecret: f.secret, operation, now })
+    expect(readNodeRetirement(retired, f.node, f.secret, now)).toEqual({ operation, at: now })
+    expect(retired.kind).toBe(1461); expect(retired.tags).toEqual([['d', f.room], ['expiration', String(now + 30 * 86400)]])
+    expect(retired.content).not.toContain(operation); expect(retired.content).not.toContain(f.node.event.id)
+    expect(readNodeRetirement(retired, f.node, generateSecretKey(), now)).toBeNull()
+    expect(readNodeRetirement({ ...retired, content: retired.content + 'x', [verifiedSymbol]: true }, f.node, f.secret, now)).toBeNull()
+    expect(readNodeRetirement(retired, f.node, f.secret, now + 30 * 86400)).toBeNull()
+    const other = readNodeRoom(signNodeRoom({ authoritySk: f.authority, room: f.room, serviceKey: f.node.serviceKey, origin: 'https://other.example', now }), now)!
+    expect(readNodeRetirement(retired, other, f.secret, now)).toBeNull()
+    expect(() => signNodeRetirement({ node: f.node, authoritySk: f.device, roomSecret: f.secret, operation, now })).toThrow()
+    expect(readNodeClosure(retired, f.node, now)).toBeNull()
+  })
+  it('clamps the retirement to the signed room end', async () => {
+    const f = await fixture(), endsAt = now + 60
+    const node = readNodeRoom(signNodeRoom({ authoritySk: f.authority, room: f.room, serviceKey: f.node.serviceKey, origin: f.node.origin, endsAt, now }), now)!
+    const retired = signNodeRetirement({ node, authoritySk: f.authority, roomSecret: f.secret, operation: 'ab'.repeat(16), now })
+    expect(retired.tags).toContainEqual(['expiration', String(endsAt)])
+    expect(readNodeRetirement(retired, node, f.secret, endsAt - 1)).not.toBeNull()
+    expect(readNodeRetirement(retired, node, f.secret, endsAt)).toBeNull()
+  })
+  it('verifies a complete operation using only the paired public service key and random id', async () => {
+    const f = await fixture(), operation = 'ab'.repeat(16)
+    const template = { kind: 27544, created_at: now, tags: [['operation', operation], ['expiration', String(now + 30 * 86400)]],
+      content: JSON.stringify({ v: 1, operation, published: true, callsRevoked: true, relayPurged: true, eventsDeleted: 3, completedAt: now }) }
+    const receipt = finalizeEvent(template, f.service)
+    expect(readNodeOperationReceipt(receipt, f.node.serviceKey, operation, now)).toEqual(readNodeCloseReceipt(receipt, f.node, operation, now))
+    expect(readNodeOperationReceipt(receipt, f.node.serviceKey, operation, now)).toMatchObject({ callsRevoked: true, relayPurged: true })
+    expect(readNodeOperationReceipt(receipt, f.node.authority, operation, now)).toBeNull()
+    expect(readNodeOperationReceipt(receipt, f.node.serviceKey, 'cd'.repeat(16), now)).toBeNull()
+    expect(readNodeOperationReceipt(receipt, f.node.serviceKey, operation, now + 30 * 86400)).toBeNull()
+    const incomplete = finalizeEvent({ ...template, content: template.content.replace('"relayPurged":true', '"relayPurged":false') }, f.service)
+    expect(readNodeOperationReceipt(incomplete, f.node.serviceKey, operation, now)).toBeNull()
+    expect(readNodeClosure(receipt, f.node, now)).toBeNull()
+  })
   it('writes v6 links with a signed node record and no traffic key or bearer welcome', async () => {
     const f = await fixture(), link = encodeNodeRoomLink('https://app.example/j/', f.event, now)
     expect(parseNodeRoomLink(link, now)).toEqual(f.node)

@@ -219,6 +219,28 @@
     "operation": "abababababababababababababababab",
     "expiration": "1902592000"
   },
+  "retirement": {
+    "kind": 1461,
+    "created_at": 1900000000,
+    "tags": [
+      [
+        "d",
+        "f39a78dfe77018d204fc63bd77c62b614a56451c084b2651f1e7d24533a2a74d"
+      ],
+      [
+        "expiration",
+        "1902592000"
+      ]
+    ],
+    "content": "AoU6iyQSyLYBrDXW1owbJFA679O9vYQy0nzcN5qG/ks3G5VlmyybLjBMPUryAqjMx7Bob4xBHhH6EIrG1t1pgKcSoovJox9sc0kKqn54XaZPzKL2drLE2pfRsYtsYBXSEufNrhDrIleQIMVVyKji0+BzxpQX9t5Ogyn0U6U66l1OiVd0kLkYnrJ93iL6xc0afzKiWONW2qYtia7fKb+mCJEu4Q1T8QVMqWSK9YHqbP3LnBHKP5dDBHj3lG/jCw2A2IibYcCu1ziZNGv1aiBitAywxZ3l59RcN417uKBGScjHzaTkhGW4GP33INHVMBZ5XoaVDY2NQjIlsns5Bj6Yk4xE7w==",
+    "pubkey": "692643effa4658779b8c949ac7c3273e67d486537aea7c59e3387293998b0aab",
+    "id": "856df18867e28d67e7c8ba31ec64f4310635ee3dea1c90dd9e6b75292dd5f0f4",
+    "sig": "b2710305b88a26c0cce991f8f7807553f639c83cee641c9e141208bbf1608d0404e39b9c5a48634e84acc93eb6b8a8c614e8ac16da2b1d892360e98616749c5d"
+  },
+  "retirementRandom": [
+    "853a8b2412c8b601ac35d6d68c1b24503aefd3bdbd8432d27cdc379a86fe4b37",
+    "6467e177a83e76153edf2093c484bdff6f19e1a7c0788135e53653398876958b"
+  ],
   "receipt": {
     "kind": 27544,
     "created_at": 1900000000,

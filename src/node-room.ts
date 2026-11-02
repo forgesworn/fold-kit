@@ -12,11 +12,13 @@ import { MAX_EPOCH } from './epoch.js'
 const PROFILE = 'kithmoot/v1/node-room'
 const ASK = 'kithmoot/v1/node-ask'
 const ANSWER = 'kithmoot/v1/node-answer'
-export const NODE_ROOM_LABELS: readonly string[] = Object.freeze([PROFILE, ASK, ANSWER])
+const RETIREMENT = 'kithmoot/v1/node-retirement'
+export const NODE_ROOM_LABELS: readonly string[] = Object.freeze([PROFILE, ASK, ANSWER, RETIREMENT])
 export const NODE_LINK_VERSION = 6
 export const NODE_RECORD_KIND = 27542
 export const NODE_CLOSE_KIND = 27543
 export const NODE_RECEIPT_KIND = 27544
+export const NODE_RETIREMENT_KIND = 1461
 export const NODE_ASK_SECONDS = 600
 const KEY = /^[0-9a-f]{64}$/
 const utf8 = new TextEncoder(), text = new TextDecoder('utf-8', { fatal: true })
@@ -170,13 +172,48 @@ export function recoverNodeClosure(raw: unknown, node: NodeRoomRecord, now: numb
     return readNodeClosure(event, node, now) ? event : null
   } catch { return null }
 }
+/** Node links have no legacy invitation secret. Their retirement is signed
+ * by the keeper and encrypted to the admitted room, bound to its descriptor
+ * and durable close operation. The explicit closure statement remains the
+ * independent deletion authority after the relay has been purged. */
+export function signNodeRetirement(opts: { node: NodeRoomRecord; authoritySk: Uint8Array; roomSecret: Uint8Array; operation: string; now: number }): Event {
+  const node = record(opts.node, opts.now), derived = deriveRoom(opts.roomSecret)
+  try {
+    check(derived.roomId === node.room && getPublicKey(opts.authoritySk) === node.authority && /^[0-9a-f]{32}$/.test(opts.operation))
+    const content = nip44.v2.encrypt(JSON.stringify({ v: 1, profile: RETIREMENT, descriptor: node.event.id, operation: opts.operation, closed: true }), derived.roomKey)
+    return finalizeEvent({ kind: NODE_RETIREMENT_KIND, created_at: opts.now,
+      tags: withNodeRoomExpiration([['d', node.room]], opts.now, node.endsAt), content }, opts.authoritySk)
+  } finally { derived.roomKey.fill(0) }
+}
+export function readNodeRetirement(raw: unknown, node: NodeRoomRecord, roomSecret: Uint8Array, now: number): { operation: string; at: number } | null {
+  let key: Uint8Array | undefined
+  try {
+    const pinned = record(node, now), derived = deriveRoom(roomSecret); key = derived.roomKey
+    event(raw, 4096)
+    check(derived.roomId === pinned.room && raw.kind === NODE_RETIREMENT_KIND && raw.pubkey === pinned.authority && raw.created_at <= now + 30
+      && raw.tags.length === 2 && tag(raw, 'd') === pinned.room && Number(tag(raw, 'expiration')) > now
+      && tag(raw, 'expiration') === String(Math.min(raw.created_at + MAX_ROOM_ENDS_SECONDS, pinned.endsAt ?? Infinity)))
+    const body = json(nip44.v2.decrypt(raw.content, key), ['v', 'profile', 'descriptor', 'operation', 'closed'])
+    check(body.v === 1 && body.profile === RETIREMENT && body.descriptor === pinned.event.id && body.closed === true
+      && typeof body.operation === 'string' && /^[0-9a-f]{32}$/.test(body.operation))
+    return { operation: body.operation, at: raw.created_at }
+  } catch { return null } finally { key?.fill(0) }
+}
 /** A receipt authenticates what the node reports. Device deletion still
  * requires the keeper's closure statement, never the node's signature alone. */
 export function readNodeCloseReceipt(raw: unknown, node: NodeRoomRecord, operation: string, now: number): NodeCloseReceipt | null {
   try {
     const pinned = record(node, Math.min(now, node.endsAt === undefined ? now : node.endsAt - 1))
+    return readNodeOperationReceipt(raw, pinned.serviceKey, operation, now)
+  } catch { return null }
+}
+/** After self-destruct the owner keeps only the paired public service key
+ * and random operation id. Verifying completion needs no room descriptor,
+ * room id, member identity or traffic key. This never authorises a wipe. */
+export function readNodeOperationReceipt(raw: unknown, serviceKey: string, operation: string, now: number): NodeCloseReceipt | null {
+  try {
     event(raw, 8192)
-    check(/^[0-9a-f]{32}$/.test(operation) && raw.kind === NODE_RECEIPT_KIND && raw.pubkey === pinned.serviceKey
+    check(integer(now) && KEY.test(serviceKey) && /^[0-9a-f]{32}$/.test(operation) && raw.kind === NODE_RECEIPT_KIND && raw.pubkey === serviceKey
       && raw.created_at <= now + 30 && raw.tags.length === 2 && tag(raw, 'operation') === operation
       && tag(raw, 'expiration') === String(raw.created_at + MAX_ROOM_ENDS_SECONDS) && raw.created_at + MAX_ROOM_ENDS_SECONDS > now)
     const body = json(raw.content, ['v', 'operation', 'published', 'callsRevoked', 'relayPurged', 'eventsDeleted', 'completedAt'])
