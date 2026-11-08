@@ -49,6 +49,7 @@ import * as lane from '@forgesworn/fold-kit/lane'
 import * as mls from '@forgesworn/fold-kit/mls-admission'
 import * as evidence from '@forgesworn/fold-kit/persistent-invitation-evidence'
 import * as nodeRoom from '@forgesworn/fold-kit/node-room'
+import * as migration from '@forgesworn/fold-kit/node-migration'
 import { readFileSync } from 'node:fs'
 for (const name of ['requestPersistentRoomAdmissionEvidence', 'revalidatePersistentInvitationEvidence', 'revalidatePersistentInvitationSource', 'PersistentInvitationEvidenceQueryError', 'MAX_PERSISTENT_INVITATION_EVIDENCE_EVENTS', 'MAX_PERSISTENT_INVITATION_EVENT_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_BYTES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_DELIVERIES', 'MAX_PERSISTENT_INVITATION_EVIDENCE_VERIFICATIONS']) {
   if (!(name in evidence)) throw new Error('missing packaged evidence export ' + name)
@@ -98,6 +99,12 @@ if (missing.length > 0) {
   process.exit(1)
 }
 
+for (const name of ['signNodeMigrationPreparation', 'readNodeMigrationPreparation', 'signNodeMigrationReady', 'readNodeMigrationReady', 'signNodeMigrationCommit', 'readNodeMigrationCommit', 'encodeNodeMigrationFrames', 'readNodeMigrationFrame', 'NodeMigrationFrameReceiver', 'nodeMigrationDigest']) if (typeof migration[name] !== 'function') throw new Error('missing packaged migration export ' + name)
+const migrationVector = JSON.parse(readFileSync(new URL('./node_modules/@forgesworn/fold-kit/vectors/node-migration-vectors.json', import.meta.url), 'utf8'))
+if (migration.readNodeMigrationCommit(migrationVector.commit, migrationVector.now + 3, migrationVector.preparation.pubkey)?.ready.length !== 3) throw new Error('packaged migration decision did not verify')
+const receiver = new migration.NodeMigrationFrameReceiver()
+const assembled = migration.encodeNodeMigrationFrames(migrationVector.commit).map(frame => receiver.push(frame, migrationVector.preparation.pubkey, migrationVector.now)).filter(Boolean)
+if (assembled.length !== 1 || assembled[0].id !== migrationVector.commit.id) throw new Error('packaged migration fragments did not reassemble')
 // One real call through each entry point, not just a presence check.
 const nodeVector = JSON.parse(readFileSync(new URL('./node_modules/@forgesworn/fold-kit/vectors/node-room-vectors.json', import.meta.url), 'utf8'))
 const nodeRecord = nodeRoom.parseNodeRoomLink(nodeVector.link, nodeVector.now)

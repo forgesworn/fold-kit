@@ -25,6 +25,7 @@ import { PERSISTENT_INVITATION_LABELS } from './persistent-invitation.js'
 import { LIVE_PERSISTENT_ADMISSION_LABELS } from './live-persistent-admission.js'
 import { MLS_ADMISSION_LABELS } from './mls-admission.js'
 import { ROOM_LABELS } from './room.js'
+import { NODE_MIGRATION_LABELS } from './node-migration.js'
 import { NODE_ROOM_LABELS } from './node-room.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -65,6 +66,9 @@ const FROZEN_LABELS: readonly string[] = [
   'kithmoot/v1/kindred:',
   'kithmoot/v1/member-epoch-request-key',
   'kithmoot/v1/node-room',
+  'kithmoot/v1/node-room-existing',
+  'kithmoot/v1/node-migration',
+  'kithmoot/v1/node-migration-ready',
   'kithmoot/v1/node-ask',
   'kithmoot/v1/node-answer',
   'kithmoot/v1/node-retirement',
@@ -114,6 +118,7 @@ describe('kithmoot/ wire-format labels', () => {
 // ===========================================================================
 
 const MODULE_LABEL_LISTS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['node-migration.ts', NODE_MIGRATION_LABELS],
   ['access.ts', ACCESS_LABELS],
   ['channel.ts', CHANNEL_LABELS],
   ['epoch.ts', EPOCH_LABELS],

@@ -7,6 +7,9 @@ completion receipt verification after room self-destruct. Legacy room links
 keep their existing semantics. Version 0.17 adds keeper-signed per-node TURN
 ports for hosted app coexistence; default descriptor bytes stay unchanged.
 
+The unreleased [existing-room migration protocol](docs/node-migration.md) adds
+explicit per-client cutover evidence; it does not migrate rooms by itself.
+
 Circle primitives for private Nostr groups that nobody operates: a room key
 per epoch, sealed to each device that stays; link invitations as
 capabilities; member removal by rekey; device credentials so a person

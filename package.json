@@ -26,6 +26,10 @@
     "./node-room": {
       "types": "./dist/node-room.d.ts",
       "default": "./dist/node-room.js"
+    },
+    "./node-migration": {
+      "types": "./dist/node-migration.d.ts",
+      "default": "./dist/node-migration.js"
     }
   },
   "files": [
@@ -48,7 +52,8 @@
     "docs",
     "EXTRACTION.md",
     "CHANGELOG.md",
-    "vectors/node-room-vectors.json"
+    "vectors/node-room-vectors.json",
+    "vectors/node-migration-vectors.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -72,7 +77,8 @@
     "generate-invitation-account": "node scripts/generate-invitation-account.mjs",
     "generate-invitation-decline": "node scripts/generate-invitation-decline.mjs",
     "generate-mls-admission": "node scripts/generate-mls-admission.mjs",
-    "generate-node-room": "node scripts/generate-node-room.mjs"
+    "generate-node-room": "node scripts/generate-node-room.mjs",
+    "generate-node-migration": "node scripts/generate-node-migration.mjs"
   },
   "keywords": [
     "nostr",
