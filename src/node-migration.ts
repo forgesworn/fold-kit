@@ -138,7 +138,7 @@ function signedWire(raw: unknown): Event | null {
     check(raw && typeof raw === 'object' && !Array.isArray(raw))
     const e = raw as Event
     check(Object.keys(e).sort().join(',') === 'content,created_at,id,kind,pubkey,sig,tags'
-      && [NODE_MIGRATION_KIND, NODE_MIGRATION_READY_KIND].includes(e.kind) && verifyEventUncached(e))
+      && [NODE_MIGRATION_KIND, NODE_MIGRATION_READY_KIND, 27542].includes(e.kind) && verifyEventUncached(e))
     return e
   } catch { return null }
 }

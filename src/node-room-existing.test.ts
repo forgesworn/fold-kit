@@ -49,3 +49,9 @@ it('preserves a non-destructing existing room through authenticated node admissi
   expect(read && read !== 'denied' && read.secret).toEqual(f.secret)
   expect(read && read !== 'denied' && read.epochHint).toBe(3)
 })
+
+it('retains the original closed-members quiet policy in the signed destination', () => {
+  const f = fixture(), policy = { tier: 'open' as const, members: [getPublicKey(f.deviceSk), getPublicKey(generateSecretKey())], quiet: true as const }
+  const event = signNodeRoom({ ...f.options, existing: { destruct: false, policy } } as Parameters<typeof signNodeRoom>[0])
+  expect(readNodeRoom(event, now)?.existing).toEqual({ destruct: false, policy })
+})

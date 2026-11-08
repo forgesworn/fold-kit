@@ -375,5 +375,19 @@
       "total": 11,
       "data": "XCJpZFwiOlwiNGJjOThhZmIzZTY4ZDQwYTY4MmE4YmE0ZDkwMjY5MmQwNGQ5MWI3MmYzZjRlNjg4M2E5NTkzMTY2NjZlOGJiNVwiLFwic2lnXCI6XCJjMDc0YTE0ODhhNWFkYzc2ZTgxNWNkYzFjNzIwN2U5NjcyNmEzZDNjMGMzNWM5YjAxYjA1YWE2MmEwNTM1YWE2ZDA3YzJlOGUzYWU1ZjhkYTAwNzM5MmRmODQxMDE2YzRhMDg2MDdhNjJjZmY1Yjg1ZDE3ZmMyNzdhNWEwYTY0M1wifV19IiwicHVia2V5IjoiMWI4NGM1NTY3YjEyNjQ0MDk5NWQzZWQ1YWFiYTA1NjVkNzFlMTgzNDYwNDgxOWZmOWMxN2Y1ZTlkNWRkMDc4ZiIsImlkIjoiOWE4ZjM1MDAyMDEyOWQzMmQ0Nzc0MTZjMmIxMjIwZTEyMDU2YWI2NGEwZTZiNWFlMGZiNGQ5OGJiODkwNzM0NyIsInNpZyI6ImU2ZDQ1OGU3NDBlNzEyZGU1NzFmYTMyYzRmMmIzZDIwZTMwZThlMjFjYWRhZmYwZTcxYzVmMzVlZThkYWUyNTQyYTZmZjg3YWMxNzI0NjY0YmUyOGRlOGYwNGE5MjY1Mjg4YTFkMjQwZGUwYTJiMmY0YWE4OGE4OGUwZTg3MTFkIn0"
     }
-  ]
+  ],
+  "policyNode": {
+    "kind": 27542,
+    "created_at": 1900000000,
+    "tags": [
+      [
+        "d",
+        "f09a3bbad0a8eefc0752e11a768a3e028c9ad3d1192e546cfd3ca13423a37613"
+      ]
+    ],
+    "content": "{\"v\":1,\"profile\":\"kithmoot/v1/node-room-existing\",\"room\":\"f09a3bbad0a8eefc0752e11a768a3e028c9ad3d1192e546cfd3ca13423a37613\",\"node\":\"https://node.example\",\"service\":\"989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f\",\"calls\":\"relay-only\",\"files\":\"client\",\"destruct\":false,\"policy\":{\"tier\":\"open\",\"members\":[\"4d4b6cd1361032ca9bd2aeb9d900aa4d45d9ead80ac9423374c451a7254d0766\",\"531fe6068134503d2723133227c867ac8fa6c83c537e9a44c3c5bdbdcb1fe337\"],\"quiet\":true},\"turnPorts\":{\"udpTcp\":34790,\"tls\":53499}}",
+    "pubkey": "1b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+    "id": "d68d4d5338cce6e486dac89cdc341b591e4c5ee6d5d746778cd63c65eacf783e",
+    "sig": "9513f838167068507c690ef239d0b51b8885bbef4a50c649c0f0a17b9b3d6967562049aeba0ebb9dec390b635cf16f3ae90f17cb3dc71794c533869df158783d"
+  }
 }

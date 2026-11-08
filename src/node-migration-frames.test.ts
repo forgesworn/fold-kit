@@ -35,3 +35,9 @@ it('bounds pending assemblies, expires partial copies and rejects conflicting du
   const completed = frames.flatMap(f => { const e = receiver.push(f, source, v.now + 300); return e ? [e] : [] })
   expect(completed).toEqual([v.commit])
 })
+
+it('carries the signed existing-room destination and admission policy', () => {
+  const receiver = new NodeMigrationFrameReceiver(), frames = encodeNodeMigrationFrames(v.policyNode)
+  const result = frames.flatMap(f => { const event = receiver.push(f, source, v.now); return event ? [event] : [] })
+  expect(result).toEqual([v.policyNode])
+})

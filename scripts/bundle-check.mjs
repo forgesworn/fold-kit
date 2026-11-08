@@ -49,9 +49,9 @@ const BUDGETS_KB = {
   evidence: { minified: 18, gzip: 7 },
   // Existing-room profile parsing measures 18.3 KiB / 6.5 KiB gzip.
   // Keep a small measured margin; index/lane budgets are unchanged.
-  node: { minified: 19, gzip: 7 },
-  // Opt-in migration evidence and bounded framing: 14.2 KiB / 5.3 KiB gzip.
-  migration: { minified: 15.5, gzip: 6 },
+  node: { minified: 20.5, gzip: 7.5 },
+  // Opt-in migration evidence, signed original policy and bounded framing: 15.8 KiB / 5.8 KiB gzip.
+  migration: { minified: 16.5, gzip: 6 },
 }
 
 let failed = false
