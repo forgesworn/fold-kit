@@ -3,17 +3,19 @@ import { nip44 } from 'nostr-tools'
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey, type Event, type UnsignedEvent } from 'nostr-tools/pure'
 import { randomBytes } from '@noble/hashes/utils'
 import { verifyEventUncached } from './verify.js'
-import { deriveRoom } from './room.js'
+import type { RoomPolicy } from './types.js'
+import { deriveRoom, parseRoomPolicy } from './room.js'
 import { sanitiseDisplayName } from './display-name.js'
 import { verifyDeviceCredential } from './credential.js'
 import { MAX_ROOM_ENDS_SECONDS, withExpiration } from './expiration.js'
 import { MAX_EPOCH } from './epoch.js'
 
 const PROFILE = 'kithmoot/v1/node-room'
+const EXISTING_PROFILE = 'kithmoot/v1/node-room-existing'
 const ASK = 'kithmoot/v1/node-ask'
 const ANSWER = 'kithmoot/v1/node-answer'
 const RETIREMENT = 'kithmoot/v1/node-retirement'
-export const NODE_ROOM_LABELS: readonly string[] = Object.freeze([PROFILE, ASK, ANSWER, RETIREMENT])
+export const NODE_ROOM_LABELS: readonly string[] = Object.freeze([PROFILE, ASK, ANSWER, RETIREMENT, EXISTING_PROFILE])
 export const NODE_LINK_VERSION = 6
 export const NODE_RECORD_KIND = 27542
 export const NODE_CLOSE_KIND = 27543
@@ -35,6 +37,9 @@ export interface NodeRoomRecord {
   relay: string
   iceUrls: string[]
   turnUrls: string[]
+  /** An existing room keeps its original file and self-destruct choices.
+   * This distinct signed profile is refused by older node-room readers. */
+  existing?: { destruct: boolean; policy?: RoomPolicy }
 }
 export interface NodeJoinRequest {
   id: string
@@ -49,7 +54,7 @@ export interface NodeRoomAdmission {
   persistent: true
   epoch: 0
   epochHint: number
-  destruct: true
+  destruct: boolean
   relays: string[]
   storage: []
   endsAt?: number
@@ -92,6 +97,11 @@ function origin(raw: unknown): URL {
     && url.hostname.split('.').every(s => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s)))
   return url
 }
+function checkedPolicy(raw: unknown): RoomPolicy {
+  shape(raw, ['tier'], ['admitted', 'agents', 'members', 'quiet'])
+  const policy = parseRoomPolicy(raw); check(policy)
+  return policy
+}
 /** Only ports on the already pinned node hostname vary. HTTPS and the
  * dedicated TURN TLS hostname always retain port 443. */
 export function readNodeTurnPorts(raw: unknown = undefined): NodeTurnPorts | null {
@@ -105,21 +115,28 @@ export function readNodeTurnPorts(raw: unknown = undefined): NodeTurnPorts | nul
 }
 const standardPorts = (ports: NodeTurnPorts): boolean => ports.udpTcp === 3478 && ports.tls === 5349
 /** A signed record pins one node, its transport key and the privacy policy.
- * It contains no room traffic key, grant token, account key or device list. */
-export function signNodeRoom(opts: { authoritySk: Uint8Array; room: string; origin: string; serviceKey: string; now: number; endsAt?: number; turnPorts?: NodeTurnPorts }): Event {
+ * It contains no traffic key, usable grant, private account key or device list.
+ * Existing-room records also retain the original participant admission policy. */
+export function signNodeRoom(opts: { authoritySk: Uint8Array; room: string; origin: string; serviceKey: string; now: number; endsAt?: number; turnPorts?: NodeTurnPorts; existing?: { destruct: boolean; policy?: RoomPolicy } }): Event {
   const ports = readNodeTurnPorts(opts.turnPorts); check(ports)
   check(integer(opts.now) && KEY.test(opts.room) && KEY.test(opts.serviceKey) && opts.serviceKey !== getPublicKey(opts.authoritySk)); origin(opts.origin)
   if (opts.endsAt !== undefined) check(integer(opts.endsAt) && opts.endsAt > opts.now && opts.endsAt <= opts.now + MAX_ROOM_ENDS_SECONDS)
+  if (opts.existing !== undefined) { shape(opts.existing, ['destruct'], ['policy']); check(typeof opts.existing.destruct === 'boolean') }
+  const policy = opts.existing?.policy === undefined ? undefined : checkedPolicy(opts.existing.policy)
   return finalizeEvent({ kind: NODE_RECORD_KIND, created_at: opts.now,
-    tags: withExpiration([['d', opts.room]], opts.endsAt), content: JSON.stringify({ v: 1, profile: PROFILE, room: opts.room,
-      node: opts.origin, service: opts.serviceKey, calls: 'relay-only', files: 'off', ...(opts.endsAt === undefined ? {} : { ends: opts.endsAt }), ...(standardPorts(ports) ? {} : { turnPorts: ports }) }) }, opts.authoritySk)
+    tags: withExpiration([['d', opts.room]], opts.endsAt), content: JSON.stringify({ v: 1, profile: opts.existing ? EXISTING_PROFILE : PROFILE, room: opts.room,
+      node: opts.origin, service: opts.serviceKey, calls: 'relay-only', files: opts.existing ? 'client' : 'off',
+      ...(opts.existing ? { destruct: opts.existing.destruct, ...(policy ? { policy } : {}) } : {}), ...(opts.endsAt === undefined ? {} : { ends: opts.endsAt }), ...(standardPorts(ports) ? {} : { turnPorts: ports }) }) }, opts.authoritySk)
 }
 export function readNodeRoom(raw: unknown, now: number, pinnedAuthority?: string): NodeRoomRecord | null {
   try {
     check(integer(now)); event(raw, 4096)
     check(raw.kind === NODE_RECORD_KIND && raw.created_at <= now + 30 && (pinnedAuthority === undefined || raw.pubkey === pinnedAuthority))
-    const body = json(raw.content, ['v', 'profile', 'room', 'node', 'service', 'calls', 'files'], ['ends', 'turnPorts'])
-    check(body.v === 1 && body.profile === PROFILE && body.calls === 'relay-only' && body.files === 'off'
+    const body = json(raw.content, ['v', 'profile', 'room', 'node', 'service', 'calls', 'files'], ['ends', 'turnPorts', 'destruct', 'policy'])
+    const existing = body.profile === EXISTING_PROFILE
+    check(existing ? body.files === 'client' && typeof body.destruct === 'boolean' : body.profile === PROFILE && body.files === 'off' && !('destruct' in body) && !('policy' in body))
+    const policy = body.policy === undefined ? undefined : checkedPolicy(body.policy)
+    check(body.v === 1 && body.calls === 'relay-only'
       && typeof body.room === 'string' && KEY.test(body.room) && tag(raw, 'd') === body.room
       && typeof body.service === 'string' && KEY.test(body.service) && body.service !== raw.pubkey)
     const node = origin(body.node), ports = readNodeTurnPorts(body.turnPorts); check(ports)
@@ -127,6 +144,7 @@ export function readNodeRoom(raw: unknown, now: number, pinnedAuthority?: string
       && tag(raw, 'expiration') === String(body.ends) && raw.tags.length === 2)
     else check(raw.tags.length === 1)
     return { event: JSON.parse(JSON.stringify(raw)), room: body.room, authority: raw.pubkey, origin: node.origin, serviceKey: body.service,
+      ...(existing ? { existing: { destruct: body.destruct as boolean, ...(policy ? { policy } : {}) } } : {}),
       ...(body.ends === undefined ? {} : { endsAt: body.ends as number }), ...(standardPorts(ports) ? {} : { turnPorts: ports }), relay: `wss://${node.host}/events`,
       iceUrls: [`stun:${node.host}:${ports.udpTcp}`], turnUrls: [`turn:${node.host}:${ports.udpTcp}?transport=udp`, `turn:${node.host}:${ports.udpTcp}?transport=tcp`,
         `turns:${node.host}:${ports.tls}?transport=tcp`, `turns:turn.${node.host}:443?transport=tcp`] }
@@ -328,7 +346,7 @@ export function decodeNodeJoinAnswer(opts: { node: NodeRoomRecord; deviceSk: Uin
     check(body.outcome === 'allow' && typeof body.secret === 'string' && integer(body.epoch) && body.epoch <= MAX_EPOCH && verifyNodeRoomGrant(body.grant, node, device, opts.now))
     const secret = base64urlnopad.decode(body.secret)
     try { check(secret.length === 32 && deriveRoom(secret).roomId === node.room) } catch (error) { secret.fill(0); throw error }
-    return { secret, persistent: true, epoch: 0, epochHint: body.epoch, destruct: true, relays: [node.relay], storage: [], grant: body.grant as Event,
+    return { secret, persistent: true, epoch: 0, epochHint: body.epoch, destruct: node.existing?.destruct ?? true, relays: [node.relay], storage: [], grant: body.grant as Event,
       node, ...(node.endsAt === undefined ? {} : { endsAt: node.endsAt }) }
   } catch { return null }
 }

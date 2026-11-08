@@ -207,3 +207,7 @@ Only the decoders issue the nominal `Verified*` handles. Verified answers are ev
 - docs/ - wire profiles per feature (member epoch catch-up, seal keys, scheduled rekey, room destruct, live persistent admission, MLS admission v4, persistent invitation evidence)
 
 Signed `turnPorts:{udpTcp,tls}` optionally selects two distinct ports in 1024..65535 on the pinned node hostname. Omitted values retain 3478/5349. HTTPS and TURN TLS at turn.<node>:443 stay fixed. No supplied URL/host/fallback list is accepted. Older strict readers refuse records with this extension. Existing default vectors remain byte-identical.
+
+Existing-room migration codecs: docs/node-migration.md, node-migration export,
+vectors/node-migration-vectors.json. Evidence must remain inside encrypted
+control messages. No runtime migration, storage or relay I/O is supplied.

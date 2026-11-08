@@ -5,6 +5,14 @@ This kit is pre-1.0 (see AGENTS.md "Release Notes"); a behaviour change on
 byte-identical copy of a KithMoot function (see EXTRACTION.md) and this is
 the one place its behaviour has deliberately diverged.
 
+## Unreleased
+
+- Add an explicit existing-room node profile preserving the original room ID,
+  root authority, destruct setting and client file policy.
+- Add signed preparation, per-session readiness and commitment codecs, with
+  shared TypeScript and Android migration fixtures. Runtime migration remains
+  the embedding's responsibility; this change alone moves no rooms.
+
 ## 0.16.1
 
 - Add encrypted version 6 node retirement, bound to the descriptor and close

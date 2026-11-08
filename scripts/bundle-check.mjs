@@ -17,8 +17,9 @@ const distLane = join(root, 'dist', 'lane.js')
 const distMls = join(root, 'dist', 'mls-admission.js')
 const distEvidence = join(root, 'dist', 'persistent-invitation-evidence.js')
 const distNode = join(root, 'dist', 'node-room.js')
+const distMigration = join(root, 'dist', 'node-migration.js')
 
-if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !existsSync(distEvidence)) {
+if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !existsSync(distEvidence) || !existsSync(distNode) || !existsSync(distMigration)) {
   console.error('bundle-check: dist/ is missing - run `npm run build` first')
   process.exit(1)
 }
@@ -46,13 +47,16 @@ const BUDGETS_KB = {
   // Optional evidence entry measured at 13.8 KiB / 5.2 KiB gzip.
   // Existing entry budgets remain unchanged.
   evidence: { minified: 18, gzip: 7 },
-  // Opt-in node codec measured at16.3KiB/6.0KiB gzip; legacy budgets unchanged.
-  node: { minified: 18, gzip: 7 },
+  // Existing-room profile parsing measures 18.3 KiB / 6.5 KiB gzip.
+  // Keep a small measured margin; index/lane budgets are unchanged.
+  node: { minified: 20.5, gzip: 7.5 },
+  // Opt-in migration evidence, signed original policy and bounded framing: 15.8 KiB / 5.8 KiB gzip.
+  migration: { minified: 16.5, gzip: 6 },
 }
 
 let failed = false
 
-for (const [name, entry] of [['index', distIndex], ['lane', distLane], ['mls', distMls], ['evidence', distEvidence], ['node', distNode]]) {
+for (const [name, entry] of [['index', distIndex], ['lane', distLane], ['mls', distMls], ['evidence', distEvidence], ['node', distNode], ['migration', distMigration]]) {
   const result = esbuild.buildSync({
     entryPoints: [entry],
     bundle: true,
