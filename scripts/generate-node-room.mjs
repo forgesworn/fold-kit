@@ -6,7 +6,7 @@ import { sha256 } from '@noble/hashes/sha2'
 import { getPublicKey } from 'nostr-tools/pure'
 import { deriveSecretKey, seed32, finalizeDeterministic, withStubbedRandomness } from '../vectors/lib/determinism.mjs'
 import { deriveRoom } from '../dist/index.js'
-import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, encodeNodeJoinRequest, encodeNodeJoinAnswer, signNodeClosure, readNodeClosure, signNodeRetirement } from '../dist/node-room.js'
+import { signNodeRoom, readNodeRoom, encodeNodeRoomLink, encodeShortNodeRoomLink, inspectNodeRoomLink, encodeNodeJoinRequest, encodeNodeJoinAnswer, signNodeClosure, readNodeClosure, signNodeRetirement } from '../dist/node-room.js'
 
 const now = 1_900_000_000, authority = deriveSecretKey('node/authority'), device = deriveSecretKey('node/device'), participant = deriveSecretKey('node/participant')
 const serviceSk = deriveSecretKey('node/service')
@@ -43,5 +43,16 @@ const portsRandom = [seed32('node/ports-descriptor-aux')], turnPorts = { udpTcp:
 const portsDescriptor = wire(withStubbedRandomness(portsRandom, () => signNodeRoom({ authoritySk: authority, room, origin: 'https://node.example', serviceKey, now, turnPorts })))
 const portsNode = readNodeRoom(portsDescriptor, now)
 record.customPorts = { turnPorts, descriptor: portsDescriptor, descriptorRandom: portsRandom.map(bytesToHex), link: encodeNodeRoomLink('https://app.example/j/', portsDescriptor, now), iceUrls: portsNode.iceUrls, turnUrls: portsNode.turnUrls }
+const shortRandom = [seed32('node/short-descriptor-aux')], endsAt = now + 86400
+const shortPolicy = { tier: 'open', members: [getPublicKey(device), getPublicKey(participant)], quiet: true }
+const shortDescriptor = wire(withStubbedRandomness(shortRandom, () => signNodeRoom({ authoritySk: authority, room, origin: 'https://node.example', serviceKey, now,
+  endsAt, turnPorts, existing: { destruct: true, policy: shortPolicy } })))
+const shortLink = encodeShortNodeRoomLink('https://app.example/j/', shortDescriptor, now)
+record.short = { linkVersion: 7, note: 'The same signed records as a version 7 link. A reader rebuilds id, kind, tags and content and must reach the identical event id.',
+  link: encodeShortNodeRoomLink('https://app.example/j/', descriptor, now), customPortsLink: encodeShortNodeRoomLink('https://app.example/j/', portsDescriptor, now),
+  existing: { policy: shortPolicy, endsAt, descriptor: shortDescriptor, descriptorRandom: shortRandom.map(bytesToHex), link: shortLink, longLink: encodeNodeRoomLink('https://app.example/j/', shortDescriptor, now) },
+  states: [{ now, state: 'open' }, { now: endsAt - 1, state: 'open' }, { now: endsAt, state: 'ended', endsAt }, { now: now - 31, state: 'early', createdAt: now }]
+    .map(s => { const seen = inspectNodeRoomLink(shortLink, s.now); if (seen?.state !== s.state) throw Error(`state at ${s.now}`); return s }),
+  refusals: ['any-single-bit-change', 'truncated', 'trailing-byte', 'unknown-flag', 'existing-flags-on-new-room', 'legacy-parser-refuses-link'] }
 writeFileSync(new URL('../vectors/node-room-vectors.json', import.meta.url), JSON.stringify(record, null, 2) + '\n')
-console.log('Node-room v6 descriptor, sealed request, answer and refusal vectors generated')
+console.log('Node-room v6 and v7 descriptor, sealed request, answer and refusal vectors generated')

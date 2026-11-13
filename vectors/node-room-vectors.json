@@ -300,5 +300,73 @@
       "turns:node.example:53499?transport=tcp",
       "turns:turn.node.example:443?transport=tcp"
     ]
+  },
+  "short": {
+    "linkVersion": 7,
+    "note": "The same signed records as a version 7 link. A reader rebuilds id, kind, tags and content and must reach the identical event id.",
+    "link": "https://app.example/j/#BwBpJkPv-kZYd5uMlJrHwyc-Z9SGU3rqfFnjOHKTmYsKq85lNzb4AFtk01E7gSCPdC3VH0W17p8p5IVRED561I4qJw231Em-4h-p0HXIwdHvu1l1S6GFFFoeEd5i8mX9EnBxP7MA85p43-dwGNIE_GO9d8YrYUpWRRwISyZR8efSRTOip02w217HS51jBDPPyG7IEoxnHfpNDqWH66cWN1kBt5s4Jwxub2RlLmV4YW1wbGU",
+    "customPortsLink": "https://app.example/j/#BwRpJkPv-kZYd5uMlJrHwyc-Z9SGU3rqfFnjOHKTmYsKqxxSmFxc1d9biychQsquuL0SgGGZrxUe4VWscrQiOVv3nFpc-Vdo1jESqseO6XkTiyCcwXL2zlwTr6bTJddbj31xP7MA85p43-dwGNIE_GO9d8YrYUpWRRwISyZR8efSRTOip02w217HS51jBDPPyG7IEoxnHfpNDqWH66cWN1kBt5s4Jwxub2RlLmV4YW1wbGWH5tD7",
+    "existing": {
+      "policy": {
+        "tier": "open",
+        "members": [
+          "700935516d75fc1a960df746c311376d0a2a0daf63784cbc90e7914630d85e7b",
+          "444cef039d223e3fa81ebbae8a7f8f6edb96549d5bc13fe0f44d9003a8a38fe9"
+        ],
+        "quiet": true
+      },
+      "endsAt": 1900086400,
+      "descriptor": {
+        "kind": 27542,
+        "created_at": 1900000000,
+        "tags": [
+          [
+            "d",
+            "f39a78dfe77018d204fc63bd77c62b614a56451c084b2651f1e7d24533a2a74d"
+          ],
+          [
+            "expiration",
+            "1900086400"
+          ]
+        ],
+        "content": "{\"v\":1,\"profile\":\"kithmoot/v1/node-room-existing\",\"room\":\"f39a78dfe77018d204fc63bd77c62b614a56451c084b2651f1e7d24533a2a74d\",\"node\":\"https://node.example\",\"service\":\"b0db5ec74b9d630433cfc86ec8128c671dfa4d0ea587eba716375901b79b3827\",\"calls\":\"relay-only\",\"files\":\"client\",\"destruct\":true,\"policy\":{\"tier\":\"open\",\"members\":[\"700935516d75fc1a960df746c311376d0a2a0daf63784cbc90e7914630d85e7b\",\"444cef039d223e3fa81ebbae8a7f8f6edb96549d5bc13fe0f44d9003a8a38fe9\"],\"quiet\":true},\"ends\":1900086400,\"turnPorts\":{\"udpTcp\":34790,\"tls\":53499}}",
+        "pubkey": "692643effa4658779b8c949ac7c3273e67d486537aea7c59e3387293998b0aab",
+        "id": "cc22cf9972360f5d53a324017c9effb878f46790f30231897cf636642b629b16",
+        "sig": "c99bcb5238c6679c2c9e9e43c0b6bc869f8cf30cce95b2e2b011f8e6f322aa8595171e67210fc2ccc3f35432b2bf4c4a9ec15c0a913128713afde4e6be34e7c2"
+      },
+      "descriptorRandom": [
+        "9736b7038b5f28e4976df18db873d44288fe99f627caa25a357886ed6339762a"
+      ],
+      "link": "https://app.example/j/#Bx9pJkPv-kZYd5uMlJrHwyc-Z9SGU3rqfFnjOHKTmYsKq8mby1I4xmecLJ6eQ8C2vIafjPMMzpWy4rAR-ObzIqqFlRceZyEPwszD81Qysr9MSp7BXAqRMShxOv3k5r4058JxP7MA85p43-dwGNIE_GO9d8YrYUpWRRwISyZR8efSRTOip02w217HS51jBDPPyG7IEoxnHfpNDqWH66cWN1kBt5s4Jwxub2RlLmV4YW1wbGVxQQSAh-bQ-wCueyJ0aWVyIjoib3BlbiIsIm1lbWJlcnMiOlsiNzAwOTM1NTE2ZDc1ZmMxYTk2MGRmNzQ2YzMxMTM3NmQwYTJhMGRhZjYzNzg0Y2JjOTBlNzkxNDYzMGQ4NWU3YiIsIjQ0NGNlZjAzOWQyMjNlM2ZhODFlYmJhZThhN2Y4ZjZlZGI5NjU0OWQ1YmMxM2ZlMGY0NGQ5MDAzYThhMzhmZTkiXSwicXVpZXQiOnRydWV9",
+      "longLink": "https://app.example/j/#eyJ2Ijo2LCJub2RlIjp7ImtpbmQiOjI3NTQyLCJjcmVhdGVkX2F0IjoxOTAwMDAwMDAwLCJ0YWdzIjpbWyJkIiwiZjM5YTc4ZGZlNzcwMThkMjA0ZmM2M2JkNzdjNjJiNjE0YTU2NDUxYzA4NGIyNjUxZjFlN2QyNDUzM2EyYTc0ZCJdLFsiZXhwaXJhdGlvbiIsIjE5MDAwODY0MDAiXV0sImNvbnRlbnQiOiJ7XCJ2XCI6MSxcInByb2ZpbGVcIjpcImtpdGhtb290L3YxL25vZGUtcm9vbS1leGlzdGluZ1wiLFwicm9vbVwiOlwiZjM5YTc4ZGZlNzcwMThkMjA0ZmM2M2JkNzdjNjJiNjE0YTU2NDUxYzA4NGIyNjUxZjFlN2QyNDUzM2EyYTc0ZFwiLFwibm9kZVwiOlwiaHR0cHM6Ly9ub2RlLmV4YW1wbGVcIixcInNlcnZpY2VcIjpcImIwZGI1ZWM3NGI5ZDYzMDQzM2NmYzg2ZWM4MTI4YzY3MWRmYTRkMGVhNTg3ZWJhNzE2Mzc1OTAxYjc5YjM4MjdcIixcImNhbGxzXCI6XCJyZWxheS1vbmx5XCIsXCJmaWxlc1wiOlwiY2xpZW50XCIsXCJkZXN0cnVjdFwiOnRydWUsXCJwb2xpY3lcIjp7XCJ0aWVyXCI6XCJvcGVuXCIsXCJtZW1iZXJzXCI6W1wiNzAwOTM1NTE2ZDc1ZmMxYTk2MGRmNzQ2YzMxMTM3NmQwYTJhMGRhZjYzNzg0Y2JjOTBlNzkxNDYzMGQ4NWU3YlwiLFwiNDQ0Y2VmMDM5ZDIyM2UzZmE4MWViYmFlOGE3ZjhmNmVkYjk2NTQ5ZDViYzEzZmUwZjQ0ZDkwMDNhOGEzOGZlOVwiXSxcInF1aWV0XCI6dHJ1ZX0sXCJlbmRzXCI6MTkwMDA4NjQwMCxcInR1cm5Qb3J0c1wiOntcInVkcFRjcFwiOjM0NzkwLFwidGxzXCI6NTM0OTl9fSIsInB1YmtleSI6IjY5MjY0M2VmZmE0NjU4Nzc5YjhjOTQ5YWM3YzMyNzNlNjdkNDg2NTM3YWVhN2M1OWUzMzg3MjkzOTk4YjBhYWIiLCJpZCI6ImNjMjJjZjk5NzIzNjBmNWQ1M2EzMjQwMTdjOWVmZmI4NzhmNDY3OTBmMzAyMzE4OTdjZjYzNjY0MmI2MjliMTYiLCJzaWciOiJjOTliY2I1MjM4YzY2NzljMmM5ZTllNDNjMGI2YmM4NjlmOGNmMzBjY2U5NWIyZTJiMDExZjhlNmYzMjJhYTg1OTUxNzFlNjcyMTBmYzJjY2MzZjM1NDMyYjJiZjRjNGE5ZWMxNWMwYTkxMzEyODcxM2FmZGU0ZTZiZTM0ZTdjMiJ9fQ"
+    },
+    "states": [
+      {
+        "now": 1900000000,
+        "state": "open"
+      },
+      {
+        "now": 1900086399,
+        "state": "open"
+      },
+      {
+        "now": 1900086400,
+        "state": "ended",
+        "endsAt": 1900086400
+      },
+      {
+        "now": 1899999969,
+        "state": "early",
+        "createdAt": 1900000000
+      }
+    ],
+    "refusals": [
+      "any-single-bit-change",
+      "truncated",
+      "trailing-byte",
+      "unknown-flag",
+      "existing-flags-on-new-room",
+      "legacy-parser-refuses-link"
+    ]
   }
 }
