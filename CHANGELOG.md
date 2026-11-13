@@ -7,6 +7,10 @@ the one place its behaviour has deliberately diverged.
 
 ## Unreleased
 
+- Add version 7 short node-room links: the same signed descriptor in compact
+  binary, about 260 to 300 characters for a plain room. `parseNodeRoomLink`
+  reads both versions; `longNodeRoomLink` restores the version 6 form for
+  storage; `inspectNodeRoomLink` tells an ended or early link from a broken one.
 - Add an explicit existing-room node profile preserving the original room ID,
   root authority, destruct setting and client file policy.
 - Add signed preparation, per-session readiness and commitment codecs, with

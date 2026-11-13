@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { hexToBytes } from '@noble/hashes/utils'
 import { withStubbedRandomness } from './lib/determinism.mjs'
-import { signNodeRoom, readNodeRoom, parseNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest, encodeNodeJoinAnswer, decodeNodeJoinAnswer } from '../src/node-room.js'
+import { signNodeRoom, readNodeRoom, parseNodeRoomLink, encodeShortNodeRoomLink, longNodeRoomLink, inspectNodeRoomLink, encodeNodeJoinRequest, decodeNodeJoinRequest, encodeNodeJoinAnswer, decodeNodeJoinAnswer } from '../src/node-room.js'
 import { parseRoomLink } from '../src/link.js'
 import { signNodeClosure, readNodeClosure, recoverNodeClosure, readNodeCloseReceipt, signNodeRetirement, readNodeRetirement, readNodeOperationReceipt } from '../src/node-room.js'
 const v = JSON.parse(readFileSync(new URL('./node-room-vectors.json', import.meta.url), 'utf8'))
@@ -41,4 +41,20 @@ it('recomputes the signed custom-port descriptor while retaining the same v6 env
   expect(node).not.toBeNull(); expect(parseNodeRoomLink(custom.link, v.now)).toEqual(node)
   expect(node.turnPorts).toEqual(custom.turnPorts); expect(node.iceUrls).toEqual(custom.iceUrls); expect(node.turnUrls).toEqual(custom.turnUrls)
   expect(wire(withStubbedRandomness(custom.descriptorRandom.map(hexToBytes), () => signNodeRoom({ authoritySk: hexToBytes(v.keys.authority), room: node.room, serviceKey: node.serviceKey, origin: node.origin, now: v.now, turnPorts: custom.turnPorts })))).toEqual(custom.descriptor)
+})
+
+it('reads the version 7 links as the identical signed records and refuses them in the legacy parser', () => {
+  const short = v.short, base = 'https://app.example/j/'
+  expect(parseNodeRoomLink(short.link, v.now)).toEqual(readNodeRoom(v.descriptor, v.now))
+  expect(parseNodeRoomLink(short.customPortsLink, v.now)).toEqual(readNodeRoom(v.customPorts.descriptor, v.now))
+  expect(encodeShortNodeRoomLink(base, v.descriptor, v.now)).toBe(short.link)
+  const existing = short.existing, node = readNodeRoom(existing.descriptor, v.now)!
+  expect(node.existing).toEqual({ destruct: true, policy: existing.policy }); expect(node.endsAt).toBe(existing.endsAt)
+  expect(parseNodeRoomLink(existing.link, v.now)!.event.id).toBe(existing.descriptor.id)
+  expect(longNodeRoomLink(existing.link, v.now)).toBe(existing.longLink)
+  expect(wire(withStubbedRandomness(existing.descriptorRandom.map(hexToBytes), () => signNodeRoom({ authoritySk: hexToBytes(v.keys.authority), room: node.room,
+    serviceKey: node.serviceKey, origin: node.origin, now: v.now, endsAt: existing.endsAt, turnPorts: v.customPorts.turnPorts,
+    existing: { destruct: true, policy: existing.policy } })))).toEqual(existing.descriptor)
+  for (const s of short.states) expect(inspectNodeRoomLink(existing.link, s.now)).toMatchObject({ state: s.state, ...(s.endsAt ? { endsAt: s.endsAt } : {}), ...(s.createdAt ? { createdAt: s.createdAt } : {}) })
+  for (const link of [short.link, short.customPortsLink, existing.link]) expect(() => parseRoomLink(link)).toThrow('not valid')
 })

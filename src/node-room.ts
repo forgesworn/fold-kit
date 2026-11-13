@@ -1,7 +1,7 @@
 import { base64urlnopad } from '@scure/base'
 import { nip44 } from 'nostr-tools'
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey, type Event, type UnsignedEvent } from 'nostr-tools/pure'
-import { randomBytes } from '@noble/hashes/utils'
+import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils'
 import { verifyEventUncached } from './verify.js'
 import type { RoomPolicy } from './types.js'
 import { deriveRoom, parseRoomPolicy } from './room.js'
@@ -17,6 +17,7 @@ const ANSWER = 'kithmoot/v1/node-answer'
 const RETIREMENT = 'kithmoot/v1/node-retirement'
 export const NODE_ROOM_LABELS: readonly string[] = Object.freeze([PROFILE, ASK, ANSWER, RETIREMENT, EXISTING_PROFILE])
 export const NODE_LINK_VERSION = 6
+export const SHORT_NODE_LINK_VERSION = 7
 export const NODE_RECORD_KIND = 27542
 export const NODE_CLOSE_KIND = 27543
 export const NODE_RECEIPT_KIND = 27544
@@ -154,17 +155,100 @@ function record(value: NodeRoomRecord, now: number): NodeRoomRecord {
   const verified = readNodeRoom(value.event, now, value.authority)
   check(verified); return verified
 }
+function linkBase(base: string): URL {
+  const url = new URL(base); check(url.protocol === 'https:' && !url.hash)
+  return url
+}
 /** Version 6 deliberately stays outside parseRoomLink: an older client must
  * refuse this link instead of falling back to a bearer invitation. */
 export function encodeNodeRoomLink(base: string, node: Event, now: number): string {
-  check(readNodeRoom(node, now)); const url = new URL(base); check(url.protocol === 'https:' && !url.hash)
+  check(readNodeRoom(node, now)); const url = linkBase(base)
   return `${url.href}#${base64urlnopad.encode(utf8.encode(JSON.stringify({ v: NODE_LINK_VERSION, node })))}`
 }
-export function parseNodeRoomLink(link: string, now: number): NodeRoomRecord | null {
+// Version 7 carries the same signed record in binary, leaving out every field
+// a reader can rebuild: the id, kind, tags and the fixed JSON wording. The
+// first byte can never start JSON, so parseRoomLink refuses it as v6 is refused.
+const SHORT = { existing: 1, ends: 2, ports: 4, destruct: 8, policy: 16 } as const
+const hex = (bytes: Uint8Array): string => bytesToHex(bytes)
+function u32(value: number): Uint8Array { check(integer(value) && value <= 0xffffffff); return Uint8Array.of(value >>> 24, value >>> 16 & 255, value >>> 8 & 255, value & 255) }
+function u16(value: number): Uint8Array { check(integer(value) && value <= 0xffff); return Uint8Array.of(value >>> 8, value & 255) }
+function packNodeRoom(node: Event, record: NodeRoomRecord): Uint8Array {
+  const body = JSON.parse(node.content) as Record<string, unknown>, host = utf8.encode(new URL(record.origin).host)
+  const policy = body.policy === undefined ? undefined : utf8.encode(JSON.stringify(body.policy))
+  check(host.length <= 255)
+  const flags = (record.existing ? SHORT.existing : 0) | (record.endsAt === undefined ? 0 : SHORT.ends) | (body.turnPorts === undefined ? 0 : SHORT.ports)
+    | (record.existing?.destruct ? SHORT.destruct : 0) | (policy ? SHORT.policy : 0)
+  const ports = body.turnPorts as NodeTurnPorts | undefined
+  const parts = [Uint8Array.of(SHORT_NODE_LINK_VERSION, flags), hexToBytes(node.pubkey), hexToBytes(node.sig), u32(node.created_at), hexToBytes(record.room),
+    hexToBytes(record.serviceKey), Uint8Array.of(host.length), host, ...(record.endsAt === undefined ? [] : [u32(record.endsAt)]),
+    ...(ports ? [u16(ports.udpTcp), u16(ports.tls)] : []), ...(policy ? [u16(policy.length), policy] : [])]
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let at = 0
+  for (const part of parts) { out.set(part, at); at += part.length }
+  return out
+}
+function unpackNodeRoom(bytes: Uint8Array): Event {
+  let at = 0
+  const take = (n: number): Uint8Array => { check(at + n <= bytes.length); at += n; return bytes.subarray(at - n, at) }
+  const byte = (): number => take(1)[0]!, short = (): number => { const b = take(2); return b[0]! << 8 | b[1]! }
+  const long = (): number => { const b = take(4); return b[0]! * 0x1000000 + (b[1]! << 16 | b[2]! << 8 | b[3]!) }
+  check(byte() === SHORT_NODE_LINK_VERSION)
+  const flags = byte(), existing = (flags & SHORT.existing) !== 0
+  check((flags & ~31) === 0 && (existing || (flags & (SHORT.destruct | SHORT.policy)) === 0))
+  const pubkey = hex(take(32)), sig = hex(take(64)), created_at = long(), room = hex(take(32)), service = hex(take(32))
+  const node = `https://${text.decode(take(byte()))}`
+  const ends = flags & SHORT.ends ? long() : undefined, turnPorts = flags & SHORT.ports ? { udpTcp: short(), tls: short() } : undefined
+  const policy: unknown = flags & SHORT.policy ? JSON.parse(text.decode(take(short()))) : undefined
+  check(at === bytes.length)
+  const content = JSON.stringify({ v: 1, profile: existing ? EXISTING_PROFILE : PROFILE, room, node, service, calls: 'relay-only', files: existing ? 'client' : 'off',
+    ...(existing ? { destruct: (flags & SHORT.destruct) !== 0, ...(policy === undefined ? {} : { policy }) } : {}),
+    ...(ends === undefined ? {} : { ends }), ...(turnPorts ? { turnPorts } : {}) })
+  const unsigned = { kind: NODE_RECORD_KIND, created_at, tags: ends === undefined ? [['d', room]] : [['d', room], ['expiration', String(ends)]], content, pubkey }
+  return { ...unsigned, id: getEventHash(unsigned), sig }
+}
+/** The short form of the same invitation. A record this encoder cannot
+ * rebuild byte for byte, such as one signed with other JSON spelling,
+ * keeps the version 6 link rather than a link that would not verify. */
+export function encodeShortNodeRoomLink(base: string, node: Event, now: number): string {
+  const record = readNodeRoom(node, now); check(record); const url = linkBase(base)
   try {
-    const fragment = new URL(link).hash.slice(1); check(fragment.length > 0 && fragment.length <= 8192)
-    const body = json(text.decode(base64urlnopad.decode(fragment)), ['v', 'node']); check(body.v === NODE_LINK_VERSION)
-    return readNodeRoom(body.node, now)
+    const bytes = packNodeRoom(node, record)
+    if (unpackNodeRoom(bytes).id === node.id) return `${url.href}#${base64urlnopad.encode(bytes)}`
+  } catch { /* fall back to the long form below */ }
+  return encodeNodeRoomLink(base, node, now)
+}
+function linkRecord(link: string): { raw: unknown; short: boolean } {
+  const fragment = new URL(link).hash.slice(1); check(fragment.length > 0 && fragment.length <= 8192)
+  const bytes = base64urlnopad.decode(fragment)
+  if (bytes[0] === SHORT_NODE_LINK_VERSION) return { raw: unpackNodeRoom(bytes), short: true }
+  const body = json(text.decode(bytes), ['v', 'node']); check(body.v === NODE_LINK_VERSION)
+  return { raw: body.node, short: false }
+}
+export function parseNodeRoomLink(link: string, now: number): NodeRoomRecord | null {
+  try { return readNodeRoom(linkRecord(link).raw, now) } catch { return null }
+}
+/** The version 6 form of an open short link, so stored and synced copies stay
+ * readable by devices that predate version 7. A long link comes back as is. */
+export function longNodeRoomLink(link: string, now: number): string | null {
+  try {
+    const { raw, short } = linkRecord(link), node = readNodeRoom(raw, now); check(node)
+    if (!short) return link
+    const url = new URL(link); url.hash = ''
+    return encodeNodeRoomLink(url.href, node.event, now)
+  } catch { return null }
+}
+export type NodeRoomLinkState = { state: 'open'; node: NodeRoomRecord } | { state: 'ended'; endsAt: number } | { state: 'early'; createdAt: number }
+/** Tells a genuine node-room link that has ended, or that was signed ahead of
+ * this device's clock, from a broken one. Only `open` admits anything; the
+ * other states exist so a door can say why instead of calling it incomplete. */
+export function inspectNodeRoomLink(link: string, now: number): NodeRoomLinkState | null {
+  try {
+    check(integer(now))
+    const { raw } = linkRecord(link), open = readNodeRoom(raw, now)
+    if (open) return { state: 'open', node: open }
+    event(raw, 4096); const signed = readNodeRoom(raw, raw.created_at); check(signed)
+    if (raw.created_at > now + 30) return { state: 'early', createdAt: raw.created_at }
+    if (signed.endsAt !== undefined && signed.endsAt <= now) return { state: 'ended', endsAt: signed.endsAt }
+    return null
   } catch { return null }
 }
 /** Apply the node's rolling NIP-40 horizon before signing, including for a

@@ -46,6 +46,34 @@ port profile requires closing affected rooms or preserving their old listeners.
 The vector file adds a separate custom-port descriptor and v6 link; every
 pre-existing vector field retains its earlier value.
 
+A version 7 link carries the same signed descriptor in about a quarter of
+the length (a plain room is under 300 characters). The fragment is
+unpadded base64url bytes, integers big-endian: `0x07`, a flag byte
+(1 existing profile, 2 end, 4 custom ports, 8 destruct, 16 policy; other
+bits refused, and destruct or policy without existing refused), then the
+authority key (32), signature (64), `created_at` (uint32), room (32),
+service key (32), the node host (one length byte, then UTF-8, read back as
+`https://<host>`), and, when flagged, the end (uint32), ports (`udpTcp` then
+`tls`, uint16 each) and policy JSON (uint16 length, then UTF-8). Nothing may
+follow. A reader rebuilds kind 27542 with tags `d` and, when there is an end,
+`expiration` set to it, and content with keys in the order `v`, `profile`, `room`,
+`node`, `service`, `calls`, `files`, then `destruct` and `policy` for an
+existing room, then `ends` and `turnPorts`. It recomputes the id and verifies
+the signature through `readNodeRoom`, so a link is either the identical
+signed record or nothing. The first byte can
+never start JSON, so `parseRoomLink` refuses a version 7 link as it refuses
+version 6. `encodeShortNodeRoomLink` checks its own output and returns the
+version 6 link for any record it cannot rebuild byte for byte.
+
+`parseNodeRoomLink` reads both versions. `longNodeRoomLink` gives the
+version 6 form of an open link, for storing or syncing to devices that
+predate version 7. `inspectNodeRoomLink` returns `open` with the record,
+or, for a genuine record that is not open at the reader's time, `ended`
+with its end or `early` when it was signed more than 30 seconds ahead of the
+reader's clock; anything else is null. Only `open` admits anything; the other
+states let a door say why instead of calling the link incomplete. The vector
+file adds a `short` group; every earlier vector field keeps its value.
+
 `withNodeRoomExpiration` applies the earlier of 30 days from signing, the
 room end and an event's existing expiry. Call it before signing every
 node-room event, including events made by rotating and one-time signers.
