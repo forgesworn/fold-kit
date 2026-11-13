@@ -48,14 +48,19 @@ pre-existing vector field retains its earlier value.
 
 A version 7 link carries the same signed descriptor in about a quarter of
 the length (a plain room is under 300 characters). The fragment is
-base64url bytes: `0x07`, a flag byte (1 existing profile, 2 end,
-4 custom ports, 8 destruct, 16 policy; other bits refused), then the
+unpadded base64url bytes, integers big-endian: `0x07`, a flag byte
+(1 existing profile, 2 end, 4 custom ports, 8 destruct, 16 policy; other
+bits refused, and destruct or policy without existing refused), then the
 authority key (32), signature (64), `created_at` (uint32), room (32),
-service key (32), the node host as a length-prefixed string, and the
-optional end (uint32), ports (two uint16) and length-prefixed policy JSON.
-A reader rebuilds the kind, tags and content in the writer's fixed key order,
-recomputes the id and verifies the signature through `readNodeRoom`, so a
-link is either the identical signed record or nothing. The first byte can
+service key (32), the node host (one length byte, then UTF-8, read back as
+`https://<host>`), and, when flagged, the end (uint32), ports (`udpTcp` then
+`tls`, uint16 each) and policy JSON (uint16 length, then UTF-8). Nothing may
+follow. A reader rebuilds kind 27542 with tags `d` and, when there is an end,
+`expiration` set to it, and content with keys in the order `v`, `profile`, `room`,
+`node`, `service`, `calls`, `files`, then `destruct` and `policy` for an
+existing room, then `ends` and `turnPorts`. It recomputes the id and verifies
+the signature through `readNodeRoom`, so a link is either the identical
+signed record or nothing. The first byte can
 never start JSON, so `parseRoomLink` refuses a version 7 link as it refuses
 version 6. `encodeShortNodeRoomLink` checks its own output and returns the
 version 6 link for any record it cannot rebuild byte for byte.
