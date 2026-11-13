@@ -60,6 +60,17 @@ describe('short node-room links', () => {
     expect(readNodeRoom(reordered, now)).not.toBeNull()
     expect(encodeShortNodeRoomLink(base, reordered, now)).toBe(encodeNodeRoomLink(base, reordered, now))
   })
+  it('opens a short link on any base and only lengthens an https one', () => {
+    const fragment = new URL(encodeShortNodeRoomLink(base, records.ends, now)).hash
+    const tracked = `https://kithmoot.app/j/?fbclid=abc${fragment}`
+    expect(parseNodeRoomLink(tracked, now)!.event.id).toBe(records.ends.id)
+    expect(longNodeRoomLink(tracked, now)).toBe(encodeNodeRoomLink('https://kithmoot.app/j/?fbclid=abc', records.ends, now))
+    for (const other of [`kithmoot://join${fragment}`, `http://localhost:5173/j/${fragment}`]) {
+      expect(parseNodeRoomLink(other, now)!.event.id).toBe(records.ends.id)
+      expect(longNodeRoomLink(other, now)).toBeNull()
+      expect(inspectNodeRoomLink(other, now)?.state).toBe('open')
+    }
+  })
   it('turns a short link into the long form for storage and leaves a long link alone', () => {
     const short = encodeShortNodeRoomLink(base, records.everything, now), long = encodeNodeRoomLink(base, records.everything, now)
     const stored = longNodeRoomLink(short, now)!
