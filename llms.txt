@@ -6,6 +6,12 @@ Node rooms (0.17): `signNodeRoom`, `readNodeRoom`, `readNodeTurnPorts`, `encodeN
 
 ESM-only, Node.js 22.13+. Five entry points: `@forgesworn/fold-kit` (circle primitives), `@forgesworn/fold-kit/lane` (relay lane classification only), `@forgesworn/fold-kit/mls-admission` (opt-in v4 evidence codec), and `@forgesworn/fold-kit/persistent-invitation-evidence` (bounded stored invitation observation and independent revalidation), and `@forgesworn/fold-kit/node-room` (opt-in node admission and closure evidence).
 
+## ForgeSworn ecosystem
+
+- [ForgeSworn library guide](https://forgesworn.dev/llms.txt): Find related libraries, tools and integration guides by task and runtime.
+- [ForgeSworn on GitHub](https://github.com/forgesworn): Browse the organisation’s public repositories.
+- [Project source](https://github.com/forgesworn/fold-kit): Canonical source repository, documentation and release information.
+
 ## Install
 
 ```bash
