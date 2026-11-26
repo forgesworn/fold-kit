@@ -8,6 +8,17 @@ import { encodeJoinUrl } from './room.js'
 const BASE = 'https://example.test/j/'
 
 describe('room links', () => {
+  it('keeps owner approval when a rotated room invitation is copied', () => {
+    const { invitation } = createRoomInvitation()
+    const approved = { ...invitation, ownerApprovedRoom: '34'.repeat(32) }
+    const url = encodeRoomLink(BASE, { invitation: approved, relays: [], iceUrls: [] })
+    const link = parseRoomLink(url)
+    expect(link.invitation).toEqual(approved)
+    expect(link.secret).toBeUndefined()
+    expect(() => encodeRoomLink(BASE, { ...link, pairingCode: new Uint8Array(16) })).toThrow(/malformed owner-approved/)
+    expect(() => encodeRoomLink(BASE, { ...link, invitation: { ...approved, persistent: true } })).toThrow(/malformed owner-approved/)
+  })
+
   it('round-trips a version 2 invitation link with every hint the app writes', () => {
     const { invitation } = createRoomInvitation()
     const url = encodeRoomLink(BASE, {

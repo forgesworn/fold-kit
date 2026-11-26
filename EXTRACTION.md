@@ -557,6 +557,24 @@ verifies; the new ones are `linkAuthority` in `fold-vectors.json`.
 `link.ts` leaves the whole-file list in `scripts/diff-source.mjs` for
 `LINK_AUTHORITY_CHANGES`, which also carries the `invitation.ts` hunk.
 
+## Owner-approved admission after a legacy key rotation
+
+A version 8 link carries the original room id as `m` alongside the invitation
+bearer and the pinned owner key. The invitation id and encrypted request key
+use version 8 derivation labels with the room id bytes as salt. The request
+uses the existing signed envelope and the owner answers only after approval.
+The response is encrypted to that request's device and signed by the owner.
+Its version 3 body carries the requester’s signed request id, original room
+secret, positive epoch, fresh epoch secret and the time the original key
+was superseded. It carries no responder delegation.
+
+The application keeps the same room id and uses the new epoch for traffic.
+The original key remains useful for history. An epoch desk that accepts
+possession of the original key must stay closed for these rooms. Approval
+and key delivery use the version 8 exchange. Clients earlier than version 8
+refuse the link. `OWNER_APPROVED_INVITATION_CHANGES` reverses this extension
+before checking the earlier sources.
+
 ## Quiet automatic replies: declared additions to `epoch.ts` and `invitation.ts`
 
 Unreleased. The authority desk waits a random time before every answer and

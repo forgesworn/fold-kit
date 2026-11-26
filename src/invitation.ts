@@ -11,12 +11,15 @@ import type { RelayTransport } from './transport.js'
 import { verifyEventUncached } from './verify.js'
 import { withExpiration } from './expiration.js'
 import { deriveRoom } from './room.js'
+import { MAX_EPOCH, type RoomEpoch } from './epoch.js'
 import type { ParticipantIdentity } from './identity.js'
 import { decodeInvitationDecline, InvitationDeclinedError } from './invitation-decline.js'
 import { DEFAULT_REPLY_DELAY_MS, defaultReplySchedule, replyDelay, type ReplyDelayRange, type ReplySchedule } from './quiet-reply.js'
 
 const INVITATION_ID_INFO = 'kithmoot/v2/invitation-id'
 const INVITATION_REQUEST_KEY_INFO = 'kithmoot/v2/invitation-request-key'
+const OWNER_INVITATION_ID_INFO = 'kithmoot/v8/invitation-id'
+const OWNER_INVITATION_REQUEST_KEY_INFO = 'kithmoot/v8/invitation-request-key'
 const INVITATION_ACCOUNT_PROOF = 'kithmoot/v2/invitation-account-proof'
 const INVITATION_MAX_AGE_SECONDS = 90
 const DEFAULT_TIMEOUT_MS = 60_000
@@ -39,6 +42,9 @@ export interface RoomInvitation {
   inviter: string
   /** Version 3 group link: admission is stored encrypted on the relays. */
   persistent?: true
+  /** Version 8 link naming the existing room whose key was changed.
+   * Only its pinned owner may approve requests. */
+  ownerApprovedRoom?: string
   /**
    * The room's authority, when it is not `inviter`: lower-case hex, carried
    * as `o` by a version 5 link. A member makes one when nobody can answer
@@ -107,6 +113,17 @@ export interface RoomAdmission {
   epoch?: number
 }
 
+export interface OwnerApprovedRoomEpoch extends RoomEpoch {
+  /** When the room left the legacy key, for readers retaining old history. */
+  rotatedAt: number
+}
+
+export interface OwnerApprovedRoomAdmission {
+  /** The original secret still identifies the room and its earlier history. */
+  secret: Uint8Array
+  epoch: OwnerApprovedRoomEpoch
+}
+
 function require32(bytes: Uint8Array, what: string): void {
   if (bytes.length !== 32) throw new Error(`${what} must be 32 bytes`)
 }
@@ -138,12 +155,19 @@ export function roomInvitation(bearer: Uint8Array, inviter: string, persistent =
 /** Public rendezvous id. Relays see this and timing, but cannot derive the bearer. */
 export function deriveInvitationId(invitation: RoomInvitation): string {
   require32(invitation.bearer, 'invitation bearer')
-  const bytes = hkdf(sha256, invitation.bearer, undefined, INVITATION_ID_INFO, 32)
+  const room = invitation.ownerApprovedRoom
+  if (room !== undefined && (invitation.persistent || invitation.authority !== undefined)) {
+    throw new Error('an owner-approved invitation must name its own room authority')
+  }
+  const salt = room === undefined ? undefined : hexToBytes(requireHex32(room, 'room id'))
+  const bytes = hkdf(sha256, invitation.bearer, salt, room === undefined ? INVITATION_ID_INFO : OWNER_INVITATION_ID_INFO, 32)
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 function requestKey(invitation: RoomInvitation): Uint8Array {
-  return hkdf(sha256, invitation.bearer, undefined, INVITATION_REQUEST_KEY_INFO, 32)
+  const room = invitation.ownerApprovedRoom
+  const salt = room === undefined ? undefined : hexToBytes(requireHex32(room, 'room id'))
+  return hkdf(sha256, invitation.bearer, salt, room === undefined ? INVITATION_REQUEST_KEY_INFO : OWNER_INVITATION_REQUEST_KEY_INFO, 32)
 }
 
 interface InvitationRequestBody {
@@ -382,6 +406,15 @@ interface InvitationGrantBody {
   epoch?: number
 }
 
+interface OwnerApprovedGrantBody {
+  v: 3
+  request: string
+  secret: string
+  epoch: number
+  epochSecret: string
+  rotatedAt: number
+}
+
 export interface EncodeInvitationGrantOptions {
   invitation: RoomInvitation
   inviterSk: Uint8Array
@@ -396,6 +429,14 @@ export interface EncodeInvitationGrantOptions {
   /** The epoch this responder is at, so the requester knows whether the
    *  secret it is being handed opens the live room or only its history. */
   epoch?: number
+  /** A fresh epoch held by the root of an owner-approved invitation. */
+  approvedEpoch?: OwnerApprovedRoomEpoch
+}
+
+function validApprovedEpoch(epoch: OwnerApprovedRoomEpoch, original: Uint8Array, at: number): boolean {
+  return Number.isSafeInteger(epoch.epoch) && epoch.epoch > 0 && epoch.epoch <= MAX_EPOCH &&
+    Number.isSafeInteger(epoch.rotatedAt) && epoch.rotatedAt > 0 && epoch.rotatedAt <= at &&
+    epoch.secret.length === 32 && !hexEquals(bytesToHex(epoch.secret), bytesToHex(original))
 }
 
 /** Encrypt a room secret only to the requester and authenticate its signer
@@ -412,20 +453,33 @@ export function encodeInvitationGrant(opts: EncodeInvitationGrantOptions): Event
   if (chain.length >= MAX_INVITATION_DELEGATION_DEPTH) throw new Error('invitation delegation is at maximum depth')
   const requester = requirePubkey(opts.requester)
   if (!/^[0-9a-f]{64}$/i.test(opts.request)) throw new Error('request id must be 32-byte hex')
-  const ownExpiry = chain.length === 0
-    ? Number.POSITIVE_INFINITY
-    : Math.min(...chain.map((cert) => cert.expiresAt))
-  const expiresAt = Math.min(
-    ownExpiry,
-    opts.now + (opts.delegationTtlSeconds ?? INVITATION_DELEGATION_TTL_SECONDS),
-  )
-  const next = issueInvitationDelegation(opts.invitation, roomId, opts.inviterSk, requester, expiresAt)
-  const body: InvitationGrantBody = {
-    v: 2,
-    request: normaliseHex(opts.request),
-    secret: base64urlnopad.encode(opts.roomSecret),
-    delegation: [...chain, next],
-    ...(opts.epoch !== undefined && Number.isSafeInteger(opts.epoch) && opts.epoch >= 0 ? { epoch: opts.epoch } : {}),
+  const request = normaliseHex(opts.request)
+  const secret = base64urlnopad.encode(opts.roomSecret)
+  let body: InvitationGrantBody | OwnerApprovedGrantBody
+  if (opts.invitation.ownerApprovedRoom !== undefined) {
+    const current = opts.approvedEpoch
+    if (chain.length || opts.epoch !== undefined || !current || !validApprovedEpoch(current, opts.roomSecret, opts.now)) {
+      throw new Error('owner-approved admission requires the root and a fresh epoch')
+    }
+    if (!hexEquals(opts.invitation.ownerApprovedRoom, roomId)) throw new Error('owner-approved invitation names another room')
+    body = {
+      v: 3, request, secret, epoch: current.epoch,
+      epochSecret: base64urlnopad.encode(current.secret), rotatedAt: current.rotatedAt,
+    }
+  } else {
+    if (opts.approvedEpoch) throw new Error('a fresh epoch requires an owner-approved invitation')
+    const ownExpiry = chain.length === 0
+      ? Number.POSITIVE_INFINITY
+      : Math.min(...chain.map((cert) => cert.expiresAt))
+    const expiresAt = Math.min(
+      ownExpiry,
+      opts.now + (opts.delegationTtlSeconds ?? INVITATION_DELEGATION_TTL_SECONDS),
+    )
+    const next = issueInvitationDelegation(opts.invitation, roomId, opts.inviterSk, requester, expiresAt)
+    body = {
+      v: 2, request, secret, delegation: [...chain, next],
+      ...(opts.epoch !== undefined && Number.isSafeInteger(opts.epoch) && opts.epoch >= 0 ? { epoch: opts.epoch } : {}),
+    }
   }
   const conversationKey = nip44.v2.utils.getConversationKey(opts.inviterSk, requester)
   return finalizeEvent(
@@ -450,6 +504,23 @@ export interface DecodeInvitationGrantOptions {
   maxAgeSeconds?: number
 }
 
+function openInvitationGrant(event: Event, opts: DecodeInvitationGrantOptions): {
+  body: Record<string, unknown>; requester: string; secret: Uint8Array
+} | null {
+  if (event.kind !== KINDS.INVITATION_GRANT || !verifyEventUncached(event)) return null
+  if (Math.abs(opts.now - event.created_at) > (opts.maxAgeSeconds ?? INVITATION_MAX_AGE_SECONDS)) return null
+  if (event.tags.find((t) => t[0] === 'd')?.[1] !== deriveInvitationId(opts.invitation)) return null
+  const requester = getPublicKey(opts.requesterSk)
+  const addressed = event.tags.find((t) => t[0] === 'p')?.[1]
+  if (addressed === undefined || !hexEquals(addressed, requester)) return null
+  const conversationKey = nip44.v2.utils.getConversationKey(opts.requesterSk, event.pubkey)
+  const body = JSON.parse(nip44.v2.decrypt(event.content, conversationKey)) as Record<string, unknown>
+  if (typeof body.request !== 'string' || !hexEquals(body.request, opts.request) || typeof body.secret !== 'string') return null
+  const secret = base64urlnopad.decode(body.secret)
+  if (secret.length !== 32) return null
+  return { body, requester, secret }
+}
+
 /**
  * Accept a fresh response whose delegation chain terminates at its event
  * signer, then retain the final requester hop so this member can become a
@@ -461,20 +532,11 @@ export function decodeRoomAdmissionGrant(
   opts: DecodeInvitationGrantOptions,
 ): RoomAdmission | null {
   try {
-    if (event.kind !== KINDS.INVITATION_GRANT) return null
-    if (!verifyEventUncached(event)) return null
-    if (Math.abs(opts.now - event.created_at) > (opts.maxAgeSeconds ?? INVITATION_MAX_AGE_SECONDS)) return null
-    if (event.tags.find((t) => t[0] === 'd')?.[1] !== deriveInvitationId(opts.invitation)) return null
-    const requester = getPublicKey(opts.requesterSk)
-    const addressed = event.tags.find((t) => t[0] === 'p')?.[1]
-    if (addressed === undefined || !hexEquals(addressed, requester)) return null
-
-    const conversationKey = nip44.v2.utils.getConversationKey(opts.requesterSk, event.pubkey)
-    const body = JSON.parse(nip44.v2.decrypt(event.content, conversationKey)) as Partial<InvitationGrantBody>
-    if (body.v !== 2 || typeof body.request !== 'string' || !hexEquals(body.request, opts.request)) return null
-    if (typeof body.secret !== 'string') return null
-    const secret = base64urlnopad.decode(body.secret)
-    if (secret.length !== 32) return null
+    if (opts.invitation.ownerApprovedRoom !== undefined) return null
+    const opened = openInvitationGrant(event, opts)
+    if (!opened) return null
+    const { body, requester, secret } = opened
+    if (body.v !== 2) return null
     if (!Array.isArray(body.delegation) || body.delegation.length === 0) return null
     if (!hexEquals(body.delegation[0]!.room, deriveRoom(secret).roomId)) return null
     const authority = verifyInvitationDelegation(opts.invitation, body.delegation, opts.now)
@@ -485,8 +547,29 @@ export function decodeRoomAdmissionGrant(
       secret,
       delegate: { delegateSk: opts.requesterSk, chain: body.delegation },
     }
-    if (Number.isSafeInteger(body.epoch) && (body.epoch as number) >= 0) admission.epoch = body.epoch
+    if (typeof body.epoch === 'number' && Number.isSafeInteger(body.epoch) && body.epoch >= 0) admission.epoch = body.epoch
     return admission
+  } catch {
+    return null
+  }
+}
+
+/** Read a fresh key sent directly by the owner pinned in the link. */
+export function decodeOwnerApprovedRoomAdmissionGrant(
+  event: Event,
+  opts: DecodeInvitationGrantOptions,
+): OwnerApprovedRoomAdmission | null {
+  try {
+    const room = opts.invitation.ownerApprovedRoom
+    if (room === undefined || !hexEquals(event.pubkey, opts.invitation.inviter)) return null
+    const opened = openInvitationGrant(event, opts)
+    if (!opened) return null
+    const { body, secret } = opened
+    if (body.v !== 3 || !hexEquals(deriveRoom(secret).roomId, room) ||
+        body.delegation !== undefined || typeof body.epoch !== 'number' ||
+        typeof body.epochSecret !== 'string' || typeof body.rotatedAt !== 'number') return null
+    const epoch = { epoch: body.epoch, secret: base64urlnopad.decode(body.epochSecret), rotatedAt: body.rotatedAt }
+    return validApprovedEpoch(epoch, secret, event.created_at) ? { secret, epoch } : null
   } catch {
     return null
   }
@@ -523,6 +606,9 @@ export interface HostRoomInvitationOptions {
   /** The epoch this responder is at, asked on every grant because it
    *  moves. Omit to say nothing, which a joiner treats as unknown. */
   epoch?: () => number
+  /** Current key for an existing room after rotation. Requires explicit
+   * approval and the root invitation key. */
+  approvedEpoch?: () => OwnerApprovedRoomEpoch
   /**
    * Asked once per fresh signed request, when present. Return true to let the
    * request in, false to leave it unanswered: there is no refusal on the
@@ -639,6 +725,12 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
   require32(opts.roomSecret, 'room secret')
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
   const delegation = opts.delegation ?? []
+  const room = opts.invitation.ownerApprovedRoom
+  if (room !== undefined && (!opts.admit || !opts.approvedEpoch || opts.epoch || delegation.length)) {
+    throw new Error('serving a rotated room key requires the owner and explicit approval')
+  }
+  if (room !== undefined && !hexEquals(deriveRoom(opts.roomSecret).roomId, room)) throw new Error('owner-approved invitation names another room')
+  if (room === undefined && opts.approvedEpoch) throw new Error('a fresh epoch requires an owner-approved invitation')
   const authority = verifyInvitationDelegation(opts.invitation, delegation, now())
   if (authority === null || !hexEquals(getPublicKey(opts.inviterSk), authority)) {
     throw new Error('responder is not delegated for invitation')
@@ -757,6 +849,7 @@ export function hostRoomInvitation(opts: HostRoomInvitationOptions): { close(): 
             now: now(),
             delegation,
             ...(opts.epoch ? { epoch: opts.epoch() } : {}),
+            ...(opts.approvedEpoch ? { approvedEpoch: opts.approvedEpoch() } : {}),
           })
         } catch {
           // Expired or maximum-depth authority is no authority. Subscription
@@ -837,8 +930,26 @@ export interface RequestRoomAdmissionOptions {
  * signer may ask the person to approve. Retaining the delegation removes the
  * creator as an availability dependency for the next arrival. */
 export function requestRoomAdmissionCapability(opts: RequestRoomAdmissionOptions): Promise<RoomAdmission> {
+  if (opts.invitation.ownerApprovedRoom !== undefined) return Promise.reject(new Error('this room requires owner-approved admission'))
+  return requestInvitationGrant(opts, (event, keys) => {
+    const admission = decodeRoomAdmissionGrant(event, keys)
+    if (!admission) return null
+    // The delegate retains its own key when the request erases its copy.
+    return { ...admission, delegate: { ...admission.delegate, delegateSk: admission.delegate.delegateSk.slice() } }
+  })
+}
+
+export function requestOwnerApprovedRoomAdmission(opts: RequestRoomAdmissionOptions): Promise<OwnerApprovedRoomAdmission> {
+  if (opts.invitation.ownerApprovedRoom === undefined) return Promise.reject(new Error('this link does not request owner approval'))
+  return requestInvitationGrant(opts, decodeOwnerApprovedRoomAdmissionGrant)
+}
+
+function requestInvitationGrant<T>(
+  opts: RequestRoomAdmissionOptions,
+  decode: (event: Event, options: DecodeInvitationGrantOptions) => T | null,
+): Promise<T> {
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000))
-  return new Promise<RoomAdmission>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     let settled = false
     let ownedKey: Uint8Array | undefined
     let request: Event | undefined
@@ -900,13 +1011,8 @@ export function requestRoomAdmissionCapability(opts: RequestRoomAdmissionOptions
         if (!request) return
         const declined = decodeInvitationDecline(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
         if (declined) { finish(() => reject(new InvitationDeclinedError())); return }
-        const admission = decodeRoomAdmissionGrant(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
-        if (admission) {
-          // The delegation owns its responder key after admission. Erasing
-          // our exchange key must not erase that independently retained key.
-          const retained = { ...admission, delegate: { ...admission.delegate, delegateSk: admission.delegate.delegateSk.slice() } }
-          finish(() => resolve(retained))
-        }
+        const admission = decode(event, { invitation: opts.invitation, requesterSk: ownedKey!, request: request.id, now: now() })
+        if (admission !== null) finish(() => resolve(admission))
       })
       if (settled) { unsub(); return }
       const prepare = async (): Promise<void> => {
@@ -940,4 +1046,6 @@ export const INVITATION_LABELS = [
   "kithmoot/v2/invitation-delegation:",
   "kithmoot/v2/invitation-id",
   "kithmoot/v2/invitation-request-key",
+  "kithmoot/v8/invitation-id",
+  "kithmoot/v8/invitation-request-key",
 ] as const

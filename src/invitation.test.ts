@@ -7,6 +7,8 @@ import type { RelayTransport } from './transport.js'
 import {
   createRoomInvitation,
   decodeInvitationGrant,
+  decodeOwnerApprovedRoomAdmissionGrant,
+  decodeRoomAdmissionGrant,
   decodeInvitationRequest,
   deriveInvitationId,
   encodeInvitationGrant,
@@ -18,14 +20,30 @@ import {
   hostRoomInvitation,
   requestRoomAdmission,
   requestRoomAdmissionCapability,
+  requestOwnerApprovedRoomAdmission,
   roomInvitation,
   verifyInvitationDelegation,
 } from './invitation.js'
+import { deriveRoom } from './room.js'
+import { deriveEpoch } from './epoch.js'
 
 const NOW = 1_800_000_000
 const now = () => NOW
 
 describe('room invitations', () => {
+  it('requires explicit approval before serving a rotated room key', () => {
+    const host = createRoomInvitation()
+    const invitation = { ...host.invitation, ownerApprovedRoom: '34'.repeat(32) }
+    const transport = new SimTransport(new SimRelay())
+    try {
+      expect(() => hostRoomInvitation({
+        ...host, invitation, transport, roomSecret: new Uint8Array(32).fill(3), now,
+      })).toThrow(/explicit approval/)
+    } finally {
+      transport.close()
+    }
+  })
+
   it('creates an unlinkable bearer and a matching one-use inviter key', () => {
     const a = createRoomInvitation()
     const b = createRoomInvitation()
@@ -40,6 +58,71 @@ describe('room invitations', () => {
   it('rejects malformed capabilities at the URL boundary', () => {
     expect(() => roomInvitation(new Uint8Array(16), 'a'.repeat(64))).toThrow(/32 bytes/)
     expect(() => roomInvitation(new Uint8Array(32), 'not-a-pubkey')).toThrow(/pubkey/)
+  })
+})
+
+describe('owner-approved room admission', () => {
+  const secret = new Uint8Array(32).fill(10)
+  const room = deriveRoom(secret)
+  const epoch = { epoch: 1, secret: new Uint8Array(32).fill(11), rotatedAt: NOW - 30 }
+
+  it('delivers the new key for the same room only after approval', async () => {
+    const { invitation: ordinary, inviterSk } = createRoomInvitation()
+    const invitation = { ...ordinary, ownerApprovedRoom: room.roomId }
+    const relay = new SimRelay()
+    const hostTransport = new SimTransport(relay)
+    const guestTransport = new SimTransport(relay)
+    const memberKey = generateSecretKey()
+    const approve = getPublicKey(memberKey)
+    const asked: string[] = []
+    const host = hostRoomInvitation({
+      transport: hostTransport, invitation, inviterSk, roomSecret: secret, now,
+      approvedEpoch: () => epoch,
+      admit: request => { asked.push(request.device); return request.device === approve },
+    })
+    try {
+      const admission = await requestOwnerApprovedRoomAdmission({
+        transport: guestTransport, invitation, requesterSk: memberKey, now, timeoutMs: 800,
+      })
+      expect(admission).toEqual({ secret, epoch })
+      expect(deriveRoom(admission.secret).roomId).toBe(room.roomId)
+      expect(deriveEpoch(admission.epoch).id).not.toBe(room.roomId)
+      await expect(requestOwnerApprovedRoomAdmission({
+        transport: guestTransport, invitation, now, timeoutMs: 150,
+      })).rejects.toThrow(/not answering/)
+      expect(asked).toHaveLength(2)
+      expect(asked[0]).toBe(approve)
+      expect(asked[1]).not.toBe(approve)
+    } finally {
+      host.close()
+      hostTransport.close()
+      guestTransport.close()
+    }
+  })
+
+  it('binds the approved epoch to the root, room, requester and live request', () => {
+    const { invitation: ordinary, inviterSk } = createRoomInvitation()
+    const invitation = { ...ordinary, ownerApprovedRoom: room.roomId }
+    const requesterSk = generateSecretKey()
+    const request = encodeInvitationRequest({ invitation, requesterSk, now: NOW })
+    const options = { invitation, requesterSk, request: request.id, now: NOW }
+    const grantOptions = {
+      invitation, inviterSk, requester: getPublicKey(requesterSk), request: request.id, roomSecret: secret, now: NOW, approvedEpoch: epoch,
+    }
+    const grant = encodeInvitationGrant(grantOptions)
+
+    expect(deriveInvitationId(invitation)).not.toBe(deriveInvitationId(ordinary))
+    expect(decodeInvitationRequest(request, { invitation: ordinary, now: NOW })).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, options)).toEqual({ secret, epoch })
+    expect(decodeRoomAdmissionGrant(grant, options)).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, { ...options, invitation: ordinary })).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, { ...options, invitation: { ...invitation, inviter: getPublicKey(generateSecretKey()) } })).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, { ...options, requesterSk: generateSecretKey() })).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, { ...options, request: 'ab'.repeat(32) })).toBeNull()
+    expect(decodeOwnerApprovedRoomAdmissionGrant(grant, { ...options, now: NOW + 91 })).toBeNull()
+    expect(() => encodeInvitationGrant({ ...grantOptions, roomSecret: new Uint8Array(32).fill(61) })).toThrow(/another room/)
+    expect(() => encodeInvitationGrant({ ...grantOptions, approvedEpoch: { ...epoch, secret } })).toThrow(/fresh epoch/)
+    expect(() => encodeInvitationGrant({ ...grantOptions, approvedEpoch: { ...epoch, epoch: 0 } })).toThrow(/fresh epoch/)
   })
 })
 
