@@ -222,7 +222,7 @@ new exchange. The helper copies a supplied `requesterSk` before signing and
 erases only its owned copy on settlement. Hosts recheck freshness when a human
 decision completes, so approval cannot extend an expired request's authority.
 
-- `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3/v5 link envelope.
+- `parseRoomLink`, `encodeRoomLink`, `RoomLink` - the v1/v2/v3/v5/v8 link envelope.
   Version 5 is a member's temporary link: its own `inviter` answers requests
   to join, and `o` (`RoomInvitation.authority`) names the room's authority
 - `invitationAuthority(invitation)` - the key a joiner pins as the room's
@@ -234,6 +234,20 @@ decision completes, so approval cannot extend an expired request's authority.
   `decodeInvitationRetirementNotice`, `hostRoomInvitation`,
   `requestRoomAdmissionCapability`, `requestRoomAdmission` - the v2 live rendezvous invitation, its delegation
   chain and retirement
+- `requestOwnerApprovedRoomAdmission` and `decodeOwnerApprovedRoomAdmissionGrant`
+  handle version 8 links for an existing room whose legacy key has been rotated.
+  Set `RoomInvitation.ownerApprovedRoom` to the existing room id and `inviter`
+  to its independently verified owner key. The owner uses `hostRoomInvitation`
+  with explicit `admit` approval and an `approvedEpoch` callback. The grant
+  delivers the current epoch to the requesting device and carries the original
+  secret for room identity and history.
+
+  An application must persist the verified owner and rotation state for each
+  room membership before using the new epoch, and reject new traffic under the
+  legacy key after migration. Keep automatic legacy epoch recovery disabled for
+  a migrated room and admit returning members through the owner-approved flow.
+  The library supplies the invitation codec and exchange. The application
+  controls rotation, history access and stored membership.
 - `encodePersistentInvitation`, `decodePersistentInvitation`,
   `requestPersistentRoomAdmission` - the v3 stored group invitation (1463).
   Pass `endsAt` (unix seconds, after `now` and at most 30 days on) for a

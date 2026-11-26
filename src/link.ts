@@ -23,12 +23,11 @@ export const MAX_ROOM_LINK_FRAGMENT_LENGTH = 16_384
  * library concern from here on: one parser, shared by the page and by
  * anything else that is handed a link.
  *
- * Exactly one of `invitation` (v2 live rendezvous, v3 stored group, or v5
- * live rendezvous a member made, naming the room's authority) and `secret`
- * (legacy version 1, the room traffic secret itself) is present.
+ * Exactly one of `invitation` (live, stored, delegated or owner-approved)
+ * and `secret` (legacy version 1, the room traffic secret) is present.
  */
 export interface RoomLink {
-  /** V2 meeting invitation or v3 persistent group invitation. */
+  /** Live or stored invitation. */
   invitation?: RoomInvitation
   /** Version 1: the room traffic secret, in the link. Legacy. */
   secret?: Uint8Array
@@ -55,12 +54,14 @@ export interface RoomLink {
 /** The fragment payload as written. Field names are short because the
  *  whole link has to fit in a QR code. */
 interface RoomLinkPayload {
-  v?: 2 | 3 | 5
+  v?: 2 | 3 | 5 | 8
   s?: string
   j?: string
   h?: string
   /** Version 5: the room's authority, when the link's inviter is not it. */
   o?: unknown
+  /** Version 8: the room id given access under the fresh key. */
+  m?: unknown
   r?: unknown
   i?: unknown
   a?: unknown
@@ -85,7 +86,13 @@ export function parseRoomLink(url: string): RoomLink {
     throw new Error('join URL fragment is not valid')
   }
   if (typeof payload !== 'object' || payload === null) throw new Error('join URL fragment is not valid')
-  if (payload.v !== undefined && payload.v !== 2 && payload.v !== 3 && payload.v !== 5) throw new Error('join URL uses an unsupported version')
+  if (payload.v !== undefined && payload.v !== 2 && payload.v !== 3 && payload.v !== 5 && payload.v !== 8) {
+    throw new Error('join URL uses an unsupported version')
+  }
+  if (payload.v === 8 && (typeof payload.m !== 'string' || !HEX64.test(payload.m) ||
+      payload.s !== undefined || payload.o !== undefined || payload.c !== undefined)) {
+    throw new Error('join URL carries a malformed owner-approved invitation')
+  }
   assertNetworkHintBounds(payload.r, payload.i)
 
   const link: RoomLink = {
@@ -106,7 +113,7 @@ export function parseRoomLink(url: string): RoomLink {
     }
   }
 
-  if (payload.v === 2 || payload.v === 3 || payload.v === 5) {
+  if (payload.v === 2 || payload.v === 3 || payload.v === 5 || payload.v === 8) {
     if (typeof payload.j !== 'string' || typeof payload.h !== 'string') {
       throw new Error('join URL carries a malformed invitation')
     }
@@ -118,6 +125,7 @@ export function parseRoomLink(url: string): RoomLink {
     }
     link.invitation = roomInvitation(bearer, payload.h, payload.v === 3)
     if (payload.v === 5) link.invitation.authority = readLinkAuthority(payload.o, link.invitation.inviter)
+    if (payload.v === 8) link.invitation.ownerApprovedRoom = (payload.m as string).toLowerCase()
     return link
   }
 
@@ -139,8 +147,19 @@ export function encodeRoomLink(base: string, link: RoomLink): string {
   const relays = safeRelayUrls(link.relays)
   const iceUrls = safeIceUrls(link.iceUrls)
   const authority = link.invitation ? writtenLinkAuthority(link.invitation) : undefined
+  const ownerApprovedRoom = link.invitation?.ownerApprovedRoom
+  if (ownerApprovedRoom !== undefined && (!HEX64.test(ownerApprovedRoom) || link.invitation?.authority !== undefined ||
+      link.invitation?.persistent || link.secret || link.pairingCode)) {
+    throw new Error('join URL carries a malformed owner-approved invitation')
+  }
   const payload: RoomLinkPayload & { r: string[]; i: string[] } = link.invitation
-    ? { v: authority ? 5 : link.invitation.persistent ? 3 : 2, j: base64urlnopad.encode(link.invitation.bearer), h: link.invitation.inviter, ...(authority ? { o: authority } : {}), r: relays, i: iceUrls }
+    ? {
+        v: ownerApprovedRoom !== undefined ? 8 : authority ? 5 : link.invitation.persistent ? 3 : 2,
+        j: base64urlnopad.encode(link.invitation.bearer), h: link.invitation.inviter,
+        ...(authority ? { o: authority } : {}),
+        ...(ownerApprovedRoom !== undefined ? { m: ownerApprovedRoom.toLowerCase() } : {}),
+        r: relays, i: iceUrls,
+      }
     : { s: base64urlnopad.encode(link.secret ?? invalid()), r: relays, i: iceUrls }
   if (link.policy) payload.a = link.policy
   if (link.pairingCode) payload.c = bytesToHex(link.pairingCode)

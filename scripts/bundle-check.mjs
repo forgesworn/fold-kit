@@ -39,7 +39,9 @@ if (!existsSync(distIndex) || !existsSync(distLane) || !existsSync(distMls) || !
 // over-limit check, add 0.6 KiB / 0.3 KiB gzip to evidence: measured at
 // 17.0 KiB / 6.3 KiB gzip.
 const BUDGETS_KB = {
-  index: { minified: 76, gzip: 23 },
+  // Version 8 adds the owner-approved grant and link codecs. Measured
+  // together with the existing exports at 78.7 KB and 23.9 KB gzip.
+  index: { minified: 79, gzip: 24 },
   lane: { minified: 1.2, gzip: 0.7 },
   // Separate opt-in v4 codec measured at 12.8 KiB / 5.1 KiB gzip.
   // Existing index/lane budgets stay unchanged.
