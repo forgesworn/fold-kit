@@ -12,6 +12,15 @@ ESM-only, Node.js 22.13+. Five entry points: `@forgesworn/fold-kit` (circle prim
 - [ForgeSworn on GitHub](https://github.com/forgesworn): Browse the organisation’s public repositories.
 - [Project source](https://github.com/forgesworn/fold-kit): Canonical source repository, documentation and release information.
 
+## Owner-approved admission after legacy key rotation
+
+Version 8 room links name the original room and pin its owner. Use
+`requestOwnerApprovedRoomAdmission` for the request and `hostRoomInvitation`
+with explicit `admit` and `approvedEpoch` for the owner's response. The
+grant is device-bound and supplies the current epoch. The app persists the
+verified owner and key rotation and prevents legacy-key recovery of future
+traffic. See the README and `vectors/owner-approved-invitation-vectors.json`.
+
 ## Install
 
 ```bash
